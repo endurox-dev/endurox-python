@@ -1,0 +1,491 @@
+Getting Started Tutorial
+========================
+
+== About the guide
+
+This document guides user how to quickly start using Enduro/X for Python3 module.
+It contains a step by step actions what needs to be taken to write and start
+the basic XATMI server and client process.
+
+== Operating System configuration
+
+Certain operating system configuration is required in order to Enduro/X running,
+see ex_adminman(guides)(Enduro/X Administration Manual, Setup System) section,
+the steps are crucial to be executed for chosen operating system before
+continuing.
+
+== Preparing the Python 3 installation
+
+After the system configuration is done, Enduro/X and Python packages can be installed.
+This document assumes that your operating system has already Python version 3.6 or
+later installed. If not, follow the standard installation procedure for CPython.
+
+=== Installing binary version of Enduro/X Python module 
+
+Binary wheel release can be downloaded from https://www.mavimax.com/downloads
+To install wheel release on target operating system use following commands:
+
+---------------------------------------------------------------------
+
+$ unzip <package_name>.whl.<os_id>.zip
+
+$ sudo pip3 install <package_name>.whl
+
+---------------------------------------------------------------------
+
+=== Installing Enduro/X Python module from sources
+
+To install module from sources code, following dependencies must be installed in the system:
+
+- CMake build system
+
+- PKG Config
+
+- C++ 11 capable compiler
+
+When dependencies are met, download the source distribution from 
+https://www.mavimax.com/downloads
+
+---------------------------------------------------------------------
+
+$ tar -xzvf endurox-<version>.tar.gz
+
+$ cd endurox-<version>
+
+$ python3 ./setup.py install
+
+or
+
+$ pip3 install .
+
+---------------------------------------------------------------------
+
+== Configuring the application environment
+
+This tutorial will prepare "python-app" application. It  will be prepared
+from new unix user "user1". Application (Enduro/X instance) will be 
+located in /opt/app-python folder.
+
+To create creating base environment, Enduro/X "provision" tool is used. 
+This generates base layout of application.
+
+---------------------------------------------------------------------
+
+# sudo -s
+# useradd -m user1
+# mkdir -p /opt/app-python
+# chown user1 /opt/app-python
+# su - user1
+$ bash
+$ cd /opt/app-python
+$ xadmin provision -d \
+    -v qprefix=setapppy \
+    -v addubf=test.fd
+....
+Provision succeed!
+
+---------------------------------------------------------------------
+
+Above script uses defaults, and for some parameters values are specified:
+
+.Parameters applied to provision script above
+[width="40%",options="header"]
+|=========================================================
+|Parameter|Value applied|Description
+|qprefix|app-python|Application prefix
+|addubf|test.fd|Additional Key-value field table/UBF field to be configured, 
+used by sample later
+|=========================================================
+
+Final directory structure built for the application is:
+
+[options="compact"]
+- /opt/app-python/conf - will contain configuration files.
+- /opt/app-python/conf/setapppy - environment configuration file.
+- /opt/app-python/conf/ndrxconfig.xml - XATMI server process configuration file.
+- /opt/app-python/conf/app.ini - application settings.
+- /opt/app-python/bin - for executables / Python scripts.
+- /opt/app-python/ubftab - for tables for field definitions.
+- /opt/app-python/tmp - temp dir
+- /opt/app-python/log - for logging
+- /opt/app-python/test - test data
+- /opt/tmlogs/rm1 - transaction manager log files (used for persistent queue space)
+
+Intial configuration file can be found in */opt/app-python/conf/ndrxconfig.xml*. 
+Lets register our Python XATMI server named *testsv.py* here first. Do this in
+*<servers/>* section add following *<server />* block in the file:
+
+---------------------------------------------------------------------
+<?xml version="1.0" ?>
+<endurox>
+...
+	</defaults>
+	<servers>
+...
+        <server name="testsv.py">
+            <min>1</min>
+            <max>1</max>
+            <srvid>200</srvid>
+            <sysopt>-e ${NDRX_ULOG}/testsv.log -r</sysopt>
+        </server>
+...
+	</servers>
+</endurox>
+---------------------------------------------------------------------
+
+Also we are about to add logging settings for scripts we are about
+to write, add following lines int the *[@debug]* section in application
+ini file (*/opt/app-python/conf/app.ini*):
+
+---------------------------------------------------------------------
+[@debug]
+..
+python3= ndrx=2 ubf=0 tp=5 file=
+
+[@debug/PYCLT]
+python3= file=${NDRX_ULOG}/testcl.log
+---------------------------------------------------------------------
+
+This makes any Python3 script to log to stderr. The *testsv.py* will log
+to *${NDRX_ULOG}/testsv.log* file as specified by *-e* argument.
+The other option is to use *tplogconfig(3)* during the process init phase to
+select required logfile name. Or use *NDRX_CCTAG* env variable for process to specify
+sub-section of the @debug section.
+
+== Adding source code
+
+This tutorial will use Enduro/X built in feature of generating the source code.
+Generators can create simple XATMI client/server processes. In this example,
+client process makes request to "TESTSV" service with one field in UBF buffer
+(*T_STRING_FLD*) and server provides original value back in *T_STRING_2_FLD* field.
+
+The development process will be following:
+
+- Define UBF tables
+
+- Create Python server process
+
+- Create Python client process
+
+=== Define UBF tables
+
+Enduro/X *Exfields* table in folder */opt/app-python/ubftab* is already added by
+provision command. In this folder we will add additional *test.fd* (already included
+in configuration). 
+
+--------------------------------------------------------------------------------
+
+$ cd /opt/app-python/ubftab
+
+$ xadmin gen ubf tab  -d -vgenmake=n
+Enduro/X 8.0.6, build Jun 15 2022 00:45:31, using epoll for LINUX (64 bits)
+
+Enduro/X Middleware Platform for Distributed Transaction Processing
+Copyright (C) 2009-2016 ATR Baltic Ltd.
+Copyright (C) 2017-2022 Mavimax Ltd. All Rights Reserved.
+
+This software is released under one of the following licenses:
+AGPLv3 (exceptions for Java, Go, Python) or Mavimax license for commercial use.
+
+Logging to ./ULOG.20220619
+
+*** Review & edit configuration ***
+
+ 0: Edit table_name   :UBF Table name (.fd will be added) [test]: 
+ 1: Edit base_number  :Base number [6000]: 
+ 2: Edit testfields   :Add test fields [y]: 
+ 3: Edit genexfields  :Gen Exfields [y]: 
+ 4: Edit genmake      :Gen makefile [n]: 
+Gen ok!
+
+--------------------------------------------------------------------------------
+
+=== Define Java server process
+
+Lets generate simple Java server process which provides some field in responses
+of the service calls. We will do this by using Enduro/X generators:
+
+--------------------------------------------------------------------------------
+$ cd /opt/app-python/bin
+
+$ xadmin gen python server -d
+Enduro/X 8.0.6, build Jun 15 2022 00:45:31, using epoll for LINUX (64 bits)
+
+Enduro/X Middleware Platform for Distributed Transaction Processing
+Copyright (C) 2009-2016 ATR Baltic Ltd.
+Copyright (C) 2017-2022 Mavimax Ltd. All Rights Reserved.
+
+This software is released under one of the following licenses:
+AGPLv3 (exceptions for Java, Go, Python) or Mavimax license for commercial use.
+
+ 0: svname       :XATMI Server Name (script) [testsv]: 
+ 1: svcname      :Service name [TESTSV]: 
+ 2: useubf       :Use UBF? [y]: 
+ 3: config       :INI File section (optional, will read config if set) []: 
+
+*** Review & edit configuration ***
+
+ 0: Edit svname       :XATMI Server Name (script) [testsv]: 
+ 1: Edit svcname      :Service name [TESTSV]: 
+ 2: Edit useubf       :Use UBF? [y]: 
+ 3: Edit config       :INI File section (optional, will read config if set) []: 
+c: Cancel
+w: Accept, write
+Enter the choice [0-3, c, w]: w
+Python server gen ok!
+
+--------------------------------------------------------------------------------
+
+The source code for basic Python XATMI server is quite simple, Check the *testsv.py*:
+
+--------------------------------------------------------------------------------
+
+#!/usr/bin/env python3
+
+import sys
+import endurox as e
+
+class Server:
+
+    def tpsvrinit(self, args):
+        e.tplog_info("Doing server init...");
+        e.tpadvertise("TESTSV", "TESTSV", self.TESTSV)
+        return 0
+
+    def tpsvrdone(self):
+        e.log_info("Server shutdown")
+
+    def TESTSV(self, args):
+        e.tplogprintubf(e.log_info, "Incoming request:", args.data)
+        args.data["data"]["T_STRING_2_FLD"]="Hello World from XATMI server"
+        return e.tpreturn(e.TPSUCCESS, 0, args.data)
+
+if __name__ == "__main__":
+    e.run(Server(), sys.argv)
+
+--------------------------------------------------------------------------------
+
+This is basic XATMI single-threaded server. The tpsvrinit() advertises service
+"TESTSV". Method tpsvrdone() is called during XATMI server shutdown.
+
+=== Define Python client process
+
+Client process in the same way as server process for demo purposes will be generated
+by Enduro/X generator.
+
+--------------------------------------------------------------------------------
+
+$ cd /opt/app-python/bin
+
+$ xadmin gen python client
+Enduro/X 8.0.6, build Jun 15 2022 00:45:31, using epoll for LINUX (64 bits)
+
+Enduro/X Middleware Platform for Distributed Transaction Processing
+Copyright (C) 2009-2016 ATR Baltic Ltd.
+Copyright (C) 2017-2022 Mavimax Ltd. All Rights Reserved.
+
+This software is released under one of the following licenses:
+AGPLv3 (exceptions for Java, Go, Python) or Mavimax license for commercial use.
+
+ 0: cltname      :XATMI Client Name (script) [testcl]: 
+ 1: useubf       :Use UBF? [y]: 
+ 2: config       :INI File section (optional, will read config if set) []: 
+
+*** Review & edit configuration ***
+
+ 0: Edit cltname      :XATMI Client Name (script) [testcl]: 
+ 1: Edit useubf       :Use UBF? [y]: 
+ 2: Edit config       :INI File section (optional, will read config if set) []: 
+c: Cancel
+w: Accept, write
+Enter the choice [0-2, c, w]: w
+Python client gen ok!
+
+--------------------------------------------------------------------------------
+
+For generator the defaults basically are used, but you may choose your own identifiers
+as well. The simple Python XATMI client process looks like this (*testcl.py*):
+
+--------------------------------------------------------------------------------
+
+#!/usr/bin/env python3
+
+import sys
+import endurox as e
+
+def run():
+
+    # Do some work here
+
+    buf = dict()
+    buf["data"] = dict()
+    buf["data"]["T_STRING_FLD"] = "Hello world!"
+    
+    tperrno, tpurcode, buf = e.tpcall("TESTSV", buf)
+    
+    if 0!=tperrno: 
+        e.tplog_error("Failed to get configuration: %d" % tperrno)
+        raise AtmiExcept(e.TPESVCFAIL, "Failed to call TESTSV")
+
+    e.tplogprintubf(e.log_info, "Got server reply", buf);
+
+def appinit():
+    e.tplog_info("Doing client init...");
+    e.tpinit()
+
+def unInit():
+    e.tpterm()
+
+if __name__ == '__main__':
+    try:
+        appinit()
+        run()
+        unInit()
+    except Exception as ee:
+        e.tplog_error("Exception: %s occurred: %s" % (ee.__class__, str(ee)))
+
+--------------------------------------------------------------------------------
+
+Generate source is simple XATMI client process which prepares they key/value 
+UBF buffer (dictionary), adds data to it and performs call to service.
+
+== Running the example
+
+After this we are ready to boot up the application, thus lets load the environment
+and start up.
+
+--------------------------------------------------------------------------------
+
+$ cd /opt/app-python/conf
+
+$ . setapppy
+
+$ xadmin start -y
+Enduro/X 8.0.6, build Jun 15 2022 00:45:31, using epoll for LINUX (64 bits)
+
+Enduro/X Middleware Platform for Distributed Transaction Processing
+Copyright (C) 2009-2016 ATR Baltic Ltd.
+Copyright (C) 2017-2022 Mavimax Ltd. All Rights Reserved.
+
+This software is released under one of the following licenses:
+AGPLv3 (exceptions for Java, Go, Python) or Mavimax license for commercial use.
+
+* Shared resources opened...
+* Enduro/X back-end (ndrxd) is not running
+* ndrxd PID (from PID file): 277319
+* ndrxd idle instance started.
+exec cconfsrv -k 0myWI5nu -i 1 -e /opt/app-python/log/cconfsrv.log -r --  :
+	process id=277325 ... Started.
+exec cconfsrv -k 0myWI5nu -i 2 -e /opt/app-python/log/cconfsrv.log -r --  :
+	process id=277326 ... Started.
+exec tpadmsv -k 0myWI5nu -i 10 -e /opt/app-python/log/tpadmsv.log -r --  :
+	process id=277327 ... Started.
+exec tpadmsv -k 0myWI5nu -i 11 -e /opt/app-python/log/tpadmsv.log -r --  :
+	process id=277328 ... Started.
+exec tpevsrv -k 0myWI5nu -i 20 -e /opt/app-python/log/tpevsrv.log -r --  :
+	process id=277329 ... Started.
+exec tmsrv -k 0myWI5nu -i 40 -e /opt/app-python/log/tmsrv-rm1.log -r -- -t1 -l/opt/app-python/tmlogs/rm1 --  :
+	process id=277330 ... Started.
+exec tmsrv -k 0myWI5nu -i 41 -e /opt/app-python/log/tmsrv-rm1.log -r -- -t1 -l/opt/app-python/tmlogs/rm1 --  :
+	process id=277342 ... Started.
+exec tmsrv -k 0myWI5nu -i 42 -e /opt/app-python/log/tmsrv-rm1.log -r -- -t1 -l/opt/app-python/tmlogs/rm1 --  :
+	process id=277354 ... Started.
+exec tmqueue -k 0myWI5nu -i 60 -e /opt/app-python/log/tmqueue-rm1.log -r -- -s1 --  :
+	process id=277366 ... Started.
+exec tpbridge -k 0myWI5nu -i 150 -e /opt/app-python/log/tpbridge_2.log -r -- -f -n2 -r -i 127.0.0.1 -p 21003 -tA -z30 :
+	process id=277399 ... Started.
+exec testsv.py -k 0myWI5nu -i 200 -e /opt/app-python/log/testsv.log -r --  :
+	process id=277406 ... Started.
+exec tmrecoversv -k 0myWI5nu -i 9900 -e /opt/app-python/log/tmrecoversv.log --  --  :
+	process id=277407 ... Started.
+exec cpmsrv -k 0myWI5nu -i 9999 -e /opt/app-python/log/cpmsrv.log -r -- -k3 -i1 --  :
+	process id=277408 ... Started.
+Startup finished. 13 processes started.
+
+--------------------------------------------------------------------------------
+
+As it could be seen Python server processes *testsv.py* is booted. 
+Let's check their services:
+
+--------------------------------------------------------------------------------
+
+$ xadmin psc
+
+Nd Service Name Routine Name Prog Name SRVID #SUCC #FAIL      MAX     LAST STAT
+-- ------------ ------------ --------- ----- ----- ----- -------- -------- -----
+ 1 @CCONF       CCONF        cconfsrv      1     0     0      0ms      0ms AVAIL
+ 1 @CCONF       CCONF        cconfsrv      2     0     0      0ms      0ms AVAIL
+ 1 .TMIB        MIB          tpadmsv      10     0     0      0ms      0ms AVAIL
+ 1 .TMIB-1-10   MIB          tpadmsv      10     0     0      0ms      0ms AVAIL
+ 1 .TMIB-1      MIB          tpadmsv      10     0     0      0ms      0ms AVAIL
+ 1 .TMIB        MIB          tpadmsv      11     0     0      0ms      0ms AVAIL
+ 1 .TMIB-1-11   MIB          tpadmsv      11     0     0      0ms      0ms AVAIL
+ 1 .TMIB-1      MIB          tpadmsv      11     0     0      0ms      0ms AVAIL
+ 1 @TPEVSUBS001 TPEVSUBS     tpevsrv      20     0     0      0ms      0ms AVAIL
+ 1 @TPEVUNSUBS+ TPEVUNSUBS   tpevsrv      20     0     0      0ms      0ms AVAIL
+ 1 @TPEVPOST001 TPEVPOST     tpevsrv      20     0     0      0ms      0ms AVAIL
+ 1 @TPEVDOPOST+ TPEVDOPOST   tpevsrv      20     0     0      0ms      0ms AVAIL
+ 1 @TM-1        TPTMSRV      tmsrv        40     1     0      0ms      0ms AVAIL
+ 1 @TM-1-1      TPTMSRV      tmsrv        40     0     0      0ms      0ms AVAIL
+ 1 @TM-1-1-40   TPTMSRV      tmsrv        40     0     0      0ms      0ms AVAIL
+ 1 @TM-1        TPTMSRV      tmsrv        41     0     0      0ms      0ms AVAIL
+ 1 @TM-1-1      TPTMSRV      tmsrv        41     0     0      0ms      0ms AVAIL
+ 1 @TM-1-1-41   TPTMSRV      tmsrv        41     0     0      0ms      0ms AVAIL
+ 1 @TM-1        TPTMSRV      tmsrv        42     0     0      0ms      0ms AVAIL
+ 1 @TM-1-1      TPTMSRV      tmsrv        42     0     0      0ms      0ms AVAIL
+ 1 @TM-1-1-42   TPTMSRV      tmsrv        42     0     0      0ms      0ms AVAIL
+ 1 @TMQ-1-60    TMQUEUE      tmqueue      60     0     0      0ms      0ms AVAIL
+ 1 @QSPSAMPLES+ TMQUEUE      tmqueue      60     0     0      0ms      0ms AVAIL
+ 1 @TPBRIDGE002 TPBRIDGE     tpbridge    150     0     0      0ms      0ms AVAIL
+ 1 TESTSV       TESTSV       testsv.py   200     0     0      0ms      0ms AVAIL
+ 1 @CPMSVC      CPMSVC       cpmsrv     9999     0     0      0ms      0ms AVAIL
+
+--------------------------------------------------------------------------------
+
+Script instance *200* provides *TESTSV* service. Now lets perform the test by calling the
+Java client process in classical way:
+
+--------------------------------------------------------------------------------
+
+$ cd /opt/app-python/bin
+
+$ ./testcl.py 
+t:USER:4:c9e5ad48:278711:7fde17b4e740:000:20220619:172802477430:tplog       :/tplog.c:0582:Doing client init...
+t:USER:4:c9e5ad48:278711:7fde17b4e740:001:20220619:172802478349:plogprintubf:bf/ubf.c:1790:Got server reply
+T_STRING_FLD	Hello world!
+T_STRING_2_FLD	Hello World from XATMI server
+
+
+-- To redirect client process output, CCTAG may be used:
+
+$ NDRX_CCTAG="PYCLT" ./testcl.py
+
+$ cat ${NDRX_ULOG}/testscl.log
+t:USER:4:c9e5ad48:281668:7f64e79f7740:000:20220619:173453057883:tplog       :/tplog.c:0582:Doing client init...
+t:USER:4:c9e5ad48:281668:7f64e79f7740:001:20220619:173453058520:plogprintubf:bf/ubf.c:1790:Got server reply
+T_STRING_FLD    Hello world!
+T_STRING_2_FLD  Hello World from XATMI server
+ 
+--------------------------------------------------------------------------------
+
+== Conclusions
+
+In the end we see that it is quite simple to create XATMI Python client and 
+server processes. The good thing is that this API is consistent with Go, Java and C/C++
+languages. Any of these four programming languages can be mixed in single
+high performance application solution.
+
+This tutorial shows only basic features of the Enduro/X. There is more to study
+as async calls, *tpforward(3)*, persistent queues, events, distributed transactions
+and more. For full API consult the Enduro/X API Pydoc pages at https://www.endurox.org/dokuwiki 
+Also unit tests can give a clue for the full functionality use (at 
+https://github.com/endurox-dev/endurox-python/tree/master/tests).
+ 
+
+:numbered!:
+
+
+////////////////////////////////////////////////////////////////
+The index is normally left completely empty, it's contents being
+generated automatically by the DocBook toolchain.
+////////////////////////////////////////////////////////////////

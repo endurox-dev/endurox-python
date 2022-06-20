@@ -1,0 +1,3 @@
+To run tests manually use:
+
+$ python3 -m unittest client.py

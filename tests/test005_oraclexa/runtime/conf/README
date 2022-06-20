@@ -1,0 +1,8 @@
+To peform tesing:
+
+- Configure env according to Enduro/X build manual: 
+	https://www.endurox.org/dokuwiki/doku.php?id=endurox:v8.0.x:guides:building_guide 
+	e.g. Testing Oracle DB (Optional) and enable EX_ORA_ settings in ~/ndrx_home
+- pip3 install cx_oracle
+
+- Load test table: $ cat tables.sql | ./sqlplus.run

@@ -1,0 +1,3 @@
+#!/bin/bash
+
+sqlplus $EX_ORA_USER/$EX_ORA_PASS@$EX_ORA_SID
