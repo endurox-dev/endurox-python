@@ -131,6 +131,7 @@ void tpsvrdone()
         server.attr(__func__)();
     }
     M_dispmap.clear();
+    ndrxpy_fdmap_clear();
 }
 
 int tpsvrthrinit(int argc, char *argv[])

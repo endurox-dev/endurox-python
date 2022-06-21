@@ -411,6 +411,8 @@ extern pytpreplycd ndrxpy_pytpgetrply(int cd, long flags);
 extern int ndrxpy_pytppost(const std::string eventname, py::object data, long flags);
 extern long ndrxpy_pytpsubscribe(char *eventexpr, char *filter, TPEVCTL *ctl, long flags);
 
+extern void ndrxpy_fdmap_clear(void);
+
 extern void ndrxpy_register_atmi(py::module &m);
 extern void ndrxpy_register_ubf(py::module &m);
 extern void ndrxpy_register_srv(py::module &m);

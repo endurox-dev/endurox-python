@@ -75,6 +75,16 @@ std::map<int, ndrxpy_object_t*> M_fdmap {};
 namespace py = pybind11;
 
 /**
+ * @brief Avoid C++ destructors for Python objects.
+ *  It is user programs responsiliby to clean up all poller fds or leave
+ *  them for OS to collect at program exit.
+ */
+expublic void ndrxpy_fdmap_clear(void)
+{
+    M_fdmap.clear();
+}
+
+/**
  * @brief Dispatch b4 poll callback
  */
 exprivate int ndrxpy_b4pollcb_callback(void)
@@ -169,7 +179,7 @@ exprivate int ndrxpy_pollevent_cb(int fd, uint32_t events, void *ptr1)
     {
         py::gil_scoped_acquire acquire;
         py::object ret=M_fdmap[fd]->obj(fd, events, M_fdmap[fd]->obj2);
-        ret=retret.cast<int>();
+        cret=ret.cast<int>();
     }
 
     return cret;
