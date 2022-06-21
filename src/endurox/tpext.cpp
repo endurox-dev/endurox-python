@@ -80,10 +80,16 @@ namespace py = pybind11;
 exprivate int ndrxpy_b4pollcb_callback(void)
 {
     //Get the gil...
-    py::gil_scoped_acquire acquire;
+    int cret;
+    {
+        py::gil_scoped_acquire acquire;
 
-    py::object ret = M_b4pollcb_handler->obj();
-    return ret.cast<int>();
+        py::object ret = M_b4pollcb_handler->obj();
+        cret=ret.cast<int>();
+    }
+
+    //Avoid RVO
+    return cret;
 
 }
 
@@ -117,9 +123,13 @@ exprivate void ndrxpy_tpext_addb4pollcb (const py::object &func)
 exprivate int ndrxpy_addperiodcb_callback(void)
 {
     //Get the gil...
-    py::gil_scoped_acquire acquire;
-    py::object ret = M_addperiodcb_handler->obj();
-    return ret.cast<int>();
+    int cret;
+    {
+        py::gil_scoped_acquire acquire;
+        py::object ret = M_addperiodcb_handler->obj();
+        cret=ret.cast<int>();
+    }
+    return cret;
 }
 
 /**
@@ -155,9 +165,14 @@ exprivate void ndrxpy_tpext_addperiodcb (int secs, const py::object &func)
  */
 exprivate int ndrxpy_pollevent_cb(int fd, uint32_t events, void *ptr1)
 {
-    py::gil_scoped_acquire acquire;
-    py::object ret=M_fdmap[fd]->obj(fd, events, M_fdmap[fd]->obj2);
-    return ret.cast<int>();
+    int cret;
+    {
+        py::gil_scoped_acquire acquire;
+        py::object ret=M_fdmap[fd]->obj(fd, events, M_fdmap[fd]->obj2);
+        ret=retret.cast<int>();
+    }
+
+    return cret;
 }
 
 /**

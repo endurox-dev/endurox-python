@@ -481,33 +481,6 @@ expublic pytpreplycd ndrxpy_pytpgetrply(int cd, long flags)
     return pytpreplycd(tperrno_saved, tpurcode, ndrx_to_py(out), cd);
 }
 
-
-/**
- * @brief RFU Admin server call
- * @param [in] input buffer for call
- * @param [in] flags
- * @return standard reply
- */
-expublic pytpreply ndrxpy_pytpadmcall(py::object idata, long flags)
-{
-    auto in = ndrx_from_py(idata);
-    int tperrno_saved=0;
-    atmibuf out("UBF", 1024);
-    {
-        py::gil_scoped_release release;
-        int rc = tpadmcall(*in.fbfr(), out.fbfr(), flags);
-        tperrno_saved=tperrno;
-        if (rc == -1)
-        {
-            if (tperrno_saved != TPESVCFAIL)
-            {
-                throw atmi_exception(tperrno_saved);
-            }
-        }
-    }
-    return pytpreply(tperrno_saved, 0, ndrx_to_py(out));
-}
-
 /**
  * @brief register atmi common methods
  * 
