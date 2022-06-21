@@ -91,16 +91,21 @@ exprivate int ndrxpy_b4pollcb_callback(void)
 {
     //Get the gil...
     int cret;
+    try
     {
         py::gil_scoped_acquire acquire;
 
         py::object ret = M_b4pollcb_handler->obj();
         cret=ret.cast<int>();
     }
+    catch (const std::exception &e)
+    {
+        NDRX_LOG(log_error, "Got exception b4pollcb: %s", e.what());
+        userlog(const_cast<char *>("%s"), e.what());
+        cret=EXFAIL;
+    }
 
-    //Avoid RVO
     return cret;
-
 }
 
 /**
@@ -134,11 +139,19 @@ exprivate int ndrxpy_addperiodcb_callback(void)
 {
     //Get the gil...
     int cret;
+    try
     {
         py::gil_scoped_acquire acquire;
         py::object ret = M_addperiodcb_handler->obj();
         cret=ret.cast<int>();
     }
+    catch (const std::exception &e)
+    {
+        NDRX_LOG(log_error, "Got exception periodcb: %s", e.what());
+        userlog(const_cast<char *>("%s"), e.what());
+        cret=EXFAIL;
+    }
+
     return cret;
 }
 
@@ -176,11 +189,19 @@ exprivate void ndrxpy_tpext_addperiodcb (int secs, const py::object &func)
 exprivate int ndrxpy_pollevent_cb(int fd, uint32_t events, void *ptr1)
 {
     int cret;
+    try
     {
         py::gil_scoped_acquire acquire;
         py::object ret=M_fdmap[fd]->obj(fd, events, M_fdmap[fd]->obj2);
         cret=ret.cast<int>();
     }
+    catch (const std::exception &e)
+    {
+        NDRX_LOG(log_error, "Got exception at pollevent_cb: %s", e.what());
+        userlog(const_cast<char *>("%s"), e.what());
+        cret=EXFAIL;
+    }
+
 
     return cret;
 }
