@@ -992,29 +992,9 @@ tpenqueue() and tpdequeue() module function.
 
       *int* -- RFU.
 
-:attr:`TPQCTL.flags` may be set to following values:
-
-.. data:: TPQCORRID
-    
-    Use :attr:`TPQCTL.corrid` identifier, set correlator id when performing
-    enqueue.
-
-.. data:: TPQGETBYCORRID
-
-    Dequeue message by :attr:`TPQCTL.corrid`.
-
-.. data:: TPQGETBYMSGID
-    
-    Dequeue message by :attr:`TPQCTL.msgid`.
-
-.. data:: TPQREPLYQ
-    
-    Use :attr:`TPQCTL.replyqueue` set reply queue for automatic queues.
-
-.. data:: TPQFAILUREQ
-    
-    Use :attr:`TPQCTL.failurequeue` use failure queue for failed 
-    automatic queue messages.
+Following :attr:`TPQCTL.flags` are supported on Enduro/X platform:
+:data:`.TPQCORRID`, :data:`.TPQGETBYCORRID`, :data:`.TPQGETBYMSGID`,
+:data:`.TPQREPLYQ` and :data:`.TPQFAILUREQ`.
 
 TPEVCTL
 -------
@@ -1022,7 +1002,7 @@ TPEVCTL
 Class used to control event subscription for the ATMI servers.
 Used by :func:`.tpsubscribe` and :func:`.tpunsubscribe`.
 
-.. py:class:: TPQCTL()
+.. py:class:: TPEVCTL()
    :module: endurox
 
    Event control class
@@ -1525,7 +1505,7 @@ in future without a notice.
         
         22 - Buffer operation not supported (complex type).
         
-.. data:: NMAXVAL
+.. data:: BMAXVAL
         
         22 - Maximum error code.
 
