@@ -36,7 +36,7 @@ class CleanCommand(distutils.cmd.Command):
             cmake_files="rm -rf CMakeFiles >/dev/null 2>&1",
             cmake_makefile="rm Makefile >/dev/null 2>&1",
             build="rm -rf ./build >/dev/null 2>&1",
-            config="rm /src/endurox/ndrxpy_config.h >/dev/null 2>&1",
+            config="rm src/endurox/ndrxpy_config.h >/dev/null 2>&1",
             shared_libs="find . -name '*.so' -exec rm -rf {} \; >/dev/null 2>&1",
             shared_libs_mac="find . -name '*.dylib' -exec rm -rf {} \; >/dev/null 2>&1",
         )
