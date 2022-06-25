@@ -12,8 +12,36 @@ from setuptools import setup, Extension, find_packages
 from setuptools.command.build_ext import build_ext
 from setuptools.command.test import test as TestCommand
 from shutil import copyfile, copymode
+import distutils.cmd
 
 NDRXPY_VERSION='8.0.1'
+
+
+class CleanCommand(distutils.cmd.Command):
+    """
+    Clean up the project
+    """
+    description = "Remove build time files"
+    user_options = []
+
+    def initialize_options(self):
+        pass
+
+    def finalize_options(self):
+        pass
+
+    def run(self):
+        cmd_list = dict(
+            cmake_cache="rm CMakeCache.txt >/dev/null 2>&1",
+            cmake_files="rm -rf CMakeFiles >/dev/null 2>&1",
+            cmake_makefile="rm Makefile >/dev/null 2>&1",
+            build="rm -rf ./build >/dev/null 2>&1",
+            config="rm /src/endurox/ndrxpy_config.h >/dev/null 2>&1",
+            shared_libs="find . -name '*.so' -exec rm -rf {} \; >/dev/null 2>&1",
+            shared_libs_mac="find . -name '*.dylib' -exec rm -rf {} \; >/dev/null 2>&1",
+        )
+        for key, cmd in cmd_list.items():
+            os.system(cmd)
 
 class CMakeExtension(Extension):
     def __init__(self, name, sourcedir=''):
@@ -104,7 +132,9 @@ setup(
     packages=find_packages('src'),
     package_dir={'':'src'},
     ext_modules=[CMakeExtension('endurox/endurox')],
-    cmdclass=dict(build_ext=CMakeBuild),
+    cmdclass=dict(
+        build_ext=CMakeBuild,
+        clean=CleanCommand,),
     test_suite='tests',
     zip_safe=False,
 )
