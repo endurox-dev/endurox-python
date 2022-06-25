@@ -34,7 +34,11 @@
 
 /*---------------------------Includes-----------------------------------*/
 
+/*
 #include <dlfcn.h>
+*/
+
+#include <ndrxpy_config.h>
 
 #include <atmi.h>
 #include <tpadm.h>
@@ -414,6 +418,9 @@ PYBIND11_MODULE(endurox, m)
     m.attr("TP_CMT_LOGGED") = py::int_(TP_CMT_LOGGED);
     m.attr("TP_CMT_COMPLETE") = py::int_(TP_CMT_COMPLETE);
 
+    //Build config:
+
+    m.attr("NDRXPY_BLD_HASH") = py::str(NDRXPY_BLD_HASH);
     //Doc syntax
     //https://www.sphinx-doc.org/en/master/usage/restructuredtext/domains.html#cross-referencing-python-objects
     m.doc() =

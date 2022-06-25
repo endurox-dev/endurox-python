@@ -13,12 +13,12 @@ from setuptools.command.build_ext import build_ext
 from setuptools.command.test import test as TestCommand
 from shutil import copyfile, copymode
 
+NDRXPY_VERSION='8.0.1'
 
 class CMakeExtension(Extension):
     def __init__(self, name, sourcedir=''):
         Extension.__init__(self, name, sources=[])
         self.sourcedir = os.path.abspath(sourcedir)
-
 
 class CMakeBuild(build_ext):
     def run(self):
@@ -39,10 +39,12 @@ class CMakeBuild(build_ext):
             self.build_extension(ext)
 
     def build_extension(self, ext):
+        global NDRXPY_VERSION
         extdir = os.path.abspath(
             os.path.dirname(self.get_ext_fullpath(ext.name)))
         cmake_args = ['-DCMAKE_LIBRARY_OUTPUT_DIRECTORY=' + extdir,
-                      '-DPYTHON_EXECUTABLE=' + sys.executable,]
+                      '-DPYTHON_EXECUTABLE=' + sys.executable,
+                      '-DNDRXPY_VERSION=' + NDRXPY_VERSION,]
 
         cfg = 'Debug' if self.debug else 'Release'
         build_args = ['--config', cfg]
@@ -94,7 +96,7 @@ class CMakeBuild(build_ext):
 
 setup(
     name='endurox',
-    version='8.0.1',
+    version=NDRXPY_VERSION,
     author='Mavimax, SIA',
     author_email='support@mavimax.com',
     description='Enduro/X Python binding',
