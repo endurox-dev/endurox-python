@@ -420,11 +420,72 @@ PYBIND11_MODULE(endurox, m)
 
     //Build config:
 
+#ifdef NDRXPY_BLD_PRODUCT
+    m.attr("NDRXPY_BLD_PRODUCT") = py::str(NDRXPY_BLD_PRODUCT);
+#else
+    m.attr("NDRXPY_BLD_PRODUCT") = py::str("");
+#endif
+
+#ifdef NDRXPY_BLD_SYSTEM 
+    m.attr("NDRXPY_BLD_SYSTEM") = py::str(NDRXPY_BLD_SYSTEM);
+#else
+    m.attr("NDRXPY_BLD_SYSTEM") = py::str("");
+#endif
+
+#ifdef NDRXPY_BLD_CONFIG 
+    m.attr("NDRXPY_BLD_CONFIG") = py::str(NDRXPY_BLD_CONFIG);
+#else
+    m.attr("NDRXPY_BLD_CONFIG") = py::str("");
+#endif
+
+#ifdef NDRXPY_BLD_VERSION
+    m.attr("NDRXPY_BLD_VERSION") = py::str(NDRXPY_BLD_VERSION);
+#else
+    m.attr("NDRXPY_BLD_VERSION") = py::str("");
+#endif
+
+#ifdef NDRXPY_BLD_RELEASE
+    m.attr("NDRXPY_BLD_RELEASE") = py::str(NDRXPY_BLD_RELEASE);
+#else
+    m.attr("NDRXPY_BLD_RELEASE") = py::str("");
+#endif
+
+#ifdef NDRXPY_BLD_TAG
+    m.attr("NDRXPY_BLD_TAG") = py::str(NDRXPY_BLD_TAG);
+#else
+    m.attr("NDRXPY_BLD_TAG") = py::str("");
+#endif
+
+#ifdef NDRXPY_BLD_BRANCH 
+    m.attr("NDRXPY_BLD_BRANCH") = py::str(NDRXPY_BLD_BRANCH);
+#else
+    m.attr("NDRXPY_BLD_BRANCH") = py::str("");
+#endif
+
+#ifdef NDRXPY_BLD_FLAGS
+    m.attr("NDRXPY_BLD_FLAGS") = py::str(NDRXPY_BLD_FLAGS);
+#else
+    m.attr("NDRXPY_BLD_FLAGS") = py::str("");
+#endif
+
+#ifdef NDRXPY_BLD_COMMIT 
+    m.attr("NDRXPY_BLD_COMMIT") = py::str(NDRXPY_BLD_COMMIT);
+#else
+    m.attr("NDRXPY_BLD_COMMIT") = py::str("");
+#endif
+
     m.attr("NDRXPY_BLD_HASH") = py::str(NDRXPY_BLD_HASH);
     m.attr("NDRXPY_VERSION_MAJOR") = py::str(NDRXPY_VERSION_MAJOR);
     m.attr("NDRXPY_VERSION_MINOR") = py::str(NDRXPY_VERSION_MINOR);
     m.attr("NDRXPY_VERSION_PATCH") = py::str(NDRXPY_VERSION_PATCH);
+
+    /* due to cmake setting 0 as udnef: */
+#ifdef NDRXPY_VERSION_NUM
     m.attr("NDRXPY_VERSION_NUM") = py::int_(NDRXPY_VERSION_NUM);
+#else
+    m.attr("NDRXPY_VERSION_NUM") = py::int_(0);
+#endif
+
     //Doc syntax
     //https://www.sphinx-doc.org/en/master/usage/restructuredtext/domains.html#cross-referencing-python-objects
     m.doc() =
