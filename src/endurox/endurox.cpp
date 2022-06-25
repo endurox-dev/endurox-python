@@ -421,6 +421,10 @@ PYBIND11_MODULE(endurox, m)
     //Build config:
 
     m.attr("NDRXPY_BLD_HASH") = py::str(NDRXPY_BLD_HASH);
+    m.attr("NDRXPY_VERSION_MAJOR") = py::str(NDRXPY_VERSION_MAJOR);
+    m.attr("NDRXPY_VERSION_MINOR") = py::str(NDRXPY_VERSION_MINOR);
+    m.attr("NDRXPY_VERSION_PATCH") = py::str(NDRXPY_VERSION_PATCH);
+    m.attr("NDRXPY_VERSION_NUM") = py::int_(NDRXPY_VERSION_NUM);
     //Doc syntax
     //https://www.sphinx-doc.org/en/master/usage/restructuredtext/domains.html#cross-referencing-python-objects
     m.doc() =

@@ -34,6 +34,7 @@ class CleanCommand(distutils.cmd.Command):
         cmd_list = dict(
             cmake_cache="rm CMakeCache.txt >/dev/null 2>&1",
             cmake_files="rm -rf CMakeFiles >/dev/null 2>&1",
+            cmake_dist="rm -rf ./dist >/dev/null 2>&1",
             cmake_makefile="rm Makefile >/dev/null 2>&1",
             build="rm -rf ./build >/dev/null 2>&1",
             config="rm src/endurox/ndrxpy_config.h >/dev/null 2>&1",
