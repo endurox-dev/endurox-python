@@ -408,8 +408,8 @@ Startup finished. 13 processes started.
 
 --------------------------------------------------------------------------------
 
-As it could be seen Python server processes *testsv.py* is booted. 
-Let's check their services:
+As it could be seen Python server process *testsv.py* is booted. 
+Let's check services:
 
 --------------------------------------------------------------------------------
 
@@ -447,7 +447,7 @@ Nd Service Name Routine Name Prog Name SRVID #SUCC #FAIL      MAX     LAST STAT
 --------------------------------------------------------------------------------
 
 Script instance *200* provides *TESTSV* service. Now lets perform the test by calling the
-Python client process in classical way:
+Python client process:
 
 --------------------------------------------------------------------------------
 
