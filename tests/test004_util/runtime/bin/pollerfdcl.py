@@ -35,6 +35,8 @@ class TestFdpoll(unittest.TestCase):
             e.tpchkunsol()
             sent+=1
             
+        # let the tpcall()/pipe to sync
+        time.sleep( 5 )
         while e.tpchkunsol() > 0:
             # consume all msgs...
             None

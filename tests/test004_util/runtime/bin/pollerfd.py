@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import sys, os, select
+import sys, os, select, io
 import endurox as e
 
 outx = None
@@ -18,7 +18,7 @@ def cb(fd, events, ptr1):
     global outx
     global path
     global obj
-#    e.tplog_error("got ev %d" % events)
+    #e.tplog_error("!!!got ev %d %d" % (events, fd))
     e.tpext_delpollerfd(outx)
 
     # shall get valid object back...
@@ -26,8 +26,25 @@ def cb(fd, events, ptr1):
     assert(ptr1==obj)
 
     if events & select.POLLIN:
-        data = os.read(outx, 1) 
-        e.tpbroadcast("", "", "python", {"data":{"T_LONG_FLD":data[0]}}, e.TPREGEXMATCH|e.TPNOBLOCK)
+        
+        #
+        # WARNING:
+        # In SystemV mode there is no guarantee that pipe would be called
+        # first. It might be POLLERSYNC service and only then pipe.
+        # As at moment pipe might be already woken up (but message is not
+        # yet read, but events to main thread have emitted),
+        # the return from POLLERSYNC would send to event thread
+        # syncfd=true, which would trigger again events on POLLIN of the pipe
+        # in such race condition it is possible to receive twice the polled event
+        # notification. The first would be read, the second would be EAGAIN or EWOULDBLOCK
+        # if there is no message in pipe.
+        #
+        try:
+            data = os.read(outx, 1) 
+            e.tpbroadcast("", "", "python", {"data":{"T_LONG_FLD":data[0]}}, e.TPREGEXMATCH|e.TPNOBLOCK)
+        except io.BlockingIOError:
+            e.tpext_addpollerfd(outx, select.POLLIN, obj, cb)
+            return 0
 
     if events & select.POLLHUP:
         os.close(outx)
