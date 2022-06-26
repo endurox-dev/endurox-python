@@ -137,8 +137,8 @@ Lets register our Python XATMI server named *testsv.py* here first. Do this in
 </endurox>
 ---------------------------------------------------------------------
 
-Also we are about to add logging settings for scripts we are about
-to write, add following lines int the *[@debug]* section in application
+Also we are about to add logging settings for Python scripts, 
+add following lines to the *[@debug]* section in application
 ini file (*/opt/app-python/conf/app.ini*):
 
 ---------------------------------------------------------------------
