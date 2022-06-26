@@ -200,9 +200,9 @@ Gen ok!
 
 --------------------------------------------------------------------------------
 
-=== Define Java server process
+=== Define Python ATMI server process
 
-Lets generate simple Java server process which provides some field in responses
+Lets generate simple Python server process which provides some field in responses
 of the service calls. We will do this by using Enduro/X generators:
 
 --------------------------------------------------------------------------------
@@ -443,7 +443,7 @@ Nd Service Name Routine Name Prog Name SRVID #SUCC #FAIL      MAX     LAST STAT
 --------------------------------------------------------------------------------
 
 Script instance *200* provides *TESTSV* service. Now lets perform the test by calling the
-Java client process in classical way:
+Python client process in classical way:
 
 --------------------------------------------------------------------------------
 
