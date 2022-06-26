@@ -59,6 +59,21 @@ To build API documentation:
     -- launch the browser at index (to view the docs):
     $ firefox index.html
 
+If files binary release is required, prepare by:
+
+.. code:: bash
+
+    $ pip3 install wheel
+    $ python3 ./setup.py bdist_wheel
+
+To prepare source distribution:
+
+.. code:: bash
+
+    $ python3 ./setup.py sdist
+
+The distribution files are unloaded to ./dist folder.
+
 General
 -------
 
