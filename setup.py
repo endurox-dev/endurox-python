@@ -34,6 +34,7 @@ class CleanCommand(distutils.cmd.Command):
         cmd_list = dict(
             cmake_cache="rm CMakeCache.txt >/dev/null 2>&1",
             cmake_files="rm -rf CMakeFiles >/dev/null 2>&1",
+            bin_pkg_name="rm package_name.tmp >/dev/null 2>&1",
             cmake_dist="rm -rf ./dist >/dev/null 2>&1",
             docs_api1="rm -rf ./doc/_build >/dev/null 2>&1",
             docs_api2="rm -rf ./doc/_generate >/dev/null 2>&1",

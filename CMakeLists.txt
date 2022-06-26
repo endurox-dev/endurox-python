@@ -2,13 +2,29 @@ cmake_minimum_required(VERSION 3.1)
 project(endurox-python)
 SET(CMAKE_BUILD_TYPE Debug)
 
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "/usr/share/endurox/cmake")
+
+include(ex_osver)
+
+################################################################################
+# Process any required includes
+################################################################################
+ex_osver_include()
+################################################################################
 
 # if using cmake directly...
 if(NOT DEFINED NDRXPY_VERSION)
-	set(NDRXPY_VERSION "0.0.0")
+        set(NDRXPY_VERSION "0.0.0")
+endif()
+
+set(RELEASE "1")
+
+if(DEFINED ENV{NDRX_BLD_RELEASE})
+    set(RELEASE $ENV{NDRX_BLD_RELEASE})
 endif()
 
 message("CMake NDRXPY_VERSION  = ${NDRXPY_VERSION}")
+message("CMake RELEASE  = ${RELEASE}")
 
 # Configure versions
 string(REPLACE "." ";" VERSION_LIST ${NDRXPY_VERSION})
@@ -33,7 +49,7 @@ if(DEFINED ENV{NDRX_BLD_VERSION})
 endif()
 
 if(DEFINED ENV{NDRX_BLD_RELEASE})
-    set(RELEASE $ENV{NDRX_BLD_RELEASE})
+        set(RELEASE $ENV{NDRX_BLD_RELEASE})
 endif()
 
 message("CMake RELEASE  = ${RELEASE}")
@@ -53,19 +69,42 @@ SET (NDRXPY_BLD_FLAGS     $ENV{NDRX_BLD_FLAGS})
 #
 execute_process(
         COMMAND
-                git rev-parse HEAD
+                python3 --version
         RESULT_VARIABLE
-                gitres
+                pyres
         OUTPUT_VARIABLE
-                NDRXPY_BLD_HASH
+                NDRXPY_PYVER
         )
+
+if (NOT pyres EQUAL 0)
+        message( FATAL_ERROR "Error getting python3 version" )
+endif ()
+
+if (NDRXPY_PYVER MATCHES "([0-9]+)\.([0-9]+)\.([0-9]+)")
+    message(STATUS "Python Major: ${CMAKE_MATCH_1} Minor: ${CMAKE_MATCH_2}")
+    set(PY_MAJOR ${CMAKE_MATCH_1})
+    set(PY_MINOR ${CMAKE_MATCH_2})
+else()
+    message(FATAL_ERROR "Failed to extract python version")
+endif()
+
+#
+# Get the git version (the version which is
+#
+execute_process(
+    COMMAND
+        git rev-parse HEAD
+    RESULT_VARIABLE
+        gitres
+    OUTPUT_VARIABLE
+        NDRXPY_BLD_HASH
+    )
 
 string(REGEX REPLACE "\n$" "" NDRXPY_BLD_HASH "${NDRXPY_BLD_HASH}")
 
 if (NOT gitres EQUAL 0)
-    SET (NDRXPY_BLD_HASH      "unknown")
+        SET (NDRX_BLD_HASH      "unknown")
 endif ()
-
 ################################################################################
 
 if (DEFINED ENV{NDRXPY_SANITIZE})
@@ -95,11 +134,6 @@ SET(SOURCES
 	"${SOURCE_DIR}/tplog.cpp"
    )
 
-#SET(TEST_DIR "tests")
-#SET(TESTS ${SOURCES}
-#    "${TEST_DIR}/test_main.cpp"
-#    "${TEST_DIR}/test_math.cpp")
-
 # Generate a test executable
 include_directories(${SOURCE_DIR})
 #add_executable("${PROJECT_NAME}_test" ${TESTS})
@@ -119,3 +153,21 @@ add_dependencies (endurox ubftestvhdrs)
 #
 configure_file ("${SOURCE_DIR}/ndrxpy_config.h.in"
                 "${SOURCE_DIR}/ndrxpy_config.h" )
+
+
+# Generate package file name 
+ex_osver()
+ex_cpuarch()
+string(TOLOWER ${PROJECT_NAME} PROJECT_NAME_LO)
+
+
+#
+# Package release file
+#
+set(CPACK_PACKAGE_FILE_NAME ${PROJECT_NAME_LO}-${NDRXPY_VERSION}-${RELEASE}.${LSB_RELEASE_OUTPUT_OS}${LSB_RELEASE_OUTPUT_VER}_cp${PY_MAJOR}${PY_MINOR}.${EX_CPU_ARCH}.whl.zip)
+
+write_file("package_name.tmp" ${CPACK_PACKAGE_FILE_NAME})
+
+message("Package name ${CPACK_PACKAGE_FILE_NAME} ${EX_CPU_ARCH}")
+
+# vim: set ts=4 sw=4 et smartindent:
