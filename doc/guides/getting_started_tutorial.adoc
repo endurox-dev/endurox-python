@@ -23,13 +23,17 @@ later installed. If not, follow the standard installation procedure for CPython.
 === Installing binary version of Enduro/X Python module 
 
 Binary wheel release can be downloaded from https://www.mavimax.com/downloads
+Mavimax provides binary builds for selected operating systems. The Python
+Wheel release files are packaged in ZIP files which are labeled according
+the release platform
+
 To install wheel release on target operating system use following commands:
 
 ---------------------------------------------------------------------
 
-$ unzip <package_name>.whl.<os_id>.zip
+$ unzip <package_name>.whl.zip
 
-$ sudo pip3 install <package_name>.whl
+$ pip3 install *.whl --user
 
 ---------------------------------------------------------------------
 
@@ -52,11 +56,11 @@ $ tar -xzvf endurox-<version>.tar.gz
 
 $ cd endurox-<version>
 
-$ python3 ./setup.py install
+$ python3 ./setup.py install --user
 
 or
 
-$ pip3 install .
+$ pip3 install . --user
 
 ---------------------------------------------------------------------
 

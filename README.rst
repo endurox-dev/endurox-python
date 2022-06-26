@@ -35,13 +35,13 @@ To build and install `endurox`, clone or download this repository and then, from
 
 .. code:: bash
 
-    $ python3 ./setup.py install
+    $ python3 ./setup.py install --user
 
 Or if `pip3` is available, install in following way:
 
 .. code:: bash
 
-    $ pip3 install .
+    $ pip3 install .  --user
 
 The unit tests can be started with:
 
@@ -53,6 +53,7 @@ To build API documentation:
 
 .. code:: bash
 
+    $ sudo pip3 intall sphinx
     $ cd doc
     $ make html
     $ cd _build/html
@@ -63,7 +64,7 @@ If files binary release is required, prepare by:
 
 .. code:: bash
 
-    $ pip3 install wheel
+    $ pip3 install wheel --user
     $ python3 ./setup.py bdist_wheel
 
 To prepare source distribution:
