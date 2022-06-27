@@ -41,7 +41,7 @@ class TestTpchkunsol(unittest.TestCase):
         x = threading.Thread(target=self.thread_function, args=(1,))
         x.start()
         # let other thread to init...
-        #time.sleep(5)
+        time.sleep(5)
 
         while w.get_delta_sec() < u.test_duratation():
             e.tpsetunsol(self.unsol_handler1)
