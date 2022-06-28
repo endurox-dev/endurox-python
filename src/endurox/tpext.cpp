@@ -53,6 +53,7 @@
 #include <functional>
 #include <map>
 #include <mutex>
+#include <sys_unix.h>
 
 /*---------------------------Externs------------------------------------*/
 /*---------------------------Macros-------------------------------------*/
@@ -487,6 +488,35 @@ expublic void ndrxpy_register_tpext(py::module &m)
 
          )pbdoc",
         py::arg("fd"));
+
+    m.def(
+        "ndrx_epoll_mode", [](void)
+        {   
+            return py::str(ndrx_epoll_mode());
+        },
+        R"pbdoc(
+        Return poller code used by used Enduro/X Core build.
+
+        Returns
+        -------
+        str
+            - **epoll** - Linux build, using Posix queues and XATMI server waits
+                for events with epoll_wait().
+            - **kqueue** - BSD build, using Posix queues and XATMI server waits
+                for events with kevent().
+            - **SystemV** - Unix mode (except MacOS), two aux threads used by
+                server process and one aux thread by client process.
+                XATMI server waits for events with poll(). Using System V message
+                queue.
+            - **poll** - Posix queue mode for operating systems which does not
+                support polling on queue. Additional thread is used by XATMI
+                server for event delivery. XATMI server waits for events with poll().
+            - **emq** - Emulated Posix queue mode used for MacOS.
+                Additional thread is used by XATMI
+                server for event delivery. XATMI server waits for events with poll().
+            - **svapoll** - For IBM AIX, XATMI server is using poll() extension to monitor
+                System V queues. 
+         )pbdoc");
 }
 
 /* vim: set ts=4 sw=4 et smartindent: */

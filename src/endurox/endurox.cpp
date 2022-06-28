@@ -589,6 +589,7 @@ Python3 bindings for writing Enduro/X clients and servers
         tpext_delperiodcb
         tpext_addpollerfd
         tpext_delpollerfd
+        ndrx_epoll_mode
 
 How to read this documentation
 ==============================
