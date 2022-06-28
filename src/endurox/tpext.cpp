@@ -215,14 +215,14 @@ exprivate int ndrxpy_pollevent_cb(int fd, uint32_t events, void *ptr1)
  * @param ptr1 object to pass back
  * @param func callback func
  */
-exprivate void ndrxpy_tpext_addpollerfd (int fd, uint32_t events, const py::object ptr1, const py::object &func)
+exprivate void ndrxpy_tpext_addpollerfd (int fd, int32_t events, const py::object ptr1, const py::object &func)
 {
     ndrxpy_object_t * obj = new ndrxpy_object_t();
 
     obj->obj = func;
     obj->obj2 = ptr1;
 
-    if (EXSUCCEED!=tpext_addpollerfd(fd, events, NULL, ndrxpy_pollevent_cb))
+    if (EXSUCCEED!=tpext_addpollerfd(fd, (uint32_t)events, NULL, ndrxpy_pollevent_cb))
     {
         throw atmi_exception(tperrno);
     }
