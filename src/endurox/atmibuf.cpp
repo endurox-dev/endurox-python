@@ -75,7 +75,7 @@ atmibuf::atmibuf(TPSVCINFO *svcinfo)
  * @param type 
  * @param subtype 
  */
-atmibuf::atmibuf(const char *type, const char *subtype) : pp(&p), len(len), p(nullptr)
+atmibuf::atmibuf(const char *type, const char *subtype) : pp(&p), p(nullptr)
 {
     reinit(type, subtype, 1024);
 }
