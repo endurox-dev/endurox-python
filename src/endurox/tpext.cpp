@@ -215,7 +215,7 @@ exprivate int ndrxpy_pollevent_cb(int fd, uint32_t events, void *ptr1)
  * @param ptr1 object to pass back
  * @param func callback func
  */
-exprivate void ndrxpy_tpext_addpollerfd (int fd, int32_t events, const py::object ptr1, const py::object &func)
+exprivate void ndrxpy_tpext_addpollerfd (int fd, uint32_t events, const py::object ptr1, const py::object &func)
 {
     ndrxpy_object_t * obj = new ndrxpy_object_t();
 
@@ -450,8 +450,9 @@ expublic void ndrxpy_register_tpext(py::module &m)
         ----------
         fd : int
             File descriptor to monitor.
-        events : int
-            Bitnmask of select events.
+        events : uint32
+            Bitnmask of select events. In case if using kqueue, convert
+            flags from signed value to unsigned, e.g. select.KQ_FILTER_READ + 2^32.
         ptr1 : object
             Custom object passed to callback.
         func : object

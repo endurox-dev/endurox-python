@@ -11,6 +11,8 @@ class SomeClass:
 
 obj = SomeClass()
 
+POLLIN = select.POLLIN
+
 #
 # se
 #
@@ -18,15 +20,16 @@ def cb(fd, events, ptr1):
     global outx
     global path
     global obj
-    #e.tplog_error("!!!got ev %d %d" % (events, fd))
+    global POLLIN
+    e.tplog_error("!!!got ev %d %d %d" % (events, fd, POLLIN))
     e.tpext_delpollerfd(outx)
 
     # shall get valid object back...
     assert ptr1.field == 199
     assert(ptr1==obj)
 
-    if events & select.POLLIN:
-        
+    # process all events of queue
+    if (events & POLLIN) or ('kqueue' == e.ndrx_epoll_mode()):
         #
         # WARNING:
         # In SystemV mode there is no guarantee that pipe would be called
@@ -43,15 +46,16 @@ def cb(fd, events, ptr1):
             data = os.read(outx, 1) 
             e.tpbroadcast("", "", "python", {"data":{"T_LONG_FLD":data[0]}}, e.TPREGEXMATCH|e.TPNOBLOCK)
         except io.BlockingIOError:
-            e.tpext_addpollerfd(outx, select.POLLIN, obj, cb)
+            e.tpext_addpollerfd(outx, POLLIN, obj, cb)
             return 0
 
-    if events & select.POLLHUP:
-        os.close(outx)
-        outx = os.open(path, os.O_NONBLOCK | os.O_RDWR)
+    # not used.
+    #if events & select.POLLHUP:
+    #    os.close(outx)
+    #    outx = os.open(path, os.O_NONBLOCK | os.O_RDWR)
 
     # add back...
-    e.tpext_addpollerfd(outx, select.POLLIN, obj, cb)
+    e.tpext_addpollerfd(outx, POLLIN, obj, cb)
     return 0
 
 #
@@ -60,7 +64,10 @@ def cb(fd, events, ptr1):
 def b4poll():
     # add poller....
     global obj
-    e.tpext_addpollerfd(outx, select.POLLIN, obj, cb)
+    global outx
+    global POLLIN
+    e.userlog("YOPT %d" % POLLIN)
+    e.tpext_addpollerfd(outx, POLLIN, obj, cb)
     e.tpext_delb4pollcb()
     return 0
 #
@@ -78,6 +85,12 @@ class Server:
         outx = os.open(path, os.O_NONBLOCK | os.O_RDWR)
         e.tpext_addb4pollcb(b4poll)
         e.tpadvertise('POLLERSYNC', 'POLLERSYNC', self.POLLERSYNC)
+
+        # configure OS specifics
+        if 'kqueue' == e.ndrx_epoll_mode():
+            global POLLIN
+            # Enduro/X uses uint32 type for poller flags.
+            POLLIN = select.KQ_FILTER_READ + 2**32
         return 0
 
     def tpsvrdone(self):
