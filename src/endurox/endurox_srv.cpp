@@ -485,7 +485,7 @@ expublic void ndrxpy_register_srv(py::module &m)
 
         This function applies to ATMI servers only.
 
-        For more details see **tpsubscribe(3)** C API call.
+        For more details see **tpunsubscribe(3)** C API call.
 
         :raise AtmiException:
             | Following error codes may be present:
