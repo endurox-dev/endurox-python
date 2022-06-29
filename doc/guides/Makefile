@@ -45,10 +45,10 @@ $(info $$GRAPHS is [${GRAPHS}])
 .DEFAULT_GOAL := all
 
 check_asciidoc: 
-	@type a2x >/dev/null 2>&1 || echo "Missing asciidoc - docs will not built"
+	@type a2x >/dev/null 2>&1 || echo "Missing asciidoc - docs will not built" && exit 2
 
 check_dia: 
-	@type dia >/dev/null 2>&1 || echo "Missing asciidoc - docs will not built"
+	@type dia >/dev/null 2>&1 || echo "Missing asciidoc - docs will not built" && exit 2
 
 all: check_asciidoc check_dia $(DOCS)
 
