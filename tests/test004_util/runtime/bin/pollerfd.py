@@ -21,7 +21,7 @@ def cb(fd, events, ptr1):
     global path
     global obj
     global POLLIN
-    e.tplog_error("!!!got ev %d %d %d" % (events, fd, POLLIN))
+    #e.tplog_error("!!!got ev %d %d %d" % (events, fd, POLLIN))
     e.tpext_delpollerfd(outx)
 
     # shall get valid object back...
@@ -66,7 +66,6 @@ def b4poll():
     global obj
     global outx
     global POLLIN
-    e.userlog("YOPT %d" % POLLIN)
     e.tpext_addpollerfd(outx, POLLIN, obj, cb)
     e.tpext_delb4pollcb()
     return 0
