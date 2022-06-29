@@ -36,7 +36,7 @@ A2X := $(shell a2x --version 2> /dev/null)
 SOURCE_DOCS :=$(shell ls -1 *.adoc)
 DOCS  := $(patsubst %.adoc, %.html, $(SOURCE_DOCS))
 
-SOURCES_GRAPHS :=$(shell ls -1 *.dia)
+SOURCES_GRAPHS :=$(shell ls -1 *.dia 2>/dev/null)
 GRAPHS  := $(patsubst %.dia, %.png, $(SOURCES_GRAPHS))
 
 $(info $$SOURCES_GRAPHS is [${SOURCES_GRAPHS}])
@@ -45,10 +45,10 @@ $(info $$GRAPHS is [${GRAPHS}])
 .DEFAULT_GOAL := all
 
 check_asciidoc: 
-	@type a2x >/dev/null 2>&1 || echo "Missing asciidoc - docs will not built" && exit 2
+	@type a2x >/dev/null 2>&1 || (echo "Missing asciidoc - docs will not built" && exit 2)
 
 check_dia: 
-	@type dia >/dev/null 2>&1 || echo "Missing asciidoc - docs will not built" && exit 2
+	@type dia >/dev/null 2>&1 || (echo "Missing asciidoc - docs will not built" && exit 2)
 
 all: check_asciidoc check_dia $(DOCS)
 
