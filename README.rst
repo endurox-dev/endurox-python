@@ -63,8 +63,8 @@ To build API documentation:
 If files binary release is required, prepare by:
 
 .. code:: bash
-
-    $ pip3 install wheel --user
+    
+    $ sudo pip3 install wheel
     $ python3 ./setup.py bdist_wheel
 
 To prepare source distribution:
