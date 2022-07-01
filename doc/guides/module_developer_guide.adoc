@@ -54,7 +54,6 @@ original libraries loaded by the Python. To overcome this problem
 actual binding code is found in "endurox.endurox" sub-module. The sub-module
 is automatically loaded with *RTLD_GLOBAL* flag at the "endurox" module init.
 
-
 === Build system
 
 Module uses CMake build scripts to perform C++ code builds. This allows
