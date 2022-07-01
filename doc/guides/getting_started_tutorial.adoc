@@ -1,5 +1,5 @@
-Getting Started Tutorial
-========================
+Enduro/X Python Getting Started Tutorial
+========================================
 
 == About the guide
 

@@ -1,0 +1,330 @@
+Enduro/X Python Internal/External Developer Guide
+=================================================
+
+== Intro
+
+This document is for external and internal purposes of the 
+Enduro/X Python module developer. Document covers details about dependency 
+installation on target platform, how to build the module, preparing
+distribution binaries.
+
+Enduro/X Python module uses Pybind11 C\++ binding library and Enduro/X
+invocation code is written in C\+\+. The minimum language level is C++ 11.
+
+Build scripts also relay on "python3" binary (or symlink) which shall
+be in the *PATH*. This name is used for detecting the Python version,
+and this name is used in test scripts.
+
+Module documentation is built by Sphinx. The documentation by it self
+is embedded in the module, meaning that python interactive shell can
+provide help.
+
+This document does not cover the Enduro/X Python API description.
+For this purpose see:
+
+- endurox-python/api/pydoc pages for full API descriptions at https://www.endurox.org
+
+- getting_started_tutorial(guides)(Getting Started Tutorial for Enduro/X Python).
+
+- README.rst at the https://github.com/endurox-dev/endurox-python
+
+== Preparing system
+
+To build Enduro/X Python module, following dependencies:
+
+- C++11 (or later) Compiler.
+
+- CMake, at-least version 3.1 or later
+
+- pkg-config
+
+Optionally, if user guides are built, AsciiDoc must be installed.
+
+
+== General Enduro/X Python architecture details
+
+This section lists details about Enduro/X Python module internals.
+
+=== Module structure
+
+Enduro/X Python mode is based on native code binding. Due to fact that
+Python loads shared libraries with *RTLD_LOCAL* flag, the consequent
+shared libraries loaded by Enduro/X code (XA libs) does not see the
+original libraries loaded by the Python. To overcome this problem
+actual binding code is found in "endurox.endurox" sub-module. The sub-module
+is automatically loaded with *RTLD_GLOBAL* flag at the "endurox" module init.
+
+
+=== Build system
+
+Module uses CMake build scripts to perform C++ code builds. This allows
+module to utilize Enduro/X build scripts and perform advanced product
+configuration. CMake configuration and building is activated from *setup.py*
+script.
+
+The generic CMake configuration may be started in the project root
+directory i.e. "$ cmake .". This will generate Makefiles in project directory
+and that shall be sufficient for IDEs such as Visual Studio Code to perform
+perform full C++ code analysis and builds.
+
+When testing such code (edited from IDE), install it with the setuptools:
+"$ python3 setup.py install --user".
+
+When switching to fully Python controlled build, clean-up the project with:
+"$ python3 setup.py clean", as Python controlled builds uses different
+directories for build outputs.
+
+== Installing Python 3
+
+This section describes tasks to be performed on the given operating system&
+for getting required Python 3 version. Additional dependencies are being
+installed such as pip, wheel and sphinx.
+
+=== CentOS/RHEL/Oracle Linux 7.X, 8.x
+
+To install the Python3 for RHEL system, use following command:
+
+--------------------------------------------------------------------------------
+
+$ su - root
+
+# yum install python3 python3-devel python3-pip
+
+--------------------------------------------------------------------------------
+
+=== Ubuntu systems / Debian / Raspberry systems
+
+--------------------------------------------------------------------------------
+
+$ sudo apt-get install python3 python3-pip
+
+--------------------------------------------------------------------------------
+
+=== SLES 15:
+
+Example version:
+
+--------------------------------------------------------------------------------
+
+$ sudo zypper install python3-devel python3-pip
+
+--------------------------------------------------------------------------------
+
+=== FreeBSD systems
+
+--------------------------------------------------------------------------------
+
+$ sudo pkg install python38 py38-pip
+
+
+$ sudo ln -s /usr/local/bin/python3 /usr/local/bin/python3.8
+
+--------------------------------------------------------------------------------
+
+=== Installing Python 3 from sources
+
+--------------------------------------------------------------------------------
+
+$ wget https://www.python.org/ftp/python/3.6.8/Python-3.6.8.tgz
+
+$ tar -xzf Python-3.6.8.tgz
+
+$ cd Python-3.6.8
+
+$ ./configure --prefix=/usr
+
+$ make
+
+$ sudo make install
+
+--------------------------------------------------------------------------------
+
+=== Installing Python 3 libraries
+
+Once Python is installed on target operating system, additionally *sphinx* and
+*wheel* packages shall be installed. Installation would be done with *pip*
+package manager. Usually the name of the command is *pip* or *pip3*, depending
+on the operating system. 
+
+--------------------------------------------------------------------------------
+
+$ sudo pip3 install sphinx wheel
+
+--------------------------------------------------------------------------------
+
+== Building the module
+
+This section describes the Enduro/X Python build/install procedures, as
+well how to perform the testing.
+
+=== Getting the source
+
+--------------------------------------------------------------------------------
+
+$ git clone --recursive https://github.com/endurox-dev/endurox-python
+
+--------------------------------------------------------------------------------
+
+Other option is to download the official sources release at https://www.mavimax.com/downloads
+
+--------------------------------------------------------------------------------
+
+$ tar -xzf endurox-8.0.1.tar.gz
+
+$ cd endurox-8.0.1
+
+--------------------------------------------------------------------------------
+
+In document further it assumed that sources are located in *endurox-python* directory.
+
+=== Building and installing module with setuptools
+
+--------------------------------------------------------------------------------
+
+$ cd endurox-python
+
+$ python3 ./setup.py build
+
+$ python3 ./setup.py install --user
+
+--------------------------------------------------------------------------------
+
+=== Building and installing module with pip3
+
+--------------------------------------------------------------------------------
+
+$ cd endurox-python
+
+$ pip3 install .  --user
+
+--------------------------------------------------------------------------------
+
+=== Cleaning project (for re-building)
+
+
+--------------------------------------------------------------------------------
+
+$ cd endurox-python
+
+$ python3 ./setup.py clean
+
+--------------------------------------------------------------------------------
+
+
+=== Building documentation
+
+Documentation shall be built after the packages are installed for user or system
+wide.
+
+--------------------------------------------------------------------------------
+
+$ cd endurox-python/doc
+
+$ make html
+
+--------------------------------------------------------------------------------
+
+HTML pages are unloaded in "_build/html" directory. Optionally user guides
+can be built (in case if asciidoc is installed).
+
+--------------------------------------------------------------------------------
+
+$ cd endurox-python/doc/guides
+
+$ make
+
+--------------------------------------------------------------------------------
+
+=== Preparing packages
+
+Binary distribution in WHL format can be prepared by:
+
+--------------------------------------------------------------------------------
+
+$  python3 ./setup.py bdist_wheel
+
+--------------------------------------------------------------------------------
+
+Source distribution 
+
+--------------------------------------------------------------------------------
+
+$  python3 ./setup.py sdist
+
+--------------------------------------------------------------------------------
+
+Distribution files are located in *endurox-python/dist* directory.
+
+
+=== Testing
+
+Enduro/X Python module contains unit/integration tests. Tests are executed
+by following command:
+
+--------------------------------------------------------------------------------
+
+$ cd endurox-python
+
+$ python3 ./setup.py test
+
+--------------------------------------------------------------------------------
+
+Oracle DB tests are not executed as part of this run, due to fact that Oracle DB
+must be configured prior the test.
+
+
+=== Testing with Oracle DB
+
+If Oracle DB tests are required, system must be configured. Oracle DB must be
+installed, and Python package *cx_oracle* shall be installed:
+
+--------------------------------------------------------------------------------
+
+$ pip3 install cx_oracle --user
+
+--------------------------------------------------------------------------------
+
+Database configuration (users, environment variables) are configured as part
+of the 
+building_guide(guides)(Enduro/X Building Guide, Enduro/X basic Environment configuration for HOME directory).
+Once the Oracle environment is configured, test database table must be created.
+that could be done in following way (assuming that ~/ndrx_home is properly set):
+
+--------------------------------------------------------------------------------
+
+$ source ~/ndrx_home
+
+$ cd endurox-python/tests/test005_oraclexa/runtime/conf
+
+$ ./sqlplus.run
+
+SQL> @tables.sql
+
+Table created.
+
+--------------------------------------------------------------------------------
+
+finally Oracle DB test cases can be run:
+
+--------------------------------------------------------------------------------
+
+$ cd endurox-python/tests/test005_oraclexa
+
+$ ./run.sh
+
+--------------------------------------------------------------------------------
+
+
+== Conclusions
+
+This instruction showed how to perform common tasks, starting from module
+build, installation and completing it with the module testing. The given information
+shall be enough to start to dig into module development details. Also document can
+help to prepare module for system for which official build is not available or Python 3
+is not available.
+
+:numbered!:
+////////////////////////////////////////////////////////////////
+The index is normally left completely empty, it's contents being
+generated automatically by the DocBook toolchain.
+////////////////////////////////////////////////////////////////
