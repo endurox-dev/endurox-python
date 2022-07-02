@@ -173,12 +173,15 @@ void PY(TPSVCINFO *svcinfo)
     try
     {
         py::gil_scoped_acquire acquire;
-        auto ibuf=atmibuf(svcinfo);
-        auto idata = ndrx_to_py(ibuf);
 
         pytpsvcinfo info(svcinfo);
 
-        info.data = idata;
+        //Destruct the auto-buf when goes out of the scope
+        {
+            auto ibuf=atmibuf(svcinfo);
+            auto idata = ndrx_to_py(ibuf);
+            info.data = idata;
+        }
 
         auto && func = M_dispmap[svcinfo->fname];
 
