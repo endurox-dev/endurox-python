@@ -114,5 +114,20 @@
 			<srvid>3100</srvid>
 			<sysopt>-e ${NDRX_ULOG}/serverctx.log -r --</sysopt>
 		</server>
+
+                <server name="serverctx_proc.py">
+                        <min>1</min>
+                        <max>1</max>
+                        <srvid>3200</srvid>
+                        <sysopt>-e ${NDRX_ULOG}/serverctx_proc.log -r --</sysopt>
+                </server>
+
+                <server name="serverctx_proc2.py">
+                        <min>1</min>
+                        <max>1</max>
+                        <srvid>3300</srvid>
+                        <sysopt>-e ${NDRX_ULOG}/serverctx_proc2.log -r --</sysopt>
+                </server>
+
 	</servers>
 </endurox>

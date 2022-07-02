@@ -170,7 +170,6 @@ void tpsvrthrdone()
  */
 void PY(TPSVCINFO *svcinfo)
 {
-
     try
     {
         py::gil_scoped_acquire acquire;
@@ -273,7 +272,10 @@ exprivate void ndrxpy_tpsrvsetctxdata(struct pytpsrvctxdata* ctxt, long flags)
     
     py::gil_scoped_release release;
 
-    if (EXSUCCEED!=tpsrvsetctxdata (const_cast<char *>(val.data()), flags))
+    //Auto-buffer is removed by service dispatcher atmibuf object destructor.
+    //Thus ptr might be still here allive in the saved object, so just do not
+    //restore auto-buf marking.
+    if (EXSUCCEED!=tpsrvsetctxdata (const_cast<char *>(val.data()), flags|TPNOAUTBUF))
     {
         throw atmi_exception(tperrno);
     }
@@ -391,6 +393,13 @@ expublic void ndrxpy_register_srv(py::module &m)
 {
     //Atmi Context data type
     py::class_<pytpsrvctxdata>(m, "PyTpSrvCtxtData")
+        .def(py::init([](py::bytes & pyctxt)
+            {
+                auto p = std::unique_ptr<pytpsrvctxdata>(new pytpsrvctxdata(pyctxt));
+                return p;
+            }),
+            py::arg("in_pyctxt")
+            )
         .def_readonly("pyctxt", &pytpsrvctxdata::pyctxt);
 
     //Client id..
@@ -550,9 +559,6 @@ expublic void ndrxpy_register_srv(py::module &m)
 
         )pbdoc");
 
-    //TPNOAUTBUF flag is not relevant here, as buffers in py are basically dictionaries
-    //and we do not have direct access to underlaying buffer, thus let it restore in the 
-    //thread context always.
     m.def("tpsrvsetctxdata", &ndrxpy_tpsrvsetctxdata, 
         R"pbdoc(
         Restore ATMI context data, previously captured by tpsrvgetctxdata() in ATMI service
@@ -575,6 +581,7 @@ expublic void ndrxpy_register_srv(py::module &m)
             ATMI service context returned from tpsrvsetctxdata() function.
         flags : int
             Reserved for future use, shall be set to **0** which is default value.
+            Enduro/X Python library automatically applies **TPNOAUTBUF** flag.
         )pbdoc",
           py::arg("ctxt"), py::arg("flags") = 0);
 

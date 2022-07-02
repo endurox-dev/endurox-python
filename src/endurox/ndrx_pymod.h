@@ -232,6 +232,8 @@ struct pytpsrvctxdata
 {
     py::bytes pyctxt;
 
+    pytpsrvctxdata(py::bytes &pyctxt): pyctxt(pyctxt) {}
+
     pytpsrvctxdata(char *buf, long len)
     {
         pyctxt = py::bytes(buf, len);

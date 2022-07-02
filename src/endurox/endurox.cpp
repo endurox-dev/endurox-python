@@ -1092,6 +1092,24 @@ Used by :func:`.tpsubscribe` and :func:`.tpunsubscribe`.
 
       *str* -- Data field 2
 
+
+PyTpSrvCtxtData
+---------------
+
+Class is used for holding the XATMI server context, used by :func:`.tpsrvgetctxdata`
+and :func:`.tpsrvsetctxdata`.
+
+.. py:class:: PyTpSrvCtxtData(pyctxt: bytes)
+   :module: endurox
+
+   XATMI Server Context transfer type.
+
+   .. attribute:: pyctxt
+
+      *pyctxt* -- Serialized XATMI server context. This value may be tranfered to other
+        threads or processes. If transfering to other process than Enduro/X Python code,
+        remember to use **TPNOAUTBUF** flag there for tpsrvsetctxdata() call.
+
 Flags
 =====
 
