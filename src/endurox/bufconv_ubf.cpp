@@ -212,9 +212,10 @@ expublic py::object ndrxpy_to_py_ubf(UBFH *fbfr, BFLDLEN buflen = 0)
  * @param oc 
  * @param obj 
  * @param b temporary buffer
+ * @param loc last position for fast add operation
  */
 static void from_py1_ubf(atmibuf &buf, BFLDID fieldid, BFLDOCC oc,
-                     py::handle obj, atmibuf &b)
+                     py::handle obj, atmibuf &b, Bfld_loc_info_t *loc)
 {
     if (obj.is_none())
     {
@@ -226,8 +227,8 @@ static void from_py1_ubf(atmibuf &buf, BFLDID fieldid, BFLDOCC oc,
         std::string val(PyBytes_AsString(obj.ptr()), PyBytes_Size(obj.ptr()));
 
         buf.mutate([&](UBFH *fbfr)
-                   { return CBchg(fbfr, fieldid, oc, const_cast<char *>(val.data()),
-                                  val.size(), BFLD_CARRAY); });
+                   { return CBaddfast(fbfr, fieldid, const_cast<char *>(val.data()),
+                                  val.size(), BFLD_CARRAY, loc); }, loc);
 #endif
     }
     else if (py::isinstance<py::str>(obj))
@@ -272,21 +273,21 @@ static void from_py1_ubf(atmibuf &buf, BFLDID fieldid, BFLDOCC oc,
 
 #endif
         buf.mutate([&](UBFH *fbfr)
-                   { return CBchg(fbfr, fieldid, oc, ptr_val, len, BFLD_CARRAY); });
+                   { return CBaddfast(fbfr, fieldid, ptr_val, len, BFLD_CARRAY, loc); }, loc);
     }
     else if (py::isinstance<py::int_>(obj))
     {
         long val = obj.cast<py::int_>();
         buf.mutate([&](UBFH *fbfr)
-                   { return CBchg(fbfr, fieldid, oc, reinterpret_cast<char *>(&val), 0,
-                                  BFLD_LONG); });
+                   { return CBaddfast(fbfr, fieldid, reinterpret_cast<char *>(&val), 0,
+                                  BFLD_LONG, loc); }, loc);
     }
     else if (py::isinstance<py::float_>(obj))
     {
         double val = obj.cast<py::float_>();
         buf.mutate([&](UBFH *fbfr)
-                   { return CBchg(fbfr, fieldid, oc, reinterpret_cast<char *>(&val), 0,
-                                  BFLD_DOUBLE); });
+                   { return CBaddfast(fbfr, fieldid, reinterpret_cast<char *>(&val), 0,
+                                  BFLD_DOUBLE, loc); }, loc);
     }
     else if (py::isinstance<py::dict>(obj))
     {
@@ -294,7 +295,7 @@ static void from_py1_ubf(atmibuf &buf, BFLDID fieldid, BFLDOCC oc,
         {
             ndrxpy_from_py_ubf(obj.cast<py::dict>(), b);
             buf.mutate([&](UBFH *fbfr)
-                    { return Bchg(fbfr, fieldid, oc, reinterpret_cast<char *>(*b.fbfr()), 0); });
+                    { return Baddfast(fbfr, fieldid, reinterpret_cast<char *>(*b.fbfr()), 0, loc); }, loc);
         }
         else if (BFLD_VIEW==Bfldtype(fieldid))
         {
@@ -317,12 +318,15 @@ static void from_py1_ubf(atmibuf &buf, BFLDID fieldid, BFLDOCC oc,
             else if (!have_vnamed && have_data)
             {
                 //Invalid condition
-               UBF_LOG(log_debug, "Failed to convert view field %d: data present but no vname", fieldid);
+                UBF_LOG(log_debug, "Failed to convert view field %d: data present but no vname", fieldid);
                 throw std::invalid_argument("data present but no vname");
             }
             else if (!have_vnamed && !have_data)
             {
                 //put empty..
+                memset(&vf, 0, sizeof(vf));
+                buf.mutate([&](UBFH *fbfr)
+                    { return Baddfast(fbfr, fieldid, reinterpret_cast<char *>(&vf), 0, loc); }, loc);
             }
             else
             {
@@ -339,7 +343,7 @@ static void from_py1_ubf(atmibuf &buf, BFLDID fieldid, BFLDOCC oc,
                 ndrxpy_from_py_view(vdata.cast<py::dict>(), vbuf, vf.vname);
 
                 buf.mutate([&](UBFH *fbfr)
-                    { return Bchg(fbfr, fieldid, oc, reinterpret_cast<char *>(&vf), 0); });
+                    { return Baddfast(fbfr, fieldid, reinterpret_cast<char *>(&vf), 0, loc); }, loc);
             }
         }
         else if (BFLD_PTR==Bfldtype(fieldid))
@@ -355,11 +359,10 @@ static void from_py1_ubf(atmibuf &buf, BFLDID fieldid, BFLDOCC oc,
             atmibuf tmp = ndrx_from_py(obj.cast<py::object>());
             
             buf.mutate([&](UBFH *fbfr)
-                    { return Bchg(fbfr, fieldid, oc, reinterpret_cast<char *>(tmp.pp), 0); });
+                    { return Baddfast(fbfr, fieldid, reinterpret_cast<char *>(tmp.pp), 0, loc); }, loc);
 
             //Do not remove this buffer... as needed by mbuf
             tmp.p = nullptr;
-
         }
     }
     else
@@ -378,6 +381,10 @@ expublic void ndrxpy_from_py_ubf(py::dict obj, atmibuf &b)
 {
     b.reinit("UBF", nullptr, 1024);
     atmibuf f;
+    BFLDID fieldid_prev = EXFAIL;
+    Bfld_loc_info_t loc;
+    memset(&loc, 0, sizeof(loc));
+    BFLDID max_seen = EXFAIL;
 
     for (auto it : obj)
     {
@@ -385,26 +392,65 @@ expublic void ndrxpy_from_py_ubf(py::dict obj, atmibuf &b)
         if (py::isinstance<py::int_>(it.first))
         {
             fieldid = it.first.cast<py::int_>();
+
+            if (fieldid<=BBADFLDID)
+            {
+                NDRX_LOG(log_error, "Invalid field id %d", fieldid);
+                throw ubf_exception(BBADFLD);
+            }
         }
         else
         {
-            fieldid =
-                Bfldid(const_cast<char *>(std::string(py::str(it.first)).c_str()));
+            char *fldstr = const_cast<char *>(std::string(py::str(it.first)).c_str());
+            fieldid = Bfldid(fldstr);
+
+            if (BBADFLDID==fieldid)
+            {
+                NDRX_LOG(log_error, "Failed to resolve field [%s]", Bstrerror(Berror));
+                throw ubf_exception(Berror);
+            }
+        }
+
+        /* check the location optimizations.. 
+         * or if there was re-alloc
+         * => reset
+         * We could keep re-using the loc if next field is higher
+         * than max ever seen, that would mean that we are still at the
+         * end of the buffer. As Enduro/X print the buffers in such order
+         * the un-modified buffers could get benefit from this.
+         */
+        if (fieldid!=loc.last_Baddfast)
+        {
+            if (max_seen==loc.last_Baddfast && fieldid > max_seen)
+            {
+                /* keep the ptr valid, as next id field follows */
+            }
+            else
+            {
+                /* ptr not valid anymore... */
+                memset(&loc, 0, sizeof(loc));
+            }
+        }
+
+        if (fieldid>max_seen)
+        {
+            max_seen = fieldid;
         }
 
         py::handle o = it.second;
         if (py::isinstance<py::list>(o))
         {
             BFLDOCC oc = 0;
+            
             for (auto e : o.cast<py::list>())
             {
-                from_py1_ubf(b, fieldid, oc++, e, f);
+                from_py1_ubf(b, fieldid, oc++, e, f, &loc);
             }
         }
         else
         {
             // Handle single elements instead of lists for convenience
-            from_py1_ubf(b, fieldid, 0, o, f);
+            from_py1_ubf(b, fieldid, 0, o, f, &loc);
         }
     }
 
@@ -782,9 +828,8 @@ expublic void ndrxpy_register_ubf(py::module &m)
             int fd = iop.attr("fileno")().cast<py::int_>();
             std::unique_ptr<FILE, decltype(&fclose)> fiop(fdopen(dup(fd), "r"),
                                                           &fclose);
-
             obuf.mutate([&](UBFH *fbfr)
-                        { return Bextread(fbfr, fiop.get()); });
+                        { return Bextread(fbfr, fiop.get());}, NULL);
             return ndrx_to_py(obuf);
         },
         R"pbdoc(

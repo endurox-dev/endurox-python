@@ -142,7 +142,7 @@ public:
     char *p;
     long len;
     
-    void mutate(std::function<int(UBFH *)> f);
+    void mutate(std::function<int(UBFH *)> f, Bfld_loc_info_t *loc);
 
 private:
     void swap(atmibuf &other) noexcept;

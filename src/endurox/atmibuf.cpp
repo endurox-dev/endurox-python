@@ -161,7 +161,13 @@ char *atmibuf::release()
 
 UBFH **atmibuf::fbfr() { return reinterpret_cast<UBFH **>(pp); }
 
-void atmibuf::mutate(std::function<int(UBFH *)> f)
+/**
+ * @brief resize the buffer if space is missing
+ * 
+ * @param f UBF buffer
+ * @param loc location to reset in case if ptr changed
+ */
+void atmibuf::mutate(std::function<int(UBFH *)> f, Bfld_loc_info_t *loc)
 {
     while (true)
     {
@@ -171,7 +177,14 @@ void atmibuf::mutate(std::function<int(UBFH *)> f)
             if (Berror == BNOSPACE)
             {
                 len *= 2;
+                char *prev_ptr =*pp; 
                 *pp = tprealloc(*pp, len);
+
+                //reset the loc as not valid anymore.
+                if (NULL!=loc && prev_ptr!=*pp)
+                {
+                    memset(loc, 0, sizeof(*loc));
+                }
             }
             else
             {

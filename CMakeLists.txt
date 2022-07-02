@@ -110,6 +110,9 @@ endif ()
 if (DEFINED ENV{NDRXPY_SANITIZE})
 	SET(CMAKE_C_FLAGS "-fsanitize=address -fno-omit-frame-pointer -O0 -ggdb ${CMAKE_C_FLAGS}")
 	SET(CMAKE_CXX_FLAGS "-fsanitize=address -fno-omit-frame-pointer -O0 -ggdb ${CMAKE_CXX_FLAGS}")
+ELSE()
+    # TODO: Solaris? AIX? Compilers?
+    SET ( CMAKE_CXX_FLAGS "-O2 ${CMAKE_CXX_FLAGS}")
 ENDIF()
 
 find_package(PkgConfig REQUIRED)
