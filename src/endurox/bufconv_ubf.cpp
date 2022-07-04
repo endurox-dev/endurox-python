@@ -401,12 +401,13 @@ expublic void ndrxpy_from_py_ubf(py::dict obj, atmibuf &b)
         }
         else
         {
-            char *fldstr = const_cast<char *>(std::string(py::str(it.first)).c_str());
+            std::string s(py::str(it.first));
+            char *fldstr = const_cast<char *>(s.c_str());
             fieldid = Bfldid(fldstr);
 
             if (BBADFLDID==fieldid)
             {
-                NDRX_LOG(log_error, "Failed to resolve field [%s]", Bstrerror(Berror));
+                NDRX_LOG(log_error, "Failed to resolve field [%s]: %s", fldstr, Bstrerror(Berror));
                 throw ubf_exception(Berror);
             }
         }
