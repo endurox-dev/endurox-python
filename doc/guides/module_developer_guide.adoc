@@ -138,6 +138,60 @@ $ sudo make install
 
 --------------------------------------------------------------------------------
 
+=== Oracle Solaris
+
+Python 3.6+ is not available from CSW, only option is to build Python 3.6 from
+the sources. CPython can be built on Solaris OS by the:
+
+- Oracle Solaris Studio compiler 
+
+- Or GCC compiler.
+
+To perform the build, please see previous section.
+
+However when building Enduro/X Python module, only GCC compiler is suitable,
+as Solaris Studio does not support *cxx_user_literals* syntax.
+
+==== Building endurox-python on Solaris
+
+- g++ compiler shall be installed:
+
+--------------------------------------------------------------------------------
+$ su - root
+# /opt/csw/bin/pkgutil -y -i gcc5g++
+# /opt/csw/bin/pkgutil -y -i pkgconfig
+--------------------------------------------------------------------------------
+
+Following environment variables must be set prior running *setuptools* or *pip3*:
+
+--------------------------------------------------------------------------------
+$ export CXX=g++
+$ export CC=gcc
+$ export LDFLAGS="-m64"
+$ export CFLAGS="-m64"
+$ export CXXFLAGS="-m64"
+$ export PKG_CONFIG_PATH=/usr/lib64/pkgconfig
+$ export LD_LIBRARY_PATH=/usr/lib64
+--------------------------------------------------------------------------------
+
+Additionally, when performing the tests, must ensure that platform dependent
+library path from (e.g.) */usr/lib/64* comes first in *LD_LIBRARY_PATH* and 
+only then */opt/csw/lib/64* (if used). For example
+
+--------------------------------------------------------------------------------
+
+$ export LD_LIBRARY_PATH=/usr/lib64:/usr/lib/64:/opt/csw/lib/64
+
+--------------------------------------------------------------------------------
+
+otherwise expect that endurox-python module exceptions will not work and
+will generate such are errors as:
+
+--------------------------------------------------------------------------------
+...
+terminate called after throwing an instance of 'atmi_exception'
+--------------------------------------------------------------------------------
+
 === Installing Python 3 libraries
 
 Once Python is installed on target operating system, additionally *sphinx* and
@@ -199,7 +253,6 @@ $ pip3 install .  --user
 --------------------------------------------------------------------------------
 
 === Cleaning project (for re-building)
-
 
 --------------------------------------------------------------------------------
 

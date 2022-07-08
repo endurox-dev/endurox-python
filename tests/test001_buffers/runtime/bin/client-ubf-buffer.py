@@ -67,6 +67,29 @@ class TestUbf(unittest.TestCase):
             self.assertEqual(retbuf["data"]["T_PTR_2_FLD"][2]["subtype"], "UBTESTVIEW2")
             # PTR in PTR
             self.assertEqual(retbuf["data"]["T_PTR_2_FLD"][3]["data"]["T_PTR_FLD"][0]["data"]["T_STRING_FLD"][0], "HELLO")
+
+
+    # massive occurrences
+    def test_ubf_tpcall_masiveocc(self):
+        w = u.NdrxStopwatch()
+        while w.get_delta_sec() < u.test_duratation():
+
+            buf = dict()
+            buf["data"] = dict()
+            buf["data"]["T_STRING_FLD"]=[]
+
+            for i in range(500):
+                buf["data"]["T_STRING_FLD"].append("HELLO %s" % i)
+
+            tperrno, tpurcode, retbuf = e.tpcall("ECHO", buf);
+
+            self.assertEqual(tperrno, 0)
+            self.assertEqual(tpurcode, 0)
+            self.assertEqual(retbuf["buftype"], "UBF")
+
+            # check occurrences
+            for i in range(500):
+                self.assertEqual(buf["data"]["T_STRING_FLD"][i], "HELLO %s" % i)
     
 if __name__ == '__main__':
     unittest.main()
