@@ -130,11 +130,14 @@ $ tar -xzf Python-3.6.8.tgz
 
 $ cd Python-3.6.8
 
-$ ./configure --prefix=/usr
+$ ./configure --prefix=/usr --with-ensurepip=install
 
 $ make
 
 $ sudo make install
+
+-- prepare sylinks
+
 
 --------------------------------------------------------------------------------
 
@@ -152,6 +155,19 @@ To perform the build, please see previous section.
 However when building Enduro/X Python module, only GCC compiler is suitable,
 as Solaris Studio does not support *cxx_user_literals* syntax.
 
+Prior building Python on Solaris, following environment must be prepared:
+
+--------------------------------------------------------------------------------
+
+$ export CFLAGS="-m64 -D_XOPEN_SOURCE_EXTENDED -I /usr/include/ncurses"
+
+$ export LDFLAGS="-m64"
+
+...
+
+--------------------------------------------------------------------------------
+
+
 ==== Building endurox-python on Solaris
 
 - g++ compiler shall be installed:
@@ -167,7 +183,7 @@ Following environment variables must be set prior running *setuptools* or *pip3*
 --------------------------------------------------------------------------------
 $ export CXX=g++
 $ export CC=gcc
-$ export LDFLAGS="-m64"
+$ export LDFLAGS="-m64 -L/usr/lib64"
 $ export CFLAGS="-m64"
 $ export CXXFLAGS="-m64"
 $ export PKG_CONFIG_PATH=/usr/lib64/pkgconfig
@@ -203,6 +219,12 @@ on the operating system.
 
 $ sudo pip3 install sphinx wheel
 
+--------------------------------------------------------------------------------
+
+In case if pip3 binary is not found, try with:
+
+--------------------------------------------------------------------------------
+$ python3 -m pip ...
 --------------------------------------------------------------------------------
 
 == Building the module
