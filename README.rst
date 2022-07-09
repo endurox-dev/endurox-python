@@ -163,7 +163,7 @@ For all other errors, ``AtmiException`` is thrown.
     import endurox
 
     tperrno, tpurcode, data = endurox.tpcall('TESTSV', {'data':{'T_STRING_FLD': 'HELLO', 'T_STRING_4_FLD': 'WORLD'}})
-    if rval == 0:
+    if tperrno == 0:
         # Service returned TPSUCCESS
     else:
         # tperrno == endurox.TPESVCFAIL
