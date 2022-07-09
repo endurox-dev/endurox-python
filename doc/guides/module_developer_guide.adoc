@@ -136,8 +136,7 @@ $ make
 
 $ sudo make install
 
--- prepare sylinks
-
+$ sudo ln -s /usr/bin/python3.6 /usr/bin/python3
 
 --------------------------------------------------------------------------------
 
@@ -221,7 +220,7 @@ $ sudo pip3 install sphinx wheel
 
 --------------------------------------------------------------------------------
 
-In case if pip3 binary is not found, try with:
+In case if pip3 loader is not found, try with:
 
 --------------------------------------------------------------------------------
 $ python3 -m pip ...
@@ -328,7 +327,6 @@ $  python3 ./setup.py sdist
 --------------------------------------------------------------------------------
 
 Distribution files are located in *endurox-python/dist* directory.
-
 
 === Testing
 
