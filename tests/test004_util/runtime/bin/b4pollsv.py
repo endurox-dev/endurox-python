@@ -48,4 +48,4 @@ class Server:
         return e.tpreturn(e.TPSUCCESS, 0, retbuf)
 
 if __name__ == '__main__':
-    e.run(Server(), sys.argv)
+    e.tprun(Server(), sys.argv)

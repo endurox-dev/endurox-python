@@ -108,5 +108,5 @@ class Server:
 
 
 if __name__ == '__main__':
-    e.run(Server(), sys.argv)
+    e.tprun(Server(), sys.argv)
 

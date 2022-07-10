@@ -618,7 +618,7 @@ expublic void ndrxpy_register_srv(py::module &m)
         )pbdoc",
         py::arg("svcname"));
 
-    m.def("run", &ndrxpy_pyrun, 
+    m.def("tprun", &ndrxpy_pyrun, 
         R"pbdoc(
 
         Run Enduro/X ATMI server process. This transfer the control to ATMI server
@@ -660,7 +660,7 @@ expublic void ndrxpy_register_srv(py::module &m)
                         return e.tpreturn(e.TPSUCCESS, 0, args.data)
             
                 if __name__ == '__main__':
-                    e.run(Server(), sys.argv)
+                    e.tprun(Server(), sys.argv)
 
         At :py:meth:`Server.tpsvrinit()` server shall perform initialization, advertises,
         event subscriptions, configure pollers, etc. 

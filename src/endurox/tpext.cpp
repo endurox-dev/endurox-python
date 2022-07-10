@@ -282,7 +282,7 @@ expublic void ndrxpy_register_tpext(py::module &m)
                     return 0
                     
             if __name__ == '__main__':
-                e.run(Server(), sys.argv)
+                e.tprun(Server(), sys.argv)
 
         For more details see **tpext_addb4pollcb(3)** C API call.
 
@@ -346,7 +346,7 @@ expublic void ndrxpy_register_tpext(py::module &m)
                     return 0
 
             if __name__ == '__main__':
-                e.run(Server(), sys.argv)
+                e.tprun(Server(), sys.argv)
 
 
         For more details see **tpext_addperiodcb(3)** C API call.
@@ -435,7 +435,7 @@ expublic void ndrxpy_register_tpext(py::module &m)
                     e.userlog('Server shutdown')
 
             if __name__ == '__main__':
-                e.run(Server(), sys.argv)
+                e.tprun(Server(), sys.argv)
 
         For more details see **tpext_addpollerfd(3)** C API call.
 

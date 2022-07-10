@@ -1158,7 +1158,7 @@ expublic void ndrxpy_register_atmi(py::module &m)
                         return e.tpreturn(e.TPSUCCESS, 0, {})
 
                 if __name__ == '__main__':
-                    e.run(Server(), sys.argv)
+                    e.tprun(Server(), sys.argv)
 
         :raise AtmiException: 
             | Following error codes may be present:

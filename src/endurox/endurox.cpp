@@ -573,7 +573,7 @@ Python3 bindings for writing Enduro/X clients and servers
         tpencrypt
         tpdecrypt
         xaoSvcCtx
-        run
+        tprun
         tpsubscribe
         tpunsubscribe
         tpreturn
@@ -638,7 +638,7 @@ ATMI Server
             return e.tpreturn(e.TPSUCCESS, 0, args.data)
 
     if __name__ == "__main__":
-        e.run(Server(), sys.argv)
+        e.tprun(Server(), sys.argv)
 
 The testsv.py shall be present in system **PATH**, and script may be started when
 it is registered in ndrxconfig.xml configuration file:
@@ -648,10 +648,10 @@ it is registered in ndrxconfig.xml configuration file:
    :name: ndrxconfig.xml
 
     <server name="testsv.py">
-            <min>1</min>
-            <max>1</max>
-            <srvid>140</srvid>
-            <sysopt>-e ${NDRX_ULOG}/testsv.log -r --</sysopt>
+        <min>1</min>
+        <max>1</max>
+        <srvid>140</srvid>
+        <sysopt>-e ${NDRX_ULOG}/testsv.log -r --</sysopt>
     </server>
 
 For full instructions how to run server or client programs on Enduro/X platform
