@@ -350,8 +350,6 @@ Additionally Enduro/X transaction manager must be configured to run global trans
         <sysopt>-e ${NDRX_ULOG}/tmsrv-rm1.log -r -- -t1 -l${NDRX_APPHOME}/tmlogs/rm1</sysopt>
     </server>
 
-Remember 
-
 Global transactions
 -------------------
 
