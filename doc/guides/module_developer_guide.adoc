@@ -271,6 +271,27 @@ $ pip3 install .  --user
 
 --------------------------------------------------------------------------------
 
+In case if Enduro/X Core is not installed system wide, custom Enduro/X Core
+installation path may be specified in following environment variables prior
+running the pip or setup.py installation instructions..
+
+This example specified custom installation path to */usr/local*:
+
+--------------------------------------------------------------------------------
+
+$ export CMAKE_MODULE_PATH=/usr/local/share/endurox/cmake
+$ export CXXFLAGS=-I/usr/local/include
+$ export LDFLAGS=-L/usr/local/lib
+$ export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig
+$ export PATH=$PATH:/usr/local/bin
+
+-- if previously did attempted the build, clean must be invoked to remove
+-- cmake caches:
+
+$ ./setup.py clean
+
+--------------------------------------------------------------------------------
+
 === Cleaning project (for re-building)
 
 --------------------------------------------------------------------------------

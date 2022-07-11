@@ -54,6 +54,9 @@ class CMakeExtension(Extension):
         self.sourcedir = os.path.abspath(sourcedir)
 
 class CMakeBuild(build_ext):
+
+    cmake_module_path = ""
+
     def run(self):
         try:
             out = subprocess.check_output(['cmake', '--version'])
@@ -73,10 +76,16 @@ class CMakeBuild(build_ext):
 
     def build_extension(self, ext):
         global NDRXPY_VERSION
+
+        self.cmake_module_path = os.environ.get( "CMAKE_MODULE_PATH", None )
+        if self.cmake_module_path is None:
+            self.cmake_module_path=""
+
         extdir = os.path.abspath(
             os.path.dirname(self.get_ext_fullpath(ext.name)))
         cmake_args = ['-DCMAKE_LIBRARY_OUTPUT_DIRECTORY=' + extdir,
                       '-DPYTHON_EXECUTABLE=' + sys.executable,
+                      '-DCMAKE_MODULE_PATH=' + self.cmake_module_path,
                       '-DNDRXPY_VERSION=' + NDRXPY_VERSION,]
 
         cfg = 'Debug' if self.debug else 'Release'
