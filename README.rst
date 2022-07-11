@@ -280,6 +280,11 @@ If client or server needs to be written in Python to participate in the global t
 standard Enduro/X Oracle XA driver configuration is be applied, i.e. libndrxxaoras (for static registration)
 or libndrxxaorad (for dynamic XA registration) configured.
 
+Global transactions
+===================
+
+Transactions can be started and committed or aborted by using ``endurox.tpbegin()``, ``endurox.tpcommit()``, ``endurox.tpabort()``.
+
 Client process example:
 
 .. code:: python
@@ -349,12 +354,6 @@ Additionally Enduro/X transaction manager must be configured to run global trans
         <cctag>ORA1</cctag>
         <sysopt>-e ${NDRX_ULOG}/tmsrv-rm1.log -r -- -t1 -l${NDRX_APPHOME}/tmlogs/rm1</sysopt>
     </server>
-
-Global transactions
--------------------
-
-Transactions can be started and committed or aborted by using ``endurox.tpbegin()``, ``endurox.tpcommit()``, ``endurox.tpabort()``.
-
 
 UBF identifiers
 -----------------
