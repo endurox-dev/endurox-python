@@ -379,13 +379,14 @@ expublic void ndrxpy_pyrun(py::object svr, std::vector<std::string> args)
         
         _tmstartserver( args.size(), &argv[0], &tmsvrargs );
 
-        server = py::none();
     }
     catch (...)
     {
         server = py::none();
         throw;
     }
+    //Do only when scope is acquired...
+    server = py::none();
 }
 /**
  * @brief Register ATMI server specific functions
