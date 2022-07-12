@@ -58,47 +58,17 @@ static py::object server;
 //Mapping of advertised functions
 std::map<std::string, py::object> M_dispmap {};
 
-struct svcresult
-{
-    int rval;
-    long rcode;
-    char *odata;
-    long olen;
-    char name[XATMI_SERVICE_NAME_LENGTH];
-    bool forward;
-    bool clean;
-};
-static thread_local svcresult tsvcresult;
-
 expublic void ndrxpy_pytpreturn(int rval, long rcode, py::object data, long flags)
 {
-    /*
-    if (!tsvcresult.clean)
-    {
-        throw std::runtime_error("tpreturn already called");
-    }
-    tsvcresult.clean = false;
-    */
-    tsvcresult.rval = rval;
-    tsvcresult.rcode = rcode;
     auto &&odata = ndrx_from_py(data);
-    tpreturn(tsvcresult.rval, tsvcresult.rcode, odata.p, odata.len, 0);
+    tpreturn(rval, rcode, odata.p, odata.len, 0);
     //Normal destructors apply... as running in nojump mode
-
 }
+
 expublic void ndrxpy_pytpforward(const std::string &svc, py::object data, long flags)
 {
-    /*
-    if (!tsvcresult.clean)
-    {
-        throw std::runtime_error("tpreturn already called");
-    }
-    tsvcresult.clean = false;
-    */
-    strncpy(tsvcresult.name, svc.c_str(), sizeof(tsvcresult.name));
     auto &&odata = ndrx_from_py(data);
-    tpforward(tsvcresult.name, odata.p, odata.len, 0);
-
+    tpforward(const_cast<char*>(svc.c_str()), odata.p, odata.len, 0);
     //Normal destructors apply... as running in nojump mode.
 }
 
@@ -137,13 +107,15 @@ void tpsvrdone()
 int tpsvrthrinit(int argc, char *argv[])
 {
 
+    py::gil_scoped_acquire acquire;
+
     // Create a new Python thread
     // otherwise pybind11 creates and deletes one
     // and messes up threading.local
     auto const &internals = pybind11::detail::get_internals();
     PyThreadState_New(internals.istate);
 
-    py::gil_scoped_acquire acquire;
+//    py::gil_scoped_acquire acquire;
     if (hasattr(server, __func__))
     {
         std::vector<std::string> args;
@@ -217,7 +189,6 @@ expublic void pytpadvertise(std::string svcname, std::string funcname, const py:
     {
         M_dispmap[funcname] = func;
     }
-
 }
 
 /**
