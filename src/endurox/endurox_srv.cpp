@@ -108,7 +108,7 @@ void tpsvrdone()
 int tpsvrthrinit(int argc, char *argv[])
 {
 
-    py::gil_scoped_acquire acquire;
+//    py::gil_scoped_acquire acquire;
 
     // Create a new Python thread
     // otherwise pybind11 creates and deletes one
@@ -116,7 +116,7 @@ int tpsvrthrinit(int argc, char *argv[])
     auto const &internals = pybind11::detail::get_internals();
     PyThreadState_New(internals.istate);
 
-//    py::gil_scoped_acquire acquire;
+    py::gil_scoped_acquire acquire;
     if (hasattr(server, __func__))
     {
         std::vector<std::string> args;
