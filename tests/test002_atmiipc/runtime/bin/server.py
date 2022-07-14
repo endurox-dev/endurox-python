@@ -10,15 +10,15 @@ class Server:
 
     def tpsvrinit(self, args):
         e.userlog('Server startup')
-        e.tpadvertise('FAILSVC', 'FAILSVC', self.FAILSVC)
-        e.tpadvertise('OKSVC', 'OKSVC', self.OKSVC)
-        e.tpadvertise('FWDSVC', 'FWDSVC', self.FWDSVC)
-        e.tpadvertise('EVSVC', 'EVSVC', self.EVSVC)
-        e.tpadvertise('EVSVC2', 'EVSVC2', self.EVSVC)
-        e.tpadvertise('CONVSVC', 'CONVSVC', self.CONVSVC)
-        e.tpadvertise('NOTIFSV', 'NOTIFSV', self.NOTIFSV)
-        e.tpadvertise('BCASTSV', 'BCASTSV', self.BCASTSV)
-        e.tpadvertise('TOUT', 'TOUT', self.TOUT)
+        e.tpadvertise('FAILSVC', 'FAILSVC', Server.FAILSVC)
+        e.tpadvertise('OKSVC', 'OKSVC', Server.OKSVC)
+        e.tpadvertise('FWDSVC', 'FWDSVC', Server.FWDSVC)
+        e.tpadvertise('EVSVC', 'EVSVC', Server.EVSVC)
+        e.tpadvertise('EVSVC2', 'EVSVC2', Server.EVSVC)
+        e.tpadvertise('CONVSVC', 'CONVSVC', Server.CONVSVC)
+        e.tpadvertise('NOTIFSV', 'NOTIFSV', Server.NOTIFSV)
+        e.tpadvertise('BCASTSV', 'BCASTSV', Server.BCASTSV)
+        e.tpadvertise('TOUT', 'TOUT', Server.TOUT)
 
         # subscribe to TESTEV event.
         e.tplog_info("ev subs %d" % e.tpsubscribe('TESTEV', None, e.TPEVCTL(name1="EVSVC", flags=e.TPEVSERVICE)))
@@ -98,7 +98,7 @@ class Server:
 
     def BCASTSV(self, args):
         # may fill all python qs...
-        e.tpbroadcast("", "", "python", {"data":"HELLO WORLD BCAST"}, e.TPREGEXMATCH)
+        e.tpbroadcast("", "", "python|Python", {"data":"HELLO WORLD BCAST"}, e.TPREGEXMATCH)
         return e.tpreturn(e.TPSUCCESS, 0, {})
 
     # generate timeout ...

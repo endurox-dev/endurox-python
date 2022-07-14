@@ -24,9 +24,9 @@ class Server:
     def tpsvrinit(self, args):
         e.userlog('Server startup')
         e.tpext_addperiodcb(1, period)
-        e.tpadvertise('PERIOD_OFF', 'PERIOD_OFF', self.PERIOD_OFF)
-        e.tpadvertise('PERIOD_ON2', 'PERIOD_ON2', self.PERIOD_ON2)
-        e.tpadvertise('PERIODSTATS', 'PERIODSTATS', self.PERIODSTATS)
+        e.tpadvertise('PERIOD_OFF', 'PERIOD_OFF', Server.PERIOD_OFF)
+        e.tpadvertise('PERIOD_ON2', 'PERIOD_ON2', Server.PERIOD_ON2)
+        e.tpadvertise('PERIODSTATS', 'PERIODSTATS', Server.PERIODSTATS)
         return 0
 
     def tpsvrdone(self):

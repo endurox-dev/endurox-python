@@ -620,12 +620,12 @@ ATMI Server
 
         def tpsvrinit(self, args):
             e.tplog_info("Doing server init...");
-            e.tpadvertise("TESTSV", "TESTSV", self.TESTSV)
-            e.tpadvertise("ECHO", "ECHO", self.ECHO)
+            e.tpadvertise("TESTSV", "TESTSV", Server.TESTSV)
+            e.tpadvertise("ECHO", "ECHO", Server.ECHO)
             return 0
 
         def tpsvrdone(self):
-            e.log_info("Server shutdown")
+            e.tplog_info("Server shutdown")
 
         # This is advertised service
         def TESTSV(self, args):
@@ -993,6 +993,46 @@ Key Classes
 ===========
 
 This section describes key classes used by Enduro/X API.
+
+TPSVCINFO
+---------
+
+This class is used to deliver call information to the service.
+Object of this class is received after the self (Server instance)
+argument.
+
+.. py:class:: TPSVCINFO()
+   :module: endurox
+
+   Service call information.
+
+   .. attribute:: name
+
+      *str* -- Service name invoked.
+
+   .. attribute:: fname
+
+      *str* -- Function name invoked
+
+   .. attribute:: flags
+
+      *int* -- Matches flags set by service caller (e.g. :func:`tpcall`)
+
+   .. attribute:: appkey
+
+      *int* -- RFU.
+
+   .. attribute:: cd
+
+      *int* -- Call descriptor as seen by caller.
+
+   .. attribute:: cltid
+
+      *CLIENTID* -- Client ID making a call. May be used for :func:`tpnotify`
+
+   .. attribute:: data
+
+      *dict* -- XATMI data buffer.
 
 TPQCTL
 ------

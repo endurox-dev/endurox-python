@@ -82,6 +82,12 @@ namespace py = pybind11;
  */
 expublic void ndrxpy_fdmap_clear(void)
 {
+    for (auto & map : M_fdmap)
+    {
+        //Cannot delete functions?
+        //map.second->obj = py::none();
+        map.second->obj2 = py::none();
+    }
     M_fdmap.clear();
 }
 

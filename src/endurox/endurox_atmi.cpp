@@ -1147,7 +1147,7 @@ expublic void ndrxpy_register_atmi(py::module &m)
 
                     def tpsvrinit(self, args):
                         e.userlog('Server startup')
-                        e.tpadvertise('NOTIFSV', 'NOTIFSV', self.NOTIFSV)
+                        e.tpadvertise('NOTIFSV', 'NOTIFSV', Server.NOTIFSV)
                         return 0
 
                     def tpsvrdone(self):
@@ -1577,10 +1577,12 @@ expublic void ndrxpy_register_atmi(py::module &m)
         [](long flags)
         {
             TPTRANID tranid;
-            py::gil_scoped_release release;
-            if (tpsuspend(&tranid, flags) == -1)
             {
-                throw atmi_exception(tperrno);
+                py::gil_scoped_release release;
+                if (tpsuspend(&tranid, flags) == -1)
+                {
+                    throw atmi_exception(tperrno);
+                }
             }
             return pytptranid(reinterpret_cast<char *>(&tranid), sizeof(tranid));
         },
@@ -1613,7 +1615,6 @@ expublic void ndrxpy_register_atmi(py::module &m)
         "tpresume",
         [](pytptranid tranid, long flags)
         {
-            py::gil_scoped_release release;
             if (tpresume(reinterpret_cast<TPTRANID *>(
 #if PY_MAJOR_VERSION >= 3
                              PyBytes_AsString(tranid.tranid.ptr())

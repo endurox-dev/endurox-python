@@ -105,6 +105,7 @@
 		<server name="server.py">
 			<min>1</min>
 			<max>1</max>
+			<max_start>60</max_start>
 			<srvid>3000</srvid>
 			<sysopt>-e ${NDRX_ULOG}/server.log -r -- </sysopt>
 		</server>

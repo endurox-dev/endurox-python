@@ -7,7 +7,8 @@ class Server:
 
     def tpsvrinit(self, args):
         e.userlog('Server startup')
-        e.tpadvertise('ECHO', 'ECHO', self.ECHO)
+        # cannot pass self.ECHO, as bound function objects are short lived.
+        e.tpadvertise('ECHO', 'ECHO', Server.ECHO)
         return 0
 
     def tpsvrdone(self):

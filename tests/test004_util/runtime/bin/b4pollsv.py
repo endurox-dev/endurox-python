@@ -26,7 +26,7 @@ class Server:
     def tpsvrinit(self, args):
         e.userlog('Server startup')
         e.tpext_addb4pollcb(b4poll)
-        e.tpadvertise('B4POLL', 'B4POLL', self.B4POLL)
+        e.tpadvertise('B4POLL', 'B4POLL', Server.B4POLL)
         return 0
 
     def tpsvrdone(self):

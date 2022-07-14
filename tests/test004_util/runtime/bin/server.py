@@ -7,7 +7,7 @@ class Server:
 
     def tpsvrinit(self, args):
         e.userlog('Server startup')
-        e.tpadvertise('RESTART', 'RESTART', self.RESTART)
+        e.tpadvertise('RESTART', 'RESTART', Server.RESTART)
         return 0
 
     def tpsvrdone(self):

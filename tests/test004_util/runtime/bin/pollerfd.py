@@ -44,7 +44,7 @@ def cb(fd, events, ptr1):
         #
         try:
             data = os.read(outx, 1) 
-            e.tpbroadcast("", "", "python", {"data":{"T_LONG_FLD":data[0]}}, e.TPREGEXMATCH|e.TPNOBLOCK)
+            e.tpbroadcast("", "", "python|Python", {"data":{"T_LONG_FLD":data[0]}}, e.TPREGEXMATCH|e.TPNOBLOCK)
         except io.BlockingIOError:
             e.tpext_addpollerfd(outx, POLLIN, obj, cb)
             return 0
@@ -83,7 +83,7 @@ class Server:
         os.mkfifo( path, 0O644 )
         outx = os.open(path, os.O_NONBLOCK | os.O_RDWR)
         e.tpext_addb4pollcb(b4poll)
-        e.tpadvertise('POLLERSYNC', 'POLLERSYNC', self.POLLERSYNC)
+        e.tpadvertise('POLLERSYNC', 'POLLERSYNC', Server.POLLERSYNC)
 
         # configure OS specifics
         if 'kqueue' == e.ndrx_epoll_mode():

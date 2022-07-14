@@ -13,7 +13,7 @@ class Server:
         self.local = threading.local()
 #        e.tpopen()
 #        self.db = cx_Oracle.connect( handle=e.xaoSvcCtx())
-        e.tpadvertise('DOINSERT', 'DOINSERT', self.DOINSERT)
+        e.tpadvertise('DOINSERT', 'DOINSERT', Server.DOINSERT)
         return 0
 
     # MT server

@@ -20,7 +20,7 @@ class Server:
 
     def tpsvrinit(self, args):
         e.userlog('Server startup')
-        e.tpadvertise('SRVCTX', 'SRVCTX', self.SRVCTX)
+        e.tpadvertise('SRVCTX', 'SRVCTX', Server.SRVCTX)
         return 0
 
     def tpsvrdone(self):

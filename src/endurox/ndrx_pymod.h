@@ -390,7 +390,7 @@ extern py::object ndrxpy_to_py_view(char *cstruct, char *vname, long size);
 extern py::object ndrxpy_to_py_ubf(UBFH *fbfr, BFLDLEN buflen);
 extern void ndrxpy_from_py_ubf(py::dict obj, atmibuf &b);
 
-extern void pytpadvertise(std::string svcname, std::string funcname, const py::object &func);
+extern void pytpadvertise(std::string svcname, std::string funcname, const py::function &func);
 extern void ndrxpy_pyrun(py::object svr, std::vector<std::string> args);
 
 extern void ndrxpy_pytpreturn(int rval, long rcode, py::object data, long flags);

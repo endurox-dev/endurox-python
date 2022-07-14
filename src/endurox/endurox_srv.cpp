@@ -56,7 +56,7 @@ namespace py = pybind11;
 static py::object server;
 
 //Mapping of advertised functions
-std::map<std::string, py::object> M_dispmap {};
+std::map<std::string, py::function> M_dispmap {};
 
 expublic void ndrxpy_pytpreturn(int rval, long rcode, py::object data, long flags)
 {
@@ -100,6 +100,7 @@ void tpsvrdone()
     {
         server.attr(__func__)();
     }
+
     M_dispmap.clear();
     ndrxpy_fdmap_clear();
 }
@@ -157,7 +158,7 @@ void PY(TPSVCINFO *svcinfo)
 
         auto && func = M_dispmap[svcinfo->fname];
 
-        func(&info);
+        func(server, &info);
 
     }
     catch (const std::exception &e)
@@ -175,7 +176,7 @@ void PY(TPSVCINFO *svcinfo)
  * @param [in] funcname function name
  * @param [in] func python function pointer
  */
-expublic void pytpadvertise(std::string svcname, std::string funcname, const py::object &func)
+expublic void pytpadvertise(std::string svcname, std::string funcname, const py::function &func)
 {
     if (tpadvertise_full(const_cast<char *>(svcname.c_str()), PY, 
         const_cast<char *>(funcname.c_str())) == -1)
@@ -188,6 +189,7 @@ expublic void pytpadvertise(std::string svcname, std::string funcname, const py:
     if (M_dispmap.end() == M_dispmap.find(funcname))
     {
         M_dispmap[funcname] = func;
+        //func.inc_ref();
     }
 }
 
@@ -391,7 +393,7 @@ expublic void ndrxpy_register_srv(py::module &m)
         .def_readonly("data", &pytpsvcinfo::data);
 
     m.def(
-        "tpadvertise", [](const char *svcname, const char *funcname, const py::object &func)
+        "tpadvertise", [](const char *svcname, const char *funcname, const py::function &func)
         { pytpadvertise(svcname, funcname, func); },
         R"pbdoc(
         Routine for advertising a service name.
@@ -414,8 +416,10 @@ expublic void ndrxpy_register_srv(py::module &m)
         funcname : str
             Function name of the service
         func : object
-            Callback function used by service. Callback function receives **data** argument
-            which corresponds to **TPSVCINFO** class.
+            Callback function used by service. Callback function receives Server object
+            with which tprun() was started and second argument is **args** variable,
+            which corresponds to :class:`.TPSVCINFO` class. The function must be
+            a class function (i.e. not bound function).
         )pbdoc"
         , py::arg("svcname"), py::arg("funcname"), py::arg("func"));
 
