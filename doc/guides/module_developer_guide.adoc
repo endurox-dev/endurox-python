@@ -87,7 +87,7 @@ To install the Python3 for RHEL system, use following command:
 
 $ su - root
 
-# yum install python3 python3-devel python3-pip
+# yum install python3 python3-devel python3-pip python3-distutils
 
 --------------------------------------------------------------------------------
 
