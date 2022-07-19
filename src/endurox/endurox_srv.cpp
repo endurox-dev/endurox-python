@@ -63,6 +63,9 @@ expublic void ndrxpy_pytpreturn(int rval, long rcode, py::object data, long flag
     auto &&odata = ndrx_from_py(data);
     tpreturn(rval, rcode, odata.p, odata.len, 0);
     //Normal destructors apply... as running in nojump mode
+    //well.. tpreturn will free up the buffer
+    //no need to destruct it one more time?
+    odata.release();
 }
 
 expublic void ndrxpy_pytpforward(const std::string &svc, py::object data, long flags)
@@ -70,6 +73,7 @@ expublic void ndrxpy_pytpforward(const std::string &svc, py::object data, long f
     auto &&odata = ndrx_from_py(data);
     tpforward(const_cast<char*>(svc.c_str()), odata.p, odata.len, 0);
     //Normal destructors apply... as running in nojump mode.
+    odata.release();
 }
 
 extern "C" long G_libatmisrv_flags;
@@ -146,7 +150,6 @@ void PY(TPSVCINFO *svcinfo)
     try
     {
         py::gil_scoped_acquire acquire;
-
         pytpsvcinfo info(svcinfo);
 
         //Destruct the auto-buf when goes out of the scope
@@ -300,9 +303,6 @@ expublic long ndrxpy_pytpunsubscribe(long subscription, long flags)
     return rc;
 }
 
-//TODO: How about unadvertise?
-//However unadvertise is not supported for MT server, thus
-
 extern "C"
 {
     extern struct xa_switch_t tmnull_switch;
@@ -326,7 +326,6 @@ expublic void ndrxpy_pyrun(py::object svr, std::vector<std::string> args)
     try
     {
         py::gil_scoped_release release;
-        _tmbuilt_with_thread_option = 1;
         std::vector<char *> argv(args.size());
         for (size_t i = 0; i < args.size(); i++)
         {
