@@ -79,7 +79,7 @@ expublic py::object ndrx_to_py(atmibuf &buf)
 
     if ((size=tptypes(*buf.pp, type, subtype)) == EXFAIL)
     {
-        NDRX_LOG(log_error, "Invalid buffer type");
+        NDRX_LOG(log_error, "Invalid buffer type: %s", tpstrerror(tperrno));
         throw std::invalid_argument("Invalid buffer type");
     }
 
