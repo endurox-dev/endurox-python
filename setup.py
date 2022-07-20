@@ -13,9 +13,9 @@ from setuptools.command.build_ext import build_ext
 from setuptools.command.test import test as TestCommand
 from shutil import copyfile, copymode
 import distutils.cmd
+from glob import glob
 
 NDRXPY_VERSION='8.0.1'
-
 
 class CleanCommand(distutils.cmd.Command):
     """
@@ -151,4 +151,7 @@ setup(
         clean=CleanCommand,),
     test_suite='tests',
     zip_safe=False,
+    data_files=[
+        ('licenses', glob('doc/guides/third_party_licences.adoc')),
+    ],
 )
