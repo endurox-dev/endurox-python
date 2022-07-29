@@ -405,6 +405,15 @@ Unit testing
 ``tests/`` contains test for all Enduro/X ATMIs provided by the module.
 These test cases can be studied for getting familiar with module APIs.
 
+
+Licensing
+---------
+
+Module is licensed under GNU Affero General Public License Version 3,
+which allows the use of the product for open source software.
+Mavimax SIA also provides commercial license EULA which allows to use Enduro/X
+Python module in closed source projects.
+
 Conclusions
 -----------
 
