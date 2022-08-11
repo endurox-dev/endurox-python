@@ -102,6 +102,10 @@
 			<mindispatchthreads>2</mindispatchthreads>
 			<maxdispatchthreads>2</maxdispatchthreads>
 			<srvid>3000</srvid>
+<<<<<<< HEAD
+=======
+			<rqaddr>SOMADDR</rqaddr>
+>>>>>>> b1b9bf2b2c57ab6371708d22489cc6dd63042e70
 			<sysopt>-e ${NDRX_ULOG}/server.log -r -- -k3 -i1</sysopt>
 		</server>
 	</servers>
