@@ -38,6 +38,9 @@ set(NDRXPY_VERSION_MAJOR "\"${NDRXPY_VERSION_MAJOR}\"")
 set(NDRXPY_VERSION_MINOR "\"${NDRXPY_VERSION_MINOR}\"")
 set(NDRXPY_VERSION_PATCH "\"${NDRXPY_VERSION_PATCH}\"")
 
+# Find the python...
+find_package (Python3 COMPONENTS Development Interpreter)
+
 ################################################################################
 # Check versions if defined, export build env
 ################################################################################
@@ -69,7 +72,7 @@ SET (NDRXPY_BLD_FLAGS     $ENV{NDRX_BLD_FLAGS})
 #
 execute_process(
         COMMAND
-                python3 --version
+                ${PYTHON_EXECUTABLE} --version
         RESULT_VARIABLE
                 pyres
         OUTPUT_VARIABLE
@@ -106,6 +109,13 @@ if (NOT gitres EQUAL 0)
         SET (NDRX_BLD_HASH      "unknown")
 endif ()
 ################################################################################
+ex_osver()
+ex_cpuarch()
+
+SET(CMAKE_CXX_FLAGS "-ggdb ${CMAKE_CXX_FLAGS}")
+set (CMAKE_CXX_STANDARD 11)
+set (CMAKE_C_STANDARD 11)
+set (CMAKE_C_STANDARD_REQUIRED 99)
 
 if (DEFINED ENV{NDRXPY_SANITIZE})
 	SET(CMAKE_C_FLAGS "-fsanitize=address -fno-omit-frame-pointer -O0 -ggdb ${CMAKE_C_FLAGS}")
@@ -115,11 +125,41 @@ ELSE()
     SET ( CMAKE_CXX_FLAGS "-O2 ${CMAKE_CXX_FLAGS}")
 ENDIF()
 
+if(CMAKE_OS_NAME STREQUAL "AIX")
+        if(CMAKE_C_COMPILER_ID STREQUAL "GNU")
+            message("GNU compiler")
+            set ( CMAKE_C_FLAGS "-D_SEM_SEMUN_UNDEFINED -D_MSGQSUPPORT -D_THREAD_SAFE -pthread -maix64 -Wl,-brtl,-bexpall,-berok ${CMAKE_C_FLAGS}")
+            set ( CMAKE_CXX_FLAGS "-D_SEM_SEMUN_UNDEFINED -D_MSGQSUPPORT -D_THREAD_SAFE -pthread -maix64 -Wl,-brtl,-bexpall,-berok ${CMAKE_CXX_FLAGS}")
+        elseif ("${CMAKE_C_COMPILER_ID}" STREQUAL "Clang")
+            message("Clang Open XL compiler")
+            set ( CMAKE_C_FLAGS "-D_SEM_SEMUN_UNDEFINED -D_MSGQSUPPORT -ftls-model=global-dynamic -D_THREAD_SAFE -pthread -brtl -bexpall -berok -Wno-unused-command-line-argument ${CMAKE_C_FLAGS}")
+            set ( CMAKE_CXX_FLAGS "-D_SEM_SEMUN_UNDEFINED -D_MSGQSUPPORT -ftls-model=global-dynamic -D_THREAD_SAFE -pthread -brtl -bexpall -berok -Wno-unused-command-line-argument ${CMAKE_CXX_FLAGS}")
+            set ( CMAKE_SHARED_LINKER_FLAGS "-shared -Wl,-G")
+        elseif ("${CMAKE_C_COMPILER_ID}" STREQUAL "XL")
+            message("XL compiler")
+            SET ( CMAKE_CXX_FLAGS "-D_MSGQSUPPORT -O2 -qtls -q64 -b64 -qsuppress=1500-030" CACHE STRING "compile flags" FORCE)
+            set ( CMAKE_C_FLAGS " -D_MSGQSUPPORT -D_SEM_SEMUN_UNDEFINED -D_THREAD_SAFE ")
+            set ( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -qwarn64 -qpic -bexpfull -b64")
+            set ( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -brtl -qtls -q64")
+            set ( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -qsuppress=1506-997 -qprocimported=setjmp")
+            set ( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -qsuppress=1506-747")
+            set ( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -qsuppress=1506-742")
+            set ( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -qsuppress=1506-743")
+            set ( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -qsuppress=1506-744")
+            set ( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -qsuppress=1506-745")
+            set ( CMAKE_SHARED_LINKER_FLAGS "-G")
+            SET ( CMAKE_CXX_FLAGS "-D_MSGQSUPPORT -O2 -qtls -q64 -b64 -qsuppress=1500-030 -qnoinline" CACHE STRING "compile flags" FORCE)
+
+            if (NOT DEFINE_RELEASEBUILD)
+                    message("XL compiler: with -g (debug symbols...)")
+                    set ( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g")
+                    set ( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")
+            endif()
+        endif()
+endif()
+
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(ATMI REQUIRED atmisrvinteg)
-
-SET(CMAKE_CXX_FLAGS "-ggdb ${CMAKE_CXX_FLAGS}")
-set (CMAKE_CXX_STANDARD 11)
 
 SET(SOURCE_DIR "src/endurox")
 # Tell cmake that headers are in alse in source_dir
@@ -145,11 +185,15 @@ include_directories(${SOURCE_DIR})
 add_subdirectory(pybind11)
 add_subdirectory(tests/views)
 
-pybind11_add_module(endurox ${SOURCES})
-target_link_libraries(endurox PRIVATE ${ATMI_LIBRARIES})
 
-# needed for testing
-add_dependencies (endurox ubftestvhdrs)
+# if this is AIX, then needs to add dependency libs
+pybind11_add_module(endurox ${SOURCES})
+
+if(CMAKE_OS_NAME STREQUAL "AIX")
+	target_link_libraries(endurox PRIVATE ${ATMI_LIBRARIES} ${Python3_LIBRARIES} "c++" "m")
+else()
+	target_link_libraries(endurox PRIVATE ${ATMI_LIBRARIES})
+endif()
 
 #
 # Generate configuration 
@@ -159,8 +203,6 @@ configure_file ("${SOURCE_DIR}/ndrxpy_config.h.in"
 
 
 # Generate package file name 
-ex_osver()
-ex_cpuarch()
 string(TOLOWER ${PROJECT_NAME} PROJECT_NAME_LO)
 
 

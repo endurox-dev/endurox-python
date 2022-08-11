@@ -61,13 +61,13 @@
 /*---------------------------Statics------------------------------------*/
 
 /** current handle for b4poll callback */
-ndrxpy_object_t * M_b4pollcb_handler = nullptr;
+static ndrxpy_object_t * M_b4pollcb_handler = nullptr;
 
 /** periodic server callback handler */
-ndrxpy_object_t * M_addperiodcb_handler = nullptr;
+static ndrxpy_object_t * M_addperiodcb_handler = nullptr;
 
 /** filedescriptor map to py callbacks */
-std::map<int, ndrxpy_object_t*> M_fdmap {};
+static std::map<int, ndrxpy_object_t*> M_fdmap;
 
 /*---------------------------Prototypes---------------------------------*/
 
@@ -80,11 +80,18 @@ namespace py = pybind11;
  */
 expublic void ndrxpy_fdmap_clear(void)
 {
-    for (auto & map : M_fdmap)
+    NDRX_LOG(log_error, "YOPT NUMBER  %d", M_fdmap.size());
+
+    if (!M_fdmap.empty())
     {
-        //Cannot delete functions?
-        //map.second->obj = py::none();
-        map.second->obj2 = py::none();
+        for (auto const & map : M_fdmap)
+        {
+            //Cannot delete functions?
+            //map.second->obj = py::none();
+            map.second->obj2 = py::none();
+            //Avoid leak?
+	    delete map.second;
+        }
     }
     M_fdmap.clear();
 }
@@ -231,6 +238,7 @@ exprivate void ndrxpy_tpext_addpollerfd (int fd, uint32_t events, const py::obje
         throw atmi_exception(tperrno);
     }
 
+NDRX_LOG(log_error, "YOPT ADD !!! %d", fd);
     M_fdmap[fd] = obj;
 }
 

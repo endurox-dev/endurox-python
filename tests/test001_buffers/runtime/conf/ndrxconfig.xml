@@ -102,7 +102,6 @@
 			<mindispatchthreads>2</mindispatchthreads>
 			<maxdispatchthreads>2</maxdispatchthreads>
 			<srvid>3000</srvid>
-			<rqaddr>YOPT</rqaddr>
 			<sysopt>-e ${NDRX_ULOG}/server.log -r -- -k3 -i1</sysopt>
 		</server>
 	</servers>

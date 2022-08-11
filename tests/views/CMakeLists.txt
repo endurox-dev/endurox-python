@@ -48,7 +48,9 @@ ENDIF ($ENV{RELEASE_BUILD})
 add_custom_command(
   WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
   OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/test_view.h ${CMAKE_CURRENT_SOURCE_DIR}/test_view.V
-  COMMAND viewc -n test_view.v_in
+  COMMAND ${CMAKE_COMMAND} -E env CFLAGS=${CMAKE_C_FLAGS}
+      CC=${CMAKE_C_COMPILER}
+      viewc -n test_view.v_in
   DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/test_view.v_in)
 
 add_custom_target(ubftestvhdrs DEPENDS test_view.h test_view.V)
