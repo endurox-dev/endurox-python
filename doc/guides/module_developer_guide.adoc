@@ -211,8 +211,8 @@ IBM AIX v7.3 ships with Python3.
 
 ==== Building endurox-python on IBM AIX
 
-To build Python module, C\++11 standard is required to be supported by compiler.
-If using IBM xlC compiler suite, then "xlclang" shall be used as a C++ compiler.
+To build Python module, C\+\+11 standard is required to be supported by compiler.
+If using IBM xlC compiler suite, then "xlclang\+\+" shall be used as a C++ compiler.
 
 For installing xlC compiler, please follow the instructions from the compiler
 vendor.
@@ -221,7 +221,7 @@ vendor.
 
 export OBJECT_MODE=64
 export CC=xlc
-export CXX=xlclang
+export CXX=xlclang++
 
 --------------------------------------------------------------------------------
 
