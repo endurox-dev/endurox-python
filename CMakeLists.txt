@@ -38,8 +38,13 @@ set(NDRXPY_VERSION_MAJOR "\"${NDRXPY_VERSION_MAJOR}\"")
 set(NDRXPY_VERSION_MINOR "\"${NDRXPY_VERSION_MINOR}\"")
 set(NDRXPY_VERSION_PATCH "\"${NDRXPY_VERSION_PATCH}\"")
 
-# Find the python...
-find_package (Python3 COMPONENTS Development Interpreter)
+
+if(${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.12.0")
+    # Find the python...
+    find_package (Python3 COMPONENTS Development Interpreter)
+else()
+    set(PYTHON_EXECUTABLE, "python3")
+endif()
 
 ################################################################################
 # Check versions if defined, export build env
@@ -126,36 +131,43 @@ ELSE()
 ENDIF()
 
 if(CMAKE_OS_NAME STREQUAL "AIX")
-        if(CMAKE_C_COMPILER_ID STREQUAL "GNU")
-            message("GNU compiler")
-            set ( CMAKE_C_FLAGS "-D_SEM_SEMUN_UNDEFINED -D_MSGQSUPPORT -D_THREAD_SAFE -pthread -maix64 -Wl,-brtl,-bexpall,-berok ${CMAKE_C_FLAGS}")
-            set ( CMAKE_CXX_FLAGS "-D_SEM_SEMUN_UNDEFINED -D_MSGQSUPPORT -D_THREAD_SAFE -pthread -maix64 -Wl,-brtl,-bexpall,-berok ${CMAKE_CXX_FLAGS}")
-        elseif ("${CMAKE_C_COMPILER_ID}" STREQUAL "Clang")
-            message("Clang Open XL compiler")
-            set ( CMAKE_C_FLAGS "-D_SEM_SEMUN_UNDEFINED -D_MSGQSUPPORT -ftls-model=global-dynamic -D_THREAD_SAFE -pthread -brtl -bexpall -berok -Wno-unused-command-line-argument ${CMAKE_C_FLAGS}")
-            set ( CMAKE_CXX_FLAGS "-D_SEM_SEMUN_UNDEFINED -D_MSGQSUPPORT -ftls-model=global-dynamic -D_THREAD_SAFE -pthread -brtl -bexpall -berok -Wno-unused-command-line-argument ${CMAKE_CXX_FLAGS}")
-            set ( CMAKE_SHARED_LINKER_FLAGS "-shared -Wl,-G")
-        elseif ("${CMAKE_C_COMPILER_ID}" STREQUAL "XL")
-            message("XL compiler")
-            SET ( CMAKE_CXX_FLAGS "-D_MSGQSUPPORT -O2 -qtls -q64 -b64 -qsuppress=1500-030" CACHE STRING "compile flags" FORCE)
-            set ( CMAKE_C_FLAGS " -D_MSGQSUPPORT -D_SEM_SEMUN_UNDEFINED -D_THREAD_SAFE ")
-            set ( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -qwarn64 -qpic -bexpfull -b64")
-            set ( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -brtl -qtls -q64")
-            set ( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -qsuppress=1506-997 -qprocimported=setjmp")
-            set ( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -qsuppress=1506-747")
-            set ( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -qsuppress=1506-742")
-            set ( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -qsuppress=1506-743")
-            set ( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -qsuppress=1506-744")
-            set ( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -qsuppress=1506-745")
-            set ( CMAKE_SHARED_LINKER_FLAGS "-G")
-            SET ( CMAKE_CXX_FLAGS "-D_MSGQSUPPORT -O2 -qtls -q64 -b64 -qsuppress=1500-030 -qnoinline" CACHE STRING "compile flags" FORCE)
 
-            if (NOT DEFINE_RELEASEBUILD)
-                    message("XL compiler: with -g (debug symbols...)")
-                    set ( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g")
-                    set ( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")
-            endif()
+    # Required as shared libs on AIX needs dependencies to be set (i.e. python shared lib)
+    # and starting from 3.12 cmake, it has the Python package.
+    if(${CMAKE_VERSION} VERSION_LESS "3.12.0")
+        message( FATAL_ERROR "CMake version 3.12 or greater is required, to find the Python3" )
+    endif()
+
+    if(CMAKE_C_COMPILER_ID STREQUAL "GNU")
+        message("GNU compiler")
+        set ( CMAKE_C_FLAGS "-D_SEM_SEMUN_UNDEFINED -D_MSGQSUPPORT -D_THREAD_SAFE -pthread -maix64 -Wl,-brtl,-bexpall,-berok ${CMAKE_C_FLAGS}")
+        set ( CMAKE_CXX_FLAGS "-D_SEM_SEMUN_UNDEFINED -D_MSGQSUPPORT -D_THREAD_SAFE -pthread -maix64 -Wl,-brtl,-bexpall,-berok ${CMAKE_CXX_FLAGS}")
+    elseif ("${CMAKE_C_COMPILER_ID}" STREQUAL "Clang")
+        message("Clang Open XL compiler")
+        set ( CMAKE_C_FLAGS "-D_SEM_SEMUN_UNDEFINED -D_MSGQSUPPORT -ftls-model=global-dynamic -D_THREAD_SAFE -pthread -brtl -bexpall -berok -Wno-unused-command-line-argument ${CMAKE_C_FLAGS}")
+        set ( CMAKE_CXX_FLAGS "-D_SEM_SEMUN_UNDEFINED -D_MSGQSUPPORT -ftls-model=global-dynamic -D_THREAD_SAFE -pthread -brtl -bexpall -berok -Wno-unused-command-line-argument ${CMAKE_CXX_FLAGS}")
+        set ( CMAKE_SHARED_LINKER_FLAGS "-shared -Wl,-G")
+    elseif ("${CMAKE_C_COMPILER_ID}" STREQUAL "XL")
+        message("XL compiler")
+        SET ( CMAKE_CXX_FLAGS "-D_MSGQSUPPORT -O2 -qtls -q64 -b64 -qsuppress=1500-030" CACHE STRING "compile flags" FORCE)
+        set ( CMAKE_C_FLAGS " -D_MSGQSUPPORT -D_SEM_SEMUN_UNDEFINED -D_THREAD_SAFE ")
+        set ( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -qwarn64 -qpic -bexpfull -b64")
+        set ( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -brtl -qtls -q64")
+        set ( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -qsuppress=1506-997 -qprocimported=setjmp")
+        set ( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -qsuppress=1506-747")
+        set ( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -qsuppress=1506-742")
+        set ( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -qsuppress=1506-743")
+        set ( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -qsuppress=1506-744")
+        set ( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -qsuppress=1506-745")
+        set ( CMAKE_SHARED_LINKER_FLAGS "-G")
+        SET ( CMAKE_CXX_FLAGS "-D_MSGQSUPPORT -O2 -qtls -q64 -b64 -qsuppress=1500-030 -qnoinline" CACHE STRING "compile flags" FORCE)
+
+        if (NOT DEFINE_RELEASEBUILD)
+                message("XL compiler: with -g (debug symbols...)")
+                set ( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g")
+                set ( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")
         endif()
+    endif()
 endif()
 
 find_package(PkgConfig REQUIRED)
@@ -204,7 +216,6 @@ configure_file ("${SOURCE_DIR}/ndrxpy_config.h.in"
 
 # Generate package file name 
 string(TOLOWER ${PROJECT_NAME} PROJECT_NAME_LO)
-
 
 #
 # Package release file
