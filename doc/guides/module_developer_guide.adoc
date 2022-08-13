@@ -40,6 +40,15 @@ To build Enduro/X Python module, following dependencies:
 
 Optionally, if user guides are built, AsciiDoc must be installed.
 
+For installing C/C++ Compiler and CMake, see Enduro/X Core building instructions. Such as:
+
+- building_guide(guides)
+- aix_notes(guides)
+- freebsd_notes(guides)
+- macos_notes(guides)
+- solaris_notes(guides)
+
+For installing pkg-config, see endurox-go-book instructions.
 
 == General Enduro/X Python architecture details
 
@@ -138,6 +147,30 @@ $ sudo ln -s /usr/bin/python3.6 /usr/bin/python3
 
 --------------------------------------------------------------------------------
 
+=== MacOS
+
+As of MacOS Monterey, OS ships with the Python3 pre-installed.
+
+==== Building endurox-python on MacOS
+
+To build Enduro/X Python module on the MacOS Monterey or later version, follow
+environment variables must be set, before running the build:
+
+--------------------------------------------------------------------------------
+
+export SDKROOT="`xcrun --show-sdk-path`"
+export CMAKE_MODULE_PATH=/usr/local/share/endurox/cmake
+export CFLAGS="-I/usr/local/include"
+export CXXFLAGS="-I/usr/local/include"
+export LDFLAGS="-L /usr/local/lib"
+export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig
+export PATH=$PATH:/usr/local/bin
+
+--------------------------------------------------------------------------------
+
+*CFLAGS* flags above are mainly used by *viewc(5)* tool which generates VIEW buffer
+headers for integration testing.
+
 === Oracle Solaris
 
 Python 3.6+ is not available from CSW, only option is to build Python 3.6 from
@@ -163,7 +196,6 @@ $ export LDFLAGS="-m64"
 ...
 
 --------------------------------------------------------------------------------
-
 
 ==== Building endurox-python on Solaris
 
@@ -219,6 +251,17 @@ So it is recommended that compiler is matched with Python compiler.
 
 - In case of AIX 7.3, build Enduro/X Python with xlC
 - In case of AIX 7.2 toolbox version, build Enduro/X Python with GCC
+
+To install Linux toolbox version of the Python3 on AIX use following commands:
+
+
+--------------------------------------------------------------------------------
+
+$ su - root
+
+# yum install python3 python3-devel
+
+--------------------------------------------------------------------------------
 
 ==== Building endurox-python on IBM AIX (xlC)
 
