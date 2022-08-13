@@ -207,9 +207,20 @@ terminate called after throwing an instance of 'atmi_exception'
 
 === IBM AIX
 
-IBM AIX v7.3 ships with Python3.
+IBM AIX v7.3 ships with Python3 which is built with xlC compiler suite. 
+For AIX v7.2, Linux toolbox version of Python3 is available. 
+In case of Linux toolbox, Python3 3 is built with GCC.
 
-==== Building endurox-python on IBM AIX
+As Enduro/X Python uses C\++ Exceptions, the stdc++ library must match with the
+compiler which is used for building Python3, otherwise exceptions will not work
+and core dumps will be generated.
+
+So it is recommended that compiler is matched with Python compiler.
+
+- In case of AIX 7.3, build Enduro/X Python with xlC
+- In case of AIX 7.2 toolbox version, build Enduro/X Python with GCC
+
+==== Building endurox-python on IBM AIX (xlC)
 
 To build Python module, C\+\+11 standard is required to be supported by compiler.
 If using IBM xlC compiler suite, then "xlclang\+\+" shall be used as a C++ compiler.
@@ -225,6 +236,18 @@ met, the CMake version shall be at least 3.12
 export OBJECT_MODE=64
 export CC=xlc
 export CXX=xlclang++
+export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:/usr/lib/pkgconfig
+
+--------------------------------------------------------------------------------
+
+==== Building endurox-python on IBM AIX (GCC)
+
+--------------------------------------------------------------------------------
+
+export CC=gcc
+export CXX=g++
+export CFLAGS=-maix64
+export CXXFLAGS=-maix64
 export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:/usr/lib/pkgconfig
 
 --------------------------------------------------------------------------------
