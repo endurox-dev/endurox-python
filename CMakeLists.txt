@@ -190,7 +190,7 @@ SET(SOURCES
    )
 
 # Generate a test executable
-include_directories(${SOURCE_DIR})
+#include_directories(${SOURCE_DIR})
 #add_executable("${PROJECT_NAME}_test" ${TESTS})
 
 # Generate python module
@@ -202,7 +202,12 @@ add_subdirectory(tests/views)
 pybind11_add_module(endurox ${SOURCES})
 
 if(CMAKE_OS_NAME STREQUAL "AIX")
-	target_link_libraries(endurox PRIVATE ${ATMI_LIBRARIES} ${Python3_LIBRARIES} "c++" "m")
+	if(CMAKE_C_COMPILER_ID STREQUAL "GNU")
+		# for GNU gcc built python versions, link to AIX std c++ lib will cause IOT/Abort trap (core dumped)
+		target_link_libraries(endurox PRIVATE ${ATMI_LIBRARIES} ${Python3_LIBRARIES} "m")
+	else()
+		target_link_libraries(endurox PRIVATE ${ATMI_LIBRARIES} ${Python3_LIBRARIES} "c++" "m")
+	endif()
 else()
 	target_link_libraries(endurox PRIVATE ${ATMI_LIBRARIES})
 endif()
@@ -220,7 +225,7 @@ string(TOLOWER ${PROJECT_NAME} PROJECT_NAME_LO)
 #
 # Package release file
 #
-set(CPACK_PACKAGE_FILE_NAME ${PROJECT_NAME_LO}-${NDRXPY_VERSION}-${RELEASE}.${LSB_RELEASE_OUTPUT_OS}${LSB_RELEASE_OUTPUT_VER}_cp${PY_MAJOR}${PY_MINOR}.${EX_CPU_ARCH}.whl.zip)
+set(CPACK_PACKAGE_FILE_NAME ${PROJECT_NAME_LO}-${NDRXPY_VERSION}-${RELEASE}.${LSB_RELEASE_OUTPUT_OS}${LSB_RELEASE_OUTPUT_VER}_${CMAKE_CXX_COMPILER_ID}_cp${PY_MAJOR}${PY_MINOR}.${EX_CPU_ARCH}.whl.zip)
 
 write_file("package_name.tmp" ${CPACK_PACKAGE_FILE_NAME})
 
