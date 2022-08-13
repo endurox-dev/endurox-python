@@ -217,11 +217,15 @@ If using IBM xlC compiler suite, then "xlclang\+\+" shall be used as a C++ compi
 For installing xlC compiler, please follow the instructions from the compiler
 vendor.
 
+As AIX shared libraries require that all dependencies for external symbols are
+met, the CMake version shall be at least 3.12
+
 --------------------------------------------------------------------------------
 
 export OBJECT_MODE=64
 export CC=xlc
 export CXX=xlclang++
+export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:/usr/lib/pkgconfig
 
 --------------------------------------------------------------------------------
 
