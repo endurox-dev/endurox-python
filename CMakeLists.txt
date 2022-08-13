@@ -194,7 +194,10 @@ add_subdirectory(pybind11)
 add_subdirectory(tests/views)
 
 # if this is AIX, then needs to add dependency libs
-pybind11_add_module(endurox ${SOURCES})
+#pybind11_add_module(endurox SHARED ${SOURCES})
+
+add_library(endurox MODULE ${SOURCES})
+target_link_libraries(endurox PRIVATE pybind11::module pybind11::lto)
 
 if(CMAKE_OS_NAME STREQUAL "AIX")
 	if(CMAKE_C_COMPILER_ID STREQUAL "GNU")
@@ -206,6 +209,11 @@ if(CMAKE_OS_NAME STREQUAL "AIX")
 else()
 	target_link_libraries(endurox PRIVATE ${ATMI_LIBRARIES})
 endif()
+
+pybind11_extension(endurox)
+set_target_properties(endurox PROPERTIES CXX_VISIBILITY_PRESET "hidden"
+                                         CUDA_VISIBILITY_PRESET "hidden")
+
 
 #
 # Generate configuration 
