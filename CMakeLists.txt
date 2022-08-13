@@ -189,14 +189,9 @@ SET(SOURCES
 	"${SOURCE_DIR}/tplog.cpp"
    )
 
-# Generate a test executable
-#include_directories(${SOURCE_DIR})
-#add_executable("${PROJECT_NAME}_test" ${TESTS})
-
 # Generate python module
 add_subdirectory(pybind11)
 add_subdirectory(tests/views)
-
 
 # if this is AIX, then needs to add dependency libs
 pybind11_add_module(endurox ${SOURCES})

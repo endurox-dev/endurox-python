@@ -44,6 +44,8 @@ class CleanCommand(distutils.cmd.Command):
             config="rm src/endurox/ndrxpy_config.h >/dev/null 2>&1",
             shared_libs="find . -name '*.so' -exec rm -rf {} \; >/dev/null 2>&1",
             shared_libs_mac="find . -name '*.dylib' -exec rm -rf {} \; >/dev/null 2>&1",
+            testdata1="rm tests/views/test_view.V >/dev/null 2>&1",
+            testdata2="rm tests/views/test_view.h >/dev/null 2>&1"
         )
         for key, cmd in cmd_list.items():
             os.system(cmd)
