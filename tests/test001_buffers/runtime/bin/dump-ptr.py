@@ -21,7 +21,7 @@ while 1==1:
 # empty occ -> {}
         "T_VIEW_FLD": [{}, {"vname":"UBTESTVIEW2", "data":{"tshort1":5} }],
         "T_PTR_FLD": {"buftype":"UBF", "data":{"T_CHAR_2_FLD":"A"}}
-        , "T_PTR_2_FLD": {"buftype":"YOPT"}
+        , "T_PTR_2_FLD": {"buftype":"EOPT"}
     }})
 
 #tperrno, tpurcode, retbuf = e.tpcall("ECHO", { "buftype":"CARRAY", "data":"HELLO WORLD"})

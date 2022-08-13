@@ -80,8 +80,6 @@ namespace py = pybind11;
  */
 expublic void ndrxpy_fdmap_clear(void)
 {
-    NDRX_LOG(log_error, "YOPT NUMBER  %d", M_fdmap.size());
-
     if (!M_fdmap.empty())
     {
         for (auto const & map : M_fdmap)
@@ -238,7 +236,6 @@ exprivate void ndrxpy_tpext_addpollerfd (int fd, uint32_t events, const py::obje
         throw atmi_exception(tperrno);
     }
 
-NDRX_LOG(log_error, "YOPT ADD !!! %d", fd);
     M_fdmap[fd] = obj;
 }
 
