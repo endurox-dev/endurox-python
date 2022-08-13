@@ -53,6 +53,6 @@ add_custom_command(
       viewc -n test_view.v_in
   DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/test_view.v_in)
 
-add_custom_target(ubftestvhdrs DEPENDS test_view.h test_view.V)
+add_custom_target(ubftestvhdrs ALL DEPENDS test_view.h test_view.V)
 
 # vim: set ts=4 sw=4 et smartindent:
