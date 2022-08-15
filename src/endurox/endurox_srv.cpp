@@ -52,11 +52,11 @@
 namespace py = pybind11;
 
 
-static py::object server;
+static py::object server = py::none();
 
 //Mapping of advertised functions
 std::map<std::string, py::function> M_dispmap {};
-
+    
 expublic void ndrxpy_pytpreturn(int rval, long rcode, py::object data, long flags)
 {
     auto &&odata = ndrx_from_py(data);
@@ -193,6 +193,24 @@ expublic void pytpadvertise(std::string svcname, std::string funcname, const py:
         M_dispmap[funcname] = func;
         //func.inc_ref();
     }
+}
+
+/**
+ * Advertise service, the name, function name and actual function in the server
+ *  class all have the same name
+ * @param svcname service name to advertise.
+ */
+expublic void pytpadvertise(std::string svcname)
+{
+    if (server.is_none())
+    {
+        throw std::runtime_error("ATMI server not initialized");
+    }
+
+    auto && cls = server.get_type();
+    auto && func = cls.attr(svcname.c_str());        
+    pytpadvertise(svcname, svcname, func);
+
 }
 
 /**
@@ -394,7 +412,7 @@ expublic void ndrxpy_register_srv(py::module &m)
         "tpadvertise", [](const char *svcname, const char *funcname, const py::function &func)
         { pytpadvertise(svcname, funcname, func); },
         R"pbdoc(
-        Routine for advertising a service name.
+        Routine for advertising a service.
 
         This function applies to ATMI servers only.
 
@@ -407,8 +425,8 @@ expublic void ndrxpy_register_srv(py::module &m)
             | :data:`.TPEMATCH` - Service already advertised.
             | :data:`.TPEOS` - System error.
 
-        Parameters
-        ----------
+        **Parameters**
+
         svcname : str
             Service name to advertise
         funcname : str
@@ -420,6 +438,33 @@ expublic void ndrxpy_register_srv(py::module &m)
             a class function (i.e. not bound function).
         )pbdoc"
         , py::arg("svcname"), py::arg("funcname"), py::arg("func"));
+
+    m.def(
+        "tpadvertise", [](const char *svcname)
+        { pytpadvertise(svcname); },
+        R"pbdoc(
+        Routine for advertising a service. Perform advertise by given service name only.
+        Actual callback function is resolved from the server object instance, which
+        is passed to the :func:`.tprun`. Enduro/X service function name is set
+        to the name as service name.
+
+        This function applies to ATMI servers only.
+
+        For more details see C call **tpadvertise(3)**.
+
+        :raise AtmiException:
+            | Following error codes may be present:
+            | :data:`.TPEINVAL` - Service name empty or too long (longer than **MAXTIDENT**)
+            | :data:`.TPELIMIT` - More than 48 services attempted to advertise by the script.
+            | :data:`.TPEMATCH` - Service already advertised.
+            | :data:`.TPEOS` - System error.
+
+        **Parameters**
+
+        svcname : str
+            Service name to advertise.
+        )pbdoc"
+        , py::arg("svcname"));
 
     m.def("tpsubscribe", &ndrxpy_pytpsubscribe,
         R"pbdoc(

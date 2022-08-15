@@ -4,11 +4,12 @@ import sys
 import endurox as e
 
 class Server:
-
+     
     def tpsvrinit(self, args):
         e.userlog('Server startup')
         # cannot pass self.ECHO, as bound function objects are short lived.
-        e.tpadvertise('ECHO', 'ECHO', Server.ECHO)
+        #e.tpadvertise('ECHO', 'ECHO', Server.ECHO)
+        e.tpadvertise('ECHO')
         return 0
 
     def tpsvrdone(self):
