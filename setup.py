@@ -15,7 +15,7 @@ from shutil import copyfile, copymode
 import distutils.cmd
 from glob import glob
 
-NDRXPY_VERSION='8.0.1'
+NDRXPY_VERSION='8.0.2'
 
 class CleanCommand(distutils.cmd.Command):
     """

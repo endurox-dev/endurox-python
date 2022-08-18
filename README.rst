@@ -441,3 +441,10 @@ The individual identifiers can be looked by directly by:
     help (e.tpcall)
 
 
+
+
+Releases
+--------
+
+- Version 8.0.2 released on 18/08/2022 - First stable release
+
