@@ -111,7 +111,7 @@ execute_process(
 string(REGEX REPLACE "\n$" "" NDRXPY_BLD_HASH "${NDRXPY_BLD_HASH}")
 
 if (NOT gitres EQUAL 0)
-        SET (NDRX_BLD_HASH      "unknown")
+        SET (NDRXPY_BLD_HASH      "unknown")
 endif ()
 ################################################################################
 ex_osver()
