@@ -370,6 +370,38 @@ static void from_py1_ubf(atmibuf &buf, BFLDID fieldid, BFLDOCC oc,
 }
 
 /**
+ * Resolve field id.
+ */
+exprivate BFLDID ndrxpy_fldid_resolve(py::object fld)
+{
+	BFLDID fieldid;
+	if (py::isinstance<py::int_>(fld))
+	{
+		fieldid = fld.cast<py::int_>();
+
+		if (fieldid<=BBADFLDID)
+		{
+			NDRX_LOG(log_error, "Invalid field id %d", fieldid);
+			throw ubf_exception(BBADFLD);
+		}
+	}
+	else
+	{
+		std::string s(py::str(fld));
+		char *fldstr = const_cast<char *>(s.c_str());
+		fieldid = Bfldid(fldstr);
+
+		if (BBADFLDID==fieldid)
+		{
+			NDRX_LOG(log_error, "Failed to resolve field [%s]: %s", fldstr, Bstrerror(Berror));
+			throw ubf_exception(Berror);
+		}
+	}
+	
+	return fieldid;
+}
+
+/**
  * @brief Convert PY to UBF
  * 
  * @param obj 
@@ -386,29 +418,7 @@ expublic void ndrxpy_from_py_ubf(py::dict obj, atmibuf &b)
 
     for (auto it : obj)
     {
-        BFLDID fieldid;
-        if (py::isinstance<py::int_>(it.first))
-        {
-            fieldid = it.first.cast<py::int_>();
-
-            if (fieldid<=BBADFLDID)
-            {
-                NDRX_LOG(log_error, "Invalid field id %d", fieldid);
-                throw ubf_exception(BBADFLD);
-            }
-        }
-        else
-        {
-            std::string s(py::str(it.first));
-            char *fldstr = const_cast<char *>(s.c_str());
-            fieldid = Bfldid(fldstr);
-
-            if (BBADFLDID==fieldid)
-            {
-                NDRX_LOG(log_error, "Failed to resolve field [%s]: %s", fldstr, Bstrerror(Berror));
-                throw ubf_exception(Berror);
-            }
-        }
+        BFLDID fieldid = ndrxpy_fldid_resolve(it.first);
 
         /* check the location optimizations.. 
          * or if there was re-alloc
@@ -855,6 +865,118 @@ expublic void ndrxpy_register_ubf(py::module &m)
         ret : dict
             Restored UBF buffer.
             )pbdoc", py::arg("iop"));
+
+    m.def(
+        "tpalloc",
+        [](const char *buf_type, const char *sub_type, long size)
+        {
+            auto buf = new atmibuf(buf_type, size);
+            ndrx_longptr_t ptr = reinterpret_cast<ndrx_longptr_t>(buf);
+            return ptr;
+        },
+        R"pbdoc(
+        Allocate XATMI buffer.
+            
+        For more details see **tpalloc(3)** C API call.
+
+        :raise AtmiException: 
+            | Following error codes may be present:
+            | :data:`.TPEINVAL` - Invalid arguments passed to function.
+            | :data:`.TPEOTYPE` - Invalid type specified.
+            | :data:`.TPESYSTEM` - System error occurred.
+            | :data:`.TPEOS` - Operating system error occurred, e.g. out of memory.
+
+        Parameters
+        ----------
+        buf_type : str
+            XATMI buffer type.
+        sub_type : str
+            XATMI buffer sub type.
+        size : int
+            Number of bytes for buffer to allocate.
+
+        Returns
+        -------
+        ret : ptr
+            C pointer to XATMI buffer object.
+            )pbdoc", py::arg("buf_type"), py::arg("sub_type"), py::arg("size"));
+    
+    m.def(
+        "tpfree",
+        [](ndrx_longptr_t ptr)
+        {
+	        atmibuf *buf = reinterpret_cast<atmibuf *>(ptr);
+            delete buf;
+        },
+        R"pbdoc(
+        Free XATMI buffer.
+
+        Parameters
+        ----------
+        ptr: int
+            C pointer to XATMI buffer object
+
+        )pbdoc", py::arg("ptr"));
+
+
+    /* dict = UbfDict({"SOME_FIELD":999, "SOME_OTHER_FIELD":{"A_FLD":["A", "B", "C"]}})*/
+    m.def(
+        "Bload",
+        [](ndrx_longptr_t ptr, py::object data)
+        {
+            atmibuf *buf = reinterpret_cast<atmibuf *>(ptr);
+            ndrxpy_from_py_ubf(data, *buf);
+        },
+        R"pbdoc(
+        Load UBF buffer from dictionary into ATMI buffer
+
+        Parameters
+        ----------
+        ptr: int
+            C pointer to buffer
+        data: dict
+            Initialization source (dictionary)
+
+        )pbdoc", py::arg("ptr"), py::arg("data"));
+    
+    m.def(
+        "Bchg",
+        [](ndrx_longptr_t ptr, py::object fldid, py::object data)
+        {
+		
+		    atmibuf *buf = reinterpret_cast<atmibuf *>(ptr);
+		    BFLDID fieldid = ndrxpy_fldid_resolve(it.first);
+		
+		    if (py::isinstance<py::list>(data))
+		    {
+			    BFLDOCC oc = 0;
+			
+			    for (auto e : data.cast<py::list>())
+			    {
+				    from_py1_ubf(*buf, fieldid, oc++, e, f, &loc);
+			    }
+		    }
+		    else
+		    {
+			    // Handle single elements instead of lists for convenience
+			    from_py1_ubf(*buf, fieldid, 0, o, f, &loc);
+		    }
+        },
+        R"pbdoc(
+        Load value into UBF buffer field
+
+        Parameters
+        ----------
+        ptr: int
+            C pointer to buffer
+        fldid: object
+            String or integer field id.
+	data: object
+            Data to load (list or single value)
+        )pbdoc", py::arg("ptr"), py::arg("data"));
+
+/*_Bchg - change whole filed or single occ, may take list, _Bget() - return list, _Bdel fullkey or list entry, _Bnext (transfer to py), _Bloadkw() */
+
 }
 
 /* vim: set ts=4 sw=4 et smartindent: */
