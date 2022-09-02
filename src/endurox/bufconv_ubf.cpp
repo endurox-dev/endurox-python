@@ -372,7 +372,7 @@ static void from_py1_ubf(atmibuf &buf, BFLDID fieldid, BFLDOCC oc,
 /**
  * Resolve field id.
  */
-exprivate BFLDID ndrxpy_fldid_resolve(py::object fld)
+exprivate BFLDID ndrxpy_fldid_resolve(py::handle fld)
 {
 	BFLDID fieldid;
 	if (py::isinstance<py::int_>(fld))
@@ -387,7 +387,14 @@ exprivate BFLDID ndrxpy_fldid_resolve(py::object fld)
 	}
 	else
 	{
-		std::string s(py::str(fld));
+		//std::string s(py::str(fld));
+        //char *str = py::str(fld).str//s.c_str();
+
+        //auto str = py::str(fld);
+
+        std::string s = std::string(py::str(fld));
+
+
 		char *fldstr = const_cast<char *>(s.c_str());
 		fieldid = Bfldid(fldstr);
 
@@ -941,12 +948,14 @@ expublic void ndrxpy_register_ubf(py::module &m)
     
     m.def(
         "Bchg",
-        [](ndrx_longptr_t ptr, py::object fldid, py::object data)
+        [](ndrx_longptr_t ptr, py::object pyfldid, py::object data)
         {
-		
+            atmibuf f;
 		    atmibuf *buf = reinterpret_cast<atmibuf *>(ptr);
-		    BFLDID fieldid = ndrxpy_fldid_resolve(it.first);
-		
+		    BFLDID fieldid = ndrxpy_fldid_resolve(pyfldid);
+		    Bfld_loc_info_t loc;
+            memset(&loc, 0, sizeof(loc));
+
 		    if (py::isinstance<py::list>(data))
 		    {
 			    BFLDOCC oc = 0;
@@ -959,7 +968,7 @@ expublic void ndrxpy_register_ubf(py::module &m)
 		    else
 		    {
 			    // Handle single elements instead of lists for convenience
-			    from_py1_ubf(*buf, fieldid, 0, o, f, &loc);
+			    from_py1_ubf(*buf, fieldid, 0, data, f, &loc);
 		    }
         },
         R"pbdoc(
@@ -973,7 +982,7 @@ expublic void ndrxpy_register_ubf(py::module &m)
             String or integer field id.
 	data: object
             Data to load (list or single value)
-        )pbdoc", py::arg("ptr"), py::arg("data"));
+        )pbdoc", py::arg("ptr"), py::arg("fldid"), py::arg("data"));
 
 /*_Bchg - change whole filed or single occ, may take list, _Bget() - return list, _Bdel fullkey or list entry, _Bnext (transfer to py), _Bloadkw() */
 

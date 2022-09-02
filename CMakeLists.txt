@@ -43,7 +43,7 @@ if(${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.12.0")
     # Find the python...
     find_package (Python3 COMPONENTS Development Interpreter)
 else()
-    set(PYTHON_EXECUTABLE, "python3")
+    set(Python3_EXECUTABLE, "python3")
 endif()
 
 ################################################################################
@@ -77,7 +77,7 @@ SET (NDRXPY_BLD_FLAGS     $ENV{NDRX_BLD_FLAGS})
 #
 execute_process(
         COMMAND
-                ${PYTHON_EXECUTABLE} --version
+                ${Python3_EXECUTABLE} --version
         RESULT_VARIABLE
                 pyres
         OUTPUT_VARIABLE
@@ -85,7 +85,7 @@ execute_process(
         )
 
 if (NOT pyres EQUAL 0)
-        message( FATAL_ERROR "Error getting python3 version" )
+        message( FATAL_ERROR "Error getting python3 version [${Python3_EXECUTABLE}]" )
 endif ()
 
 if (NDRXPY_PYVER MATCHES "([0-9]+)\.([0-9]+)\.([0-9]+)")
