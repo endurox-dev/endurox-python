@@ -3,6 +3,7 @@
 import sys
 import ctypes
 from collections.abc import MutableMapping
+from collections.abc import MutableSequence
 
 flags = sys.getdlopenflags()
 
@@ -23,14 +24,33 @@ __all__ = ['endurox']
 #
 #
 # Access by index, 
-class UbfDictFLd(MutableMapping):
+class UbfDictFld(MutableSequence):
     """Access to UBF field dictionary"""
     # parent buffer to access to
-    parent_ubf = ""
+    ubf_dict = ""
     # Resolved field id we want to access
-    fld_id = 0
-    # also have delete?
-#
+    fldid = 0
+
+    # get the item
+    def __getitem__(self, i):
+        return UbfDictFld_get(self, i)
+
+    # delete the item
+    def __delitem__(self, i):
+        return UbfDictFld_del(self, i)
+    
+    # get field length / occurrences
+    def __len__(self):
+        return UbfDictFld_len(self)
+    
+    # set item
+    def __setitem__(self, i, value):
+        return UbfDictFld_set(self, i, value)
+
+    # insert item
+    def insert(self, i, value):
+        return UbfDictFld_set(self, i, value)
+
 class UbfDict(MutableMapping):
     """UBF Based dictionary, direct access to fields
        without full transformation"""
@@ -46,13 +66,13 @@ class UbfDict(MutableMapping):
         #self.store = dict()
         self.buf = tpalloc("UBF", "", 1024)
         # Load the dictionary with fields
-        Bload(self.buf, dict(*args, **kwargs))
+        UbfDict_load(self.buf, dict(*args, **kwargs))
 
     # In case if having ptr, to UBF -> return new buffer
     # In case if having VIEW -> convert to dict()
     # In case if having UBF, return sub-buffer / read only.
     def __getitem__(self, key):
-        return self.store[self._keytransform(key)]
+        return UbfDict_get(self, key)
 
     #
     # If we are sub-subffer, throw exception of read only access.
@@ -62,24 +82,26 @@ class UbfDict(MutableMapping):
     # with dict only for FLD_PTR or FLD_UFB. And UbfDictFld the same as LFD_UBF
     # 
     def __setitem__(self, key, value):
-        Bchg(self.buf, key, value)
+        UbfDict_set(self.buf, key, value)
         #self.store[self._keytransform(key)] = value
 
     #
     # Delete full key (all occs)
     #
     def __delitem__(self, key):
-        del self.store[self._keytransform(key)]
+        return UbfDict_del(self.buf, key)
 
+    # Start iteration
     def __iter__(self):
-        return iter(self.store)
+        return UbfDict_iter(self.buf)
     
+    # next field
+    def __next__(next):
+        return UbfDict_next(self.buf)
+
     # number of fields?
     def __len__(self):
-        return len(self.store)
-
-    def _keytransform(self, key):
-        return key
+        return UbfDict_len(self.buf)
 
     # Deleting (Calling destructor)
     def __del__(self):

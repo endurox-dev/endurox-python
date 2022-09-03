@@ -61,109 +61,64 @@
 namespace py = pybind11;
 
 /**
- * @brief Convert UBF buffer to python object
- * 
- * @param fbfr UBF buffer handler
- * @param buflen buffer len (opt)
- * @return py::object converted object
+ * Convert single field to Python object
+ * @param d_ptr data pointer to UBF area
+ * @param fldid field id to retrieve from UBF
+ * @param oc occurrence to read
+ * @param len field size in bytes
+ * @param buflen UBF buffer size
  */
-expublic py::object ndrxpy_to_py_ubf(UBFH *fbfr, BFLDLEN buflen = 0)
+exprivate py::object ndrxpy_to_py_ubf_fld(char *d_ptr, BFLDID fldid, 
+    BFLDOCC oc, BFLDLEN len, BFLDLEN buflen)
 {
-    BFLDID fieldid = BFIRSTFLDID;
-    Bnext_state_t state;
-    BFLDOCC oc = 0;
-    char *d_ptr;
     BVIEWFLD *p_vf;
+    py::object ret;
 
-    py::dict result;
-    py::list val;
-
-    NDRX_LOG(log_debug, "Into ndrxpy_to_py_ubf()");
-
-    if (buflen == 0)
+    switch (Bfldtype(fldid))
     {
-        buflen = Bsizeof(fbfr);
-    }
-    /*std::unique_ptr<char[]> value(new char[buflen]); */
-
-    //Bprint(fbfr);
-
-    for (;;)
-    {
-        BFLDLEN len = buflen;
-        //Seems in Enduro/X state is not associate with particular buffer
-        //Looks like Tuxedo stores iteration state within buffer it self.
-        int r = Bnext2(&state, fbfr, &fieldid, &oc, NULL, &len, &d_ptr);
-        if (r == -1)
-        {
-            throw ubf_exception(Berror);
-        }
-        else if (r == 0)
-        {
-            break;
-        }
-
-        if (oc == 0)
-        {
-            val = py::list();
-
-            char *name = Bfname(fieldid);
-            if (name != nullptr)
-            {
-                result[name] = val;
-            }
-            else
-            {
-                result[py::int_(fieldid)] = val;
-            }
-        }
-
-        switch (Bfldtype(fieldid))
-        {
         case BFLD_CHAR:
             /* if EOS char is used, convert to byte array.
-             * as it is possible to get this value from C
-             */
+                * as it is possible to get this value from C
+                */
             if  (EXEOS==d_ptr[0])
             {
-                val.append(py::bytes(d_ptr, 1));
+                ret=py::bytes(d_ptr, 1);
             }
             else
             {
-                val.append(py::cast(d_ptr[0]));
+                ret=py::cast(d_ptr[0]);
             }            
             break;
         case BFLD_SHORT:
-            val.append(py::cast(*reinterpret_cast<short *>(d_ptr)));
+            ret=py::cast(*reinterpret_cast<short *>(d_ptr));
             break;
         case BFLD_LONG:
-            val.append(py::cast(*reinterpret_cast<long *>(d_ptr)));
+            ret=py::cast(*reinterpret_cast<long *>(d_ptr));
             break;
         case BFLD_FLOAT:
-            val.append(py::cast(*reinterpret_cast<float *>(d_ptr)));
+            ret=py::cast(*reinterpret_cast<float *>(d_ptr));
             break;
         case BFLD_DOUBLE:
-            val.append(py::cast(*reinterpret_cast<double *>(d_ptr)));
+            ret=py::cast(*reinterpret_cast<double *>(d_ptr));
             break;
         case BFLD_STRING:
 
             NDRX_LOG(log_dump, "Processing FLD_STRING... [%s]", d_ptr);
-            val.append(
+        
 #if PY_MAJOR_VERSION >= 3
-                py::str(d_ptr)
-                //Seems like this one causes memory leak:
-                //Thus assume t
-                //py::str(PyUnicode_DecodeLocale(value.get(), "surrogateescape"))
+            ret=py::str(d_ptr);
+            //Seems like this one causes memory leak:
+            //Thus assume t
+            //py::str(PyUnicode_DecodeLocale(value.get(), "surrogateescape"))
 #else
-                py::bytes(d_ptr, len - 1)
+            ret=py::bytes(d_ptr, len - 1);
 #endif
-            );
-            break;
+        break;
         case BFLD_CARRAY:
-            val.append(py::bytes(d_ptr, len));
+            ret=py::bytes(d_ptr, len);
             break;
         case BFLD_UBF:
-            val.append(ndrxpy_to_py_ubf(reinterpret_cast<UBFH *>(d_ptr), buflen));
+            ret=ndrxpy_to_py_ubf(reinterpret_cast<UBFH *>(d_ptr), buflen);
             break;
         case BFLD_VIEW:
         {
@@ -179,7 +134,7 @@ expublic py::object ndrxpy_to_py_ubf(UBFH *fbfr, BFLDLEN buflen = 0)
                 vdict["data"]= ndrxpy_to_py_view(p_vf->data, p_vf->vname, len);
             }
 
-            val.append(vdict);
+            ret=vdict;
             break;
         }
         case BFLD_PTR:
@@ -189,15 +144,78 @@ expublic py::object ndrxpy_to_py_ubf(UBFH *fbfr, BFLDLEN buflen = 0)
             ptrbuf.pp = reinterpret_cast<char **>(d_ptr);
 
             /* process stuff recursively + free up leave buffers,
-             * as we are not using them any more
-             */
-            val.append(ndrx_to_py(ptrbuf));
+                * as we are not using them any more
+                */
+            ret=ndrx_to_py(ptrbuf);
         }
         break;
-        default:
-            throw std::invalid_argument("Unsupported field " +
-                                        std::to_string(fieldid));
+    default:
+        throw std::invalid_argument("Unsupported field " +
+                                    std::to_string(fldid));
+    }
+
+    return ret;
+}
+
+/**
+ * @brief Convert UBF buffer to python object
+ * 
+ * @param fbfr UBF buffer handler
+ * @param buflen buffer len (opt)
+ * @return py::object converted object
+ */
+expublic py::object ndrxpy_to_py_ubf(UBFH *fbfr, BFLDLEN buflen = 0)
+{
+    BFLDID fldid = BFIRSTFLDID;
+    Bnext_state_t state;
+    BFLDOCC oc = 0;
+    char *d_ptr;
+
+
+    py::dict result;
+    py::list val;
+
+    NDRX_LOG(log_debug, "Into ndrxpy_to_py_ubf()");
+
+    if (buflen == 0)
+    {
+        buflen = Bsizeof(fbfr);
+    }
+    /*std::unique_ptr<char[]> value(new char[buflen]); */
+
+    for (;;)
+    {
+        BFLDLEN len = buflen;
+        //Seems in Enduro/X state is not associate with particular buffer
+        //Looks like Tuxedo stores iteration state within buffer it self.
+        int r = Bnext2(&state, fbfr, &fldid, &oc, NULL, &len, &d_ptr);
+
+        if (r == -1)
+        {
+            throw ubf_exception(Berror);
         }
+        else if (r == 0)
+        {
+            break;
+        }
+
+        if (oc == 0)
+        {
+            val = py::list();
+
+            char *name = Bfname(fldid);
+            if (name != nullptr)
+            {
+                result[name] = val;
+            }
+            else
+            {
+                result[py::int_(fldid)] = val;
+            }
+        }
+
+        val.append(ndrxpy_to_py_ubf_fld(d_ptr, fldid, oc, len, buflen));
+        
     }
     return result;
 }
@@ -206,14 +224,16 @@ expublic py::object ndrxpy_to_py_ubf(UBFH *fbfr, BFLDLEN buflen = 0)
  * @brief Build UBF buffer from PY dict
  * 
  * @param buf 
- * @param fieldid 
+ * @param fldid 
  * @param oc 
  * @param obj 
  * @param b temporary buffer
  * @param loc last position for fast add operation
+ * @param chg if set to true, do change instead of add
  */
-static void from_py1_ubf(atmibuf &buf, BFLDID fieldid, BFLDOCC oc,
-                     py::handle obj, atmibuf &b, Bfld_loc_info_t *loc)
+static void from_py1_ubf(atmibuf &buf, BFLDID fldid, BFLDOCC oc,
+                     py::handle obj, atmibuf &b, Bfld_loc_info_t *loc,
+                     bool chg)
 {
     if (obj.is_none())
     {
@@ -225,8 +245,19 @@ static void from_py1_ubf(atmibuf &buf, BFLDID fieldid, BFLDOCC oc,
         std::string val(PyBytes_AsString(obj.ptr()), PyBytes_Size(obj.ptr()));
 
         buf.mutate([&](UBFH *fbfr)
-                   { return CBaddfast(fbfr, fieldid, const_cast<char *>(val.data()),
-                                  val.size(), BFLD_CARRAY, loc); }, loc);
+                { 
+                    if (chg)
+                    {
+                        return CBchg(fbfr, fldid, oc, const_cast<char *>(val.data()),
+                                  val.size(), BFLD_CARRAY); 
+                    }
+                    else
+                    {
+                        return CBaddfast(fbfr, fldid, const_cast<char *>(val.data()),
+                                  val.size(), BFLD_CARRAY, loc); 
+                    }
+                                  
+                }, loc);
 #endif
     }
     else if (py::isinstance<py::str>(obj))
@@ -255,7 +286,7 @@ static void from_py1_ubf(atmibuf &buf, BFLDID fieldid, BFLDOCC oc,
             PyErr_Print();
             char tmp[128];
             snprintf(tmp, sizeof(tmp), "Invalid string value probably contains 0x00 (len=%ld), field=%d",
-                PyBytes_Size(obj.ptr()), fieldid);
+                PyBytes_Size(obj.ptr()), fldid);
             throw std::invalid_argument(tmp);
         }
 
@@ -271,31 +302,71 @@ static void from_py1_ubf(atmibuf &buf, BFLDID fieldid, BFLDOCC oc,
 
 #endif
         buf.mutate([&](UBFH *fbfr)
-                   { return CBaddfast(fbfr, fieldid, ptr_val, len, BFLD_CARRAY, loc); }, loc);
+                   { 
+                        if (chg)
+                        {
+                            return CBchg(fbfr, fldid, oc, ptr_val, len, BFLD_CARRAY); 
+                        }
+                        else
+                        {
+                            return CBaddfast(fbfr, fldid, ptr_val, len, BFLD_CARRAY, loc); 
+                        }
+                    
+                    }, loc);
     }
     else if (py::isinstance<py::int_>(obj))
     {
         long val = obj.cast<py::int_>();
         buf.mutate([&](UBFH *fbfr)
-                   { return CBaddfast(fbfr, fieldid, reinterpret_cast<char *>(&val), 0,
-                                  BFLD_LONG, loc); }, loc);
+                   { 
+                        if (chg)
+                        {
+                            return CBchg(fbfr, fldid, oc, reinterpret_cast<char *>(&val), 0,
+                                  BFLD_LONG); 
+                        }
+                        else
+                        {
+                            return CBaddfast(fbfr, fldid, reinterpret_cast<char *>(&val), 0,
+                                  BFLD_LONG, loc); 
+                        }   
+                    }, loc);
     }
     else if (py::isinstance<py::float_>(obj))
     {
         double val = obj.cast<py::float_>();
         buf.mutate([&](UBFH *fbfr)
-                   { return CBaddfast(fbfr, fieldid, reinterpret_cast<char *>(&val), 0,
-                                  BFLD_DOUBLE, loc); }, loc);
+                   { 
+                        if (chg)
+                        {
+                            return CBchg(fbfr, fldid, oc, reinterpret_cast<char *>(&val), 0,
+                                  BFLD_DOUBLE); 
+                        }
+                        else
+                        {
+                            return CBaddfast(fbfr, fldid, reinterpret_cast<char *>(&val), 0,
+                                  BFLD_DOUBLE, loc); 
+                        }
+                                  
+                    }, loc);
     }
     else if (py::isinstance<py::dict>(obj))
     {
-        if (BFLD_UBF==Bfldtype(fieldid))
+        if (BFLD_UBF==Bfldtype(fldid))
         {
             ndrxpy_from_py_ubf(obj.cast<py::dict>(), b);
             buf.mutate([&](UBFH *fbfr)
-                    { return Baddfast(fbfr, fieldid, reinterpret_cast<char *>(*b.fbfr()), 0, loc); }, loc);
+                    { 
+                        if (chg)
+                        {
+                            return Bchg(fbfr, fldid, oc, reinterpret_cast<char *>(*b.fbfr()), 0); 
+                        }
+                        else
+                        {
+                            return Baddfast(fbfr, fldid, reinterpret_cast<char *>(*b.fbfr()), 0, loc); 
+                        }
+                    }, loc);
         }
-        else if (BFLD_VIEW==Bfldtype(fieldid))
+        else if (BFLD_VIEW==Bfldtype(fldid))
         {
             /*
              * Syntax: data: { "VIEW_FIELD":{"vname":"VIEW_NAME", "data":{}} } 
@@ -310,13 +381,13 @@ static void from_py1_ubf(atmibuf &buf, BFLDID fieldid, BFLDOCC oc,
             if (have_vnamed && !have_data)
             {
                 //Invalid condition, but must be present
-                UBF_LOG(log_debug, "Failed to convert view field %d: vname present but no data", fieldid);
+                UBF_LOG(log_debug, "Failed to convert view field %d: vname present but no data", fldid);
                 throw std::invalid_argument("vname present but no data");
             }
             else if (!have_vnamed && have_data)
             {
                 //Invalid condition
-                UBF_LOG(log_debug, "Failed to convert view field %d: data present but no vname", fieldid);
+                UBF_LOG(log_debug, "Failed to convert view field %d: data present but no vname", fldid);
                 throw std::invalid_argument("data present but no vname");
             }
             else if (!have_vnamed && !have_data)
@@ -324,7 +395,7 @@ static void from_py1_ubf(atmibuf &buf, BFLDID fieldid, BFLDOCC oc,
                 //put empty..
                 memset(&vf, 0, sizeof(vf));
                 buf.mutate([&](UBFH *fbfr)
-                    { return Baddfast(fbfr, fieldid, reinterpret_cast<char *>(&vf), 0, loc); }, loc);
+                    { return Baddfast(fbfr, fldid, reinterpret_cast<char *>(&vf), 0, loc); }, loc);
             }
             else
             {
@@ -341,23 +412,41 @@ static void from_py1_ubf(atmibuf &buf, BFLDID fieldid, BFLDOCC oc,
                 ndrxpy_from_py_view(vdata.cast<py::dict>(), vbuf, vf.vname);
 
                 buf.mutate([&](UBFH *fbfr)
-                    { return Baddfast(fbfr, fieldid, reinterpret_cast<char *>(&vf), 0, loc); }, loc);
+                    { 
+                        if (chg)
+                        {
+                            return Bchg(fbfr, fldid, oc, reinterpret_cast<char *>(&vf), 0); 
+                        }
+                        else
+                        {
+                            return Baddfast(fbfr, fldid, reinterpret_cast<char *>(&vf), 0, loc); 
+                        }
+                    }, loc);
             }
         }
-        else if (BFLD_PTR==Bfldtype(fieldid))
+        else if (BFLD_PTR==Bfldtype(fldid))
         {
             if (!py::isinstance<py::dict>(obj))
             {
                 char tmp[128];
                 snprintf(tmp, sizeof(tmp), "Field id=%d is PTR, expected dictionary, but is not", 
-                        fieldid);
+                        fldid);
                 NDRX_LOG(log_error, "%s", tmp);
                 throw std::invalid_argument(tmp);
             }
             atmibuf tmp = ndrx_from_py(obj.cast<py::object>());
             
             buf.mutate([&](UBFH *fbfr)
-                    { return Baddfast(fbfr, fieldid, reinterpret_cast<char *>(tmp.pp), 0, loc); }, loc);
+                    { 
+                        if (chg)
+                        {
+                            return Bchg(fbfr, fldid, oc, reinterpret_cast<char *>(tmp.pp), 0); 
+                        }
+                        else
+                        {
+                            return Baddfast(fbfr, fldid, reinterpret_cast<char *>(tmp.pp), 0, loc); 
+                        }
+                    }, loc);
 
             //Do not remove this buffer... as needed by mbuf
             tmp.p = nullptr;
@@ -374,14 +463,14 @@ static void from_py1_ubf(atmibuf &buf, BFLDID fieldid, BFLDOCC oc,
  */
 exprivate BFLDID ndrxpy_fldid_resolve(py::handle fld)
 {
-	BFLDID fieldid;
+	BFLDID fldid;
 	if (py::isinstance<py::int_>(fld))
 	{
-		fieldid = fld.cast<py::int_>();
+		fldid = fld.cast<py::int_>();
 
-		if (fieldid<=BBADFLDID)
+		if (fldid<=BBADFLDID)
 		{
-			NDRX_LOG(log_error, "Invalid field id %d", fieldid);
+			NDRX_LOG(log_error, "Invalid field id %d", fldid);
 			throw ubf_exception(BBADFLD);
 		}
 	}
@@ -396,16 +485,16 @@ exprivate BFLDID ndrxpy_fldid_resolve(py::handle fld)
 
 
 		char *fldstr = const_cast<char *>(s.c_str());
-		fieldid = Bfldid(fldstr);
+		fldid = Bfldid(fldstr);
 
-		if (BBADFLDID==fieldid)
+		if (BBADFLDID==fldid)
 		{
 			NDRX_LOG(log_error, "Failed to resolve field [%s]: %s", fldstr, Bstrerror(Berror));
 			throw ubf_exception(Berror);
 		}
 	}
 	
-	return fieldid;
+	return fldid;
 }
 
 /**
@@ -418,14 +507,14 @@ expublic void ndrxpy_from_py_ubf(py::dict obj, atmibuf &b)
 {
     b.reinit("UBF", nullptr, 1024);
     atmibuf f;
-    BFLDID fieldid_prev = EXFAIL;
+    BFLDID fldid_prev = EXFAIL;
     Bfld_loc_info_t loc;
     memset(&loc, 0, sizeof(loc));
     BFLDID max_seen = EXFAIL;
 
     for (auto it : obj)
     {
-        BFLDID fieldid = ndrxpy_fldid_resolve(it.first);
+        BFLDID fldid = ndrxpy_fldid_resolve(it.first);
 
         /* check the location optimizations.. 
          * or if there was re-alloc
@@ -435,9 +524,9 @@ expublic void ndrxpy_from_py_ubf(py::dict obj, atmibuf &b)
          * end of the buffer. As Enduro/X print the buffers in such order
          * the un-modified buffers could get benefit from this.
          */
-        if (fieldid!=loc.last_Baddfast)
+        if (fldid!=loc.last_Baddfast)
         {
-            if (max_seen==loc.last_Baddfast && fieldid > max_seen)
+            if (max_seen==loc.last_Baddfast && fldid > max_seen)
             {
                 /* keep the ptr valid, as next id field follows */
             }
@@ -448,9 +537,9 @@ expublic void ndrxpy_from_py_ubf(py::dict obj, atmibuf &b)
             }
         }
 
-        if (fieldid>max_seen)
+        if (fldid>max_seen)
         {
-            max_seen = fieldid;
+            max_seen = fldid;
         }
 
         py::handle o = it.second;
@@ -460,13 +549,13 @@ expublic void ndrxpy_from_py_ubf(py::dict obj, atmibuf &b)
             
             for (auto e : o.cast<py::list>())
             {
-                from_py1_ubf(b, fieldid, oc++, e, f, &loc);
+                from_py1_ubf(b, fldid, oc++, e, f, &loc, false);
             }
         }
         else
         {
             // Handle single elements instead of lists for convenience
-            from_py1_ubf(b, fieldid, 0, o, f, &loc);
+            from_py1_ubf(b, fldid, 0, o, f, &loc, false);
         }
     }
 
@@ -481,8 +570,8 @@ expublic void ndrxpy_from_py_ubf(py::dict obj, atmibuf &b)
 expublic void ndrxpy_register_ubf(py::module &m)
 {
     m.def(
-        "Bfldtype", [](BFLDID fieldid)
-        { return Bfldtype(fieldid); },
+        "Bfldtype", [](BFLDID fldid)
+        { return Bfldtype(fldid); },
         R"pbdoc(
         Return UBF field type by given field id.
             
@@ -490,7 +579,7 @@ expublic void ndrxpy_register_ubf(py::module &m)
 
         Parameters
         ----------
-        fieldid : int
+        fldid : int
             Compiled UBF field id.
 
         Returns
@@ -501,10 +590,10 @@ expublic void ndrxpy_register_ubf(py::module &m)
             :data:`.BFLD_PTR`, :data:`.BFLD_UBF`, :data:`.BFLD_VIEW`
 
             )pbdoc"
-        , py::arg("fieldid"));
+        , py::arg("fldid"));
     m.def(
-        "Bfldno", [](BFLDID fieldid)
-        { return Bfldno(fieldid); },
+        "Bfldno", [](BFLDID fldid)
+        { return Bfldno(fldid); },
         R"pbdoc(
         Return field number from compiled field id.
             
@@ -512,7 +601,7 @@ expublic void ndrxpy_register_ubf(py::module &m)
 
         Parameters
         ----------
-        fieldid : int
+        fldid : int
             Compiled field id.
 
         Returns
@@ -520,7 +609,7 @@ expublic void ndrxpy_register_ubf(py::module &m)
         type : int
             Field number as defined in FD file.
 
-            )pbdoc", py::arg("fieldid"));
+            )pbdoc", py::arg("fldid"));
     m.def(
         "Bmkfldid", [](int type, BFLDID num)
         { return Bmkfldid(type, num); },
@@ -550,9 +639,9 @@ expublic void ndrxpy_register_ubf(py::module &m)
 
     m.def(
         "Bfname",
-        [](BFLDID fieldid)
+        [](BFLDID fldid)
         {
-            auto *name = Bfname(fieldid);
+            auto *name = Bfname(fldid);
             if (name == nullptr)
             {
                 throw ubf_exception(Berror);
@@ -571,7 +660,7 @@ expublic void ndrxpy_register_ubf(py::module &m)
 
         Parameters
         ----------
-        fieldid : int
+        fldid : int
             Field number.
 
         Returns
@@ -580,7 +669,7 @@ expublic void ndrxpy_register_ubf(py::module &m)
             Field name.
 
             )pbdoc"
-        , py::arg("fieldid"));
+        , py::arg("fldid"));
     m.def(
         "Bfldid",
         [](const char *name)
@@ -604,7 +693,7 @@ expublic void ndrxpy_register_ubf(py::module &m)
 
         Parameters
         ----------
-        fieldid : int
+        fldid : int
             | Field number.
 
         Returns
@@ -925,10 +1014,8 @@ expublic void ndrxpy_register_ubf(py::module &m)
 
         )pbdoc", py::arg("ptr"));
 
-
-    /* dict = UbfDict({"SOME_FIELD":999, "SOME_OTHER_FIELD":{"A_FLD":["A", "B", "C"]}})*/
     m.def(
-        "Bload",
+        "UbfDict_load",
         [](ndrx_longptr_t ptr, py::object data)
         {
             atmibuf *buf = reinterpret_cast<atmibuf *>(ptr);
@@ -947,12 +1034,12 @@ expublic void ndrxpy_register_ubf(py::module &m)
         )pbdoc", py::arg("ptr"), py::arg("data"));
     
     m.def(
-        "Bchg",
+        "UbfDict_set",
         [](ndrx_longptr_t ptr, py::object pyfldid, py::object data)
         {
             atmibuf f;
 		    atmibuf *buf = reinterpret_cast<atmibuf *>(ptr);
-		    BFLDID fieldid = ndrxpy_fldid_resolve(pyfldid);
+		    BFLDID fldid = ndrxpy_fldid_resolve(pyfldid);
 		    Bfld_loc_info_t loc;
             memset(&loc, 0, sizeof(loc));
 
@@ -962,13 +1049,13 @@ expublic void ndrxpy_register_ubf(py::module &m)
 			
 			    for (auto e : data.cast<py::list>())
 			    {
-				    from_py1_ubf(*buf, fieldid, oc++, e, f, &loc);
+				    from_py1_ubf(*buf, fldid, oc++, e, f, &loc, false);
 			    }
 		    }
 		    else
 		    {
 			    // Handle single elements instead of lists for convenience
-			    from_py1_ubf(*buf, fieldid, 0, data, f, &loc);
+			    from_py1_ubf(*buf, fldid, 0, data, f, &loc, false);
 		    }
         },
         R"pbdoc(
@@ -980,11 +1067,325 @@ expublic void ndrxpy_register_ubf(py::module &m)
             C pointer to buffer
         fldid: object
             String or integer field id.
-	data: object
+	    data: object
             Data to load (list or single value)
         )pbdoc", py::arg("ptr"), py::arg("fldid"), py::arg("data"));
 
-/*_Bchg - change whole filed or single occ, may take list, _Bget() - return list, _Bdel fullkey or list entry, _Bnext (transfer to py), _Bloadkw() */
+        //Get field from UBF dict, builds an object of UbfDictFld()
+        m.def(
+        "UbfDict_get",
+        [](py::object ubf_dict, py::object pyfldid)
+        {
+		    BFLDID fldid = ndrxpy_fldid_resolve(pyfldid);
+            /* TODO: Import once??? */
+            auto ex = py::module::import("endurox");
+            py::object UbfDictFld = ex.attr("UbfDictFld");
+            //Allocate Python Object
+            py::object dictfld = UbfDictFld();
+            dictfld.attr("fldid") = fldid;
+            dictfld.attr("ubf_dict") = ubf_dict;
+
+            return dictfld;
+        },
+        R"pbdoc(
+        Get UBF dictionary field object
+
+        Parameters
+        ----------
+        ubf_dict: UbfDict
+            UBF Buffer dictionary object
+        pyfldid: object
+            Field ID to resolve
+
+        Returns
+        -------
+        dictfld : UbfDictFld
+            Ubf Dictionary Buffer field object
+
+        )pbdoc", py::arg("ubf_dict"), py::arg("pyfldid"));
+
+    m.def(
+        "UbfDict_del",
+        [](ndrx_longptr_t ptr, py::object pyfldid)
+        {
+            atmibuf f;
+		    atmibuf *buf = reinterpret_cast<atmibuf *>(ptr);
+		    BFLDID fldid = ndrxpy_fldid_resolve(pyfldid);
+		    
+            if (EXSUCCEED!=Bdelall(*(buf->fbfr()), fldid))
+            {
+                /* TODO: Add support for KeyError */
+                throw ubf_exception(Berror);
+            }
+
+        },
+        R"pbdoc(
+        Delete whole field from UBF buffer.
+
+        Parameters
+        ----------
+        ptr: int
+            C pointer to buffer
+        fldid: object
+            String or integer field id
+        )pbdoc", py::arg("ptr"), py::arg("fldid"));
+
+    m.def(
+        "UbfDict_len",
+        [](ndrx_longptr_t ptr)
+        {
+            atmibuf f;
+		    atmibuf *buf = reinterpret_cast<atmibuf *>(ptr);
+		    BFLDID fldid = BFIRSTFLDID;
+            BFLDOCC oc;
+            Bnext_state_t state;
+            BFLDOCC cnt;
+
+            /* count only the ids... As occurrences are arrays... */
+            while(1==Bnext2(&state, *(buf->fbfr()), &fldid, &oc, NULL, NULL, NULL))
+            {
+                cnt++;
+            }
+
+            UBF_LOG(log_debug, "found %d unq field ids", cnt);
+
+            return cnt;
+        },
+        R"pbdoc(
+        Get number fields in UBF buffer.
+
+        Parameters
+        ----------
+        ptr: int
+            C pointer to buffer
+
+        Returns
+        -------
+        cnt : int
+            Number of fields in UBF buffer, including occurrences.
+
+        )pbdoc", py::arg("ptr"));
+
+        m.def(
+        "UbfDict_iter",
+        [](ndrx_longptr_t ptr)
+        {
+            int ret;
+            py::object ret_val;
+		    atmibuf *buf = reinterpret_cast<atmibuf *>(ptr);
+            BFLDOCC oc;
+            char *d_ptr;
+            BFLDLEN len;
+
+            buf->iter_fldid = BFIRSTFLDID;
+
+            ret=Bnext2(&buf->iter_state, *(buf->fbfr()), &buf->iter_fldid, &oc, NULL, &len, &d_ptr);
+
+            if (1==ret)
+            {
+                /* return value... directly, for performance reasons... */
+                ret_val = ndrxpy_to_py_ubf_fld(d_ptr, buf->iter_fldid, oc, len, Bsizeof(*(buf->fbfr())));
+            }
+            else if (0==ret)
+            {
+                /* EOF found */
+                throw py::stop_iteration();
+            }
+            else
+            {
+                throw ubf_exception(Berror);
+            }
+
+            return ret_val;
+        },
+        R"pbdoc(
+        Start iteration over UBF buffer.
+
+        Parameters
+        ----------
+        ptr: int
+            C pointer to buffer
+        Returns
+        -------
+        ret : object
+            Field value at occurrence. Occurrence. How about occ? TODO!
+
+        )pbdoc", py::arg("ptr"));
+
+        m.def(
+        "UbfDict_next",
+        [](ndrx_longptr_t ptr)
+        {
+            int ret;
+            py::object ret_val;
+		    atmibuf *buf = reinterpret_cast<atmibuf *>(ptr);
+            BFLDOCC oc;
+            BFLDLEN len;
+            char *d_ptr;
+
+            ret=Bnext2(&buf->iter_state, *(buf->fbfr()), &buf->iter_fldid, &oc, NULL, &len, &d_ptr);
+
+            if (1==ret)
+            {
+                /* return value... directly, for performance reasons... */
+                ret_val = ndrxpy_to_py_ubf_fld(d_ptr, buf->iter_fldid, oc, len, Bsizeof(*(buf->fbfr())));
+            }
+            else if (0==ret)
+            {
+                /* EOF found */
+                throw py::stop_iteration();
+            }
+            else
+            {
+                throw ubf_exception(Berror);
+            }
+
+            return ret_val;
+        },
+        R"pbdoc(
+        Next iteration over UBF buffer.
+
+        Parameters
+        ----------
+        ptr: int
+            C pointer to buffer
+        Returns
+        -------
+        ret_val : object
+            Field value at occurrence. Occurrence. How about occ? TODO!
+
+        )pbdoc", py::arg("ptr"));
+
+        m.def(
+        "UbfDictFld_set",
+        [](py::object ubf_dict_fld, BFLDOCC oc, py::object data)
+        {
+            py::object ret;
+            py::object ubf_dict = ubf_dict_fld.attr("ubf_dict");
+            ndrx_longptr_t ptr = ubf_dict.attr("buf").cast<py::int_>();
+            BFLDID fldid = ubf_dict_fld.attr("fldid").cast<py::int_>();
+            atmibuf *buf = reinterpret_cast<atmibuf *>(ptr);
+            atmibuf b;
+            Bfld_loc_info_t loc;
+            memset(&loc, 0, sizeof(loc));
+            from_py1_ubf(*buf, fldid, oc, data, b, &loc, true);
+        },
+        R"pbdoc(
+        Set UBF field
+
+        Parameters
+        ----------
+        ubf_dict_fld: UbfDictFld
+            UBF Buffer dictionary field object
+        oc: int
+            Occurrence to set
+        data: object
+            Data to load into occurrance
+        )pbdoc", py::arg("ubf_dict_fld"), py::arg("oc"), py::arg("data"));
+
+
+        m.def(
+        "UbfDictFld_get",
+        [](py::object ubf_dict_fld, BFLDOCC oc)
+        {
+            py::object ret;
+            BFLDLEN len;
+            py::object ubf_dict = ubf_dict_fld.attr("ubf_dict");
+            ndrx_longptr_t ptr = ubf_dict.attr("buf").cast<py::int_>();
+            BFLDID fldid = ubf_dict_fld.attr("fldid").cast<py::int_>();
+            atmibuf *buf = reinterpret_cast<atmibuf *>(ptr);
+
+            NDRX_LOG(log_debug, "Into UbfDictFld_del(fldid=%d, oc=%d)", fldid, oc);
+            char *d_ptr = Bfind (*(buf->fbfr()), fldid, oc, &len);
+
+            if (nullptr==d_ptr)
+            {
+                /* TODO: Add support for KeyError */
+                throw ubf_exception(Berror);
+            }
+
+            ret = ndrxpy_to_py_ubf_fld(d_ptr, fldid, oc, len, Bsizeof(*(buf->fbfr())));
+
+            return ret;
+
+        },
+        R"pbdoc(
+        Get UBF dictionary field object
+
+        Parameters
+        ----------
+        ubf_dict_fld: UbfDictFld
+            UBF Buffer dictionary field object
+        oc: int
+            Occurrence to get
+
+        Returns
+        -------
+        ret : object
+            Value from UBF buffer field.
+
+        )pbdoc", py::arg("ubf_dict_fld"), py::arg("oc"));
+
+        m.def(
+        "UbfDictFld_del",
+        [](py::object ubf_dict_fld, BFLDOCC oc)
+        {
+            py::object ret;
+            py::object ubf_dict = ubf_dict_fld.attr("ubf_dict");
+            ndrx_longptr_t ptr = ubf_dict.attr("buf").cast<py::int_>();
+            BFLDID fldid = ubf_dict_fld.attr("fldid").cast<py::int_>();
+            atmibuf *buf = reinterpret_cast<atmibuf *>(ptr);
+
+            NDRX_LOG(log_debug, "Into UbfDictFld_del(fldid=%d, oc=%d)", fldid, oc);
+
+            if (EXSUCCEED!=Bdel (*(buf->fbfr()), fldid, oc))
+            {
+                /* TODO: Add support for KeyError */
+                throw ubf_exception(Berror);
+            }
+        },
+        R"pbdoc(
+        Delete UBF dictionary field
+
+        Parameters
+        ----------
+        ubf_dict_fld: UbfDictFld
+            UBF Buffer dictionary field object
+        oc: int
+            Occurrence to delete
+        )pbdoc", py::arg("ubf_dict_fld"), py::arg("oc"));
+
+        m.def(
+        "UbfDictFld_len",
+        [](py::object ubf_dict_fld)
+        {
+            BFLDOCC ret;
+            py::object ubf_dict = ubf_dict_fld.attr("ubf_dict");
+            ndrx_longptr_t ptr = ubf_dict.attr("buf").cast<py::int_>();
+            BFLDID fldid = ubf_dict_fld.attr("fldid").cast<py::int_>();
+
+            atmibuf *buf = reinterpret_cast<atmibuf *>(ptr);
+            if (EXFAIL==(ret=Boccur (*(buf->fbfr()), fldid)))
+            {
+                throw ubf_exception(Berror);
+            }
+
+            return ret;
+        },
+        R"pbdoc(
+        Return number of occurrences in field
+
+        Parameters
+        ----------
+        ubf_dict_fld: UbfDictFld
+            UBF Buffer dictionary field object
+
+        Returns
+        -------
+        len : int
+            Number of field occurrences in UBF buffer.
+
+        )pbdoc", py::arg("ubf_dict_fld"));
 
 }
 

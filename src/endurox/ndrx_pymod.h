@@ -138,6 +138,11 @@ public:
      */
     char *p;
     long len;
+
+    /** used for UbfDict iteration */
+    Bnext_state_t iter_state;
+    /** field id used by iteration */
+    BFLDID iter_fldid;
     
     void mutate(std::function<int(UBFH *)> f, Bfld_loc_info_t *loc);
 
