@@ -200,7 +200,7 @@ void atmibuf::swap(atmibuf &other) noexcept
     std::swap(p, other.p);
     std::swap(len, other.len);
 
-    //In case if using differt pp
+    //In case if using different pp
     if (&other.p!=other.pp)
     {
         std::swap(pp, other.pp);

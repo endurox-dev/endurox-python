@@ -82,12 +82,12 @@ namespace py = pybind11;
  */
 expublic py::object ndrxpy_pytpexport(py::object idata, long flags)
 {
-    auto in = ndrx_from_py(idata);
+    auto in = ndrx_from_py(idata, false);
     std::vector<char> ostr;
     ostr.resize(512 + in.len * 2);
 
     long olen = ostr.capacity();
-    int rc = tpexport(in.p, in.len, &ostr[0], &olen, flags);
+    int rc = tpexport(*in.pp, in.len, &ostr[0], &olen, flags);
     if (rc == -1)
     {
         throw atmi_exception(tperrno);
@@ -118,7 +118,7 @@ expublic py::object ndrxpy_pytpimport(const std::string istr, long flags)
         throw atmi_exception(tperrno);
     }
 
-    return ndrx_to_py(obuf);
+    return ndrx_to_py(obuf, true);
 }
 
 /**
@@ -132,7 +132,7 @@ expublic int ndrxpy_pytppost(const std::string eventname, py::object data, long 
 {
     int rc=0;
     
-    auto in = ndrx_from_py(data);
+    auto in = ndrx_from_py(data, false);
     {
         py::gil_scoped_release release;
         rc = tppost(const_cast<char *>(eventname.c_str()), *in.pp, in.len, flags);
@@ -155,8 +155,7 @@ expublic int ndrxpy_pytppost(const std::string eventname, py::object data, long 
  */
 expublic pytpreply ndrxpy_pytpcall(const char *svc, py::object idata, long flags)
 {
-
-    auto in = ndrx_from_py(idata);
+    auto in = ndrx_from_py(idata, false);
     int tperrno_saved=0;
     atmibuf out("NULL", (long)0);
     {
@@ -172,7 +171,7 @@ expublic pytpreply ndrxpy_pytpcall(const char *svc, py::object idata, long flags
             }
         }
     }
-    return pytpreply(tperrno_saved, tpurcode, ndrx_to_py(out));
+    return pytpreply(tperrno_saved, tpurcode, ndrx_to_py(out, false));
 }
 
 /**
@@ -188,7 +187,7 @@ expublic pytpreply ndrxpy_pytpcall(const char *svc, py::object idata, long flags
 expublic NDRXPY_TPQCTL ndrxpy_pytpenqueue(const char *qspace, const char *qname, NDRXPY_TPQCTL *ctl,
                           py::object data, long flags)
 {
-    auto in = ndrx_from_py(data);
+    auto in = ndrx_from_py(data, false);
     {
         ctl->convert_to_base();
         TPQCTL *ctl_c = dynamic_cast<TPQCTL*>(ctl);
@@ -245,7 +244,7 @@ expublic std::pair<NDRXPY_TPQCTL, py::object> ndrx_pytpdequeue(const char *qspac
 
     ctl->convert_from_base();
     
-    return std::make_pair(*ctl, ndrx_to_py(out));
+    return std::make_pair(*ctl, ndrx_to_py(out, false));
 }
 
 /**
@@ -257,8 +256,7 @@ expublic std::pair<NDRXPY_TPQCTL, py::object> ndrx_pytpdequeue(const char *qspac
  */
 expublic int ndrxpy_pytpacall(const char *svc, py::object idata, long flags)
 {
-
-    auto in = ndrx_from_py(idata);
+    auto in = ndrx_from_py(idata, false);
 
     py::gil_scoped_release release;
     int rc = tpacall(const_cast<char *>(svc), *in.pp, in.len, flags);
@@ -279,7 +277,7 @@ expublic int ndrxpy_pytpacall(const char *svc, py::object idata, long flags)
  */
 exprivate void ndrxpy_pytpnotify(pyclientid *clientid, py::object idata, long flags)
 {
-    auto in = ndrx_from_py(idata);
+    auto in = ndrx_from_py(idata, false);
 
     int size = PyBytes_Size(clientid->pycltid.ptr());
 
@@ -315,7 +313,7 @@ exprivate void ndrxpy_pytpnotify(pyclientid *clientid, py::object idata, long fl
 exprivate void ndrxpy_pytpbroadcast(const char *lmid, const char *usrname, const char *cltname, 
     py::object idata, long flags)
 {
-    auto in = ndrx_from_py(idata);
+    auto in = ndrx_from_py(idata, false);
 
     py::gil_scoped_release release;
     int rc = tpbroadcast(const_cast<char *>(lmid), const_cast<char *>(usrname), 
@@ -344,8 +342,12 @@ exprivate void notification_callback (char *data, long len, long flags)
     ndrx_ctx_priv_t* priv = ndrx_ctx_priv_get();
     ndrxpy_object_t *obj_ptr = reinterpret_cast<ndrxpy_object_t *>(priv->integptr1);
     py::gil_scoped_acquire gil;
+    
+    auto buf = ndrx_to_py(b, false);
+    obj_ptr->obj(buf);
 
-    obj_ptr->obj(ndrx_to_py(b));
+    //Clear ptr to UBF...
+    buf.attr("buf")=0;
 }
 
 /**
@@ -380,8 +382,7 @@ exprivate void ndrxpy_pytpsetunsol(const py::object &func)
  */
 static int ndrxpy_pytpconnect(const char *svc, py::object idata, long flags)
 {
-
-    auto in = ndrx_from_py(idata);
+    auto in = ndrx_from_py(idata, false);
 
     py::gil_scoped_release release;
     int rc = tpconnect(const_cast<char *>(svc), *in.pp, in.len, flags);
@@ -402,7 +403,7 @@ static int ndrxpy_pytpconnect(const char *svc, py::object idata, long flags)
  */
 expublic pytpsendret ndrxpy_pytpsend(int cd, py::object idata, long flags)
 {
-    auto in = ndrx_from_py(idata);
+    auto in = ndrx_from_py(idata, false);
     long revent;
 
     int tperrno_saved;
@@ -450,7 +451,7 @@ expublic pytprecvret ndrxpy_pytprecv(int cd, long flags)
         }
     }
 
-    return pytprecvret(tperrno_saved, tpurcode, revent, ndrx_to_py(out));
+    return pytprecvret(tperrno_saved, tpurcode, revent, ndrx_to_py(out, false));
 }
 
 /**
@@ -476,7 +477,7 @@ expublic pytpreplycd ndrxpy_pytpgetrply(int cd, long flags)
             }
         }
     }
-    return pytpreplycd(tperrno_saved, tpurcode, ndrx_to_py(out), cd);
+    return pytpreplycd(tperrno_saved, tpurcode, ndrx_to_py(out, false), cd);
 }
 
 /**

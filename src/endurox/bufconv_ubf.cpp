@@ -51,14 +51,63 @@
 
 #include <functional>
 
+namespace py = pybind11;
+
 /*---------------------------Externs------------------------------------*/
 /*---------------------------Macros-------------------------------------*/
 /*---------------------------Enums--------------------------------------*/
 /*---------------------------Typedefs-----------------------------------*/
 /*---------------------------Globals------------------------------------*/
 /*---------------------------Statics------------------------------------*/
+py::module_ M_endurox;    /**< Loader module handle. Any houskeeping on unload? */
 /*---------------------------Prototypes---------------------------------*/
-namespace py = pybind11;
+
+/**
+ * check is given object a UbfDict typed
+ * @param data Python data object
+ * @return true/false
+ */
+expublic bool ndrxpy_is_UbfDict(py::object data)
+{
+    py::object UbfDict = M_endurox.attr("UbfDict");
+
+    if (typeid(UbfDict) == typeid(data))
+    {
+        return true;
+    }
+
+    return false;
+}
+
+/**
+ * Reset UbfDict ptr to buffer
+ * @param data buffer to reset, release the atmibuf
+ */
+expublic void ndrxpy_reset_ptr_UbfDict(py::object data)
+{
+    ndrx_longptr_t ptr = data.attr("buf").cast<py::int_>();
+    atmibuf *data_buf = reinterpret_cast<atmibuf *>(ptr);
+    //Org buffer shall be deallocated..
+    data_buf->p = nullptr;
+    delete data_buf;
+    data.attr("buf")=0;//Reset org buffer ptr too..
+}
+
+/**
+ * Allocate UBF Dictionary object
+ * @param p_ub PTR to UBF handle 
+ */
+expublic py::object ndrxpy_alloc_UbfDict(char *data, bool is_sub_buffer)
+{
+    atmibuf *b = new atmibuf();
+    b->p = data;
+    py::object UbfDict = M_endurox.attr("UbfDict");
+    //Allocate Python Object
+    py::object ret = UbfDict();
+    ret.attr("is_sub_buffer") = is_sub_buffer;
+    ret.attr("buf") = reinterpret_cast<ndrx_longptr_t>(b);
+    return ret;    
+}
 
 /**
  * Convert single field to Python object
@@ -118,7 +167,11 @@ exprivate py::object ndrxpy_to_py_ubf_fld(char *d_ptr, BFLDID fldid,
             ret=py::bytes(d_ptr, len);
             break;
         case BFLD_UBF:
-            ret=ndrxpy_to_py_ubf(reinterpret_cast<UBFH *>(d_ptr), buflen);
+            /*ret=ndrxpy_to_py_ubf(reinterpret_cast<UBFH *>(d_ptr), buflen);*/
+            
+            //Avoid buffer changing... if we are sub-buffers...
+            ret=ndrxpy_alloc_UbfDict(d_ptr, true);
+
             break;
         case BFLD_VIEW:
         {
@@ -146,7 +199,7 @@ exprivate py::object ndrxpy_to_py_ubf_fld(char *d_ptr, BFLDID fldid,
             /* process stuff recursively + free up leave buffers,
                 * as we are not using them any more
                 */
-            ret=ndrx_to_py(ptrbuf);
+            ret=ndrx_to_py(ptrbuf, true);
         }
         break;
     default:
@@ -434,7 +487,7 @@ static void from_py1_ubf(atmibuf &buf, BFLDID fldid, BFLDOCC oc,
                 NDRX_LOG(log_error, "%s", tmp);
                 throw std::invalid_argument(tmp);
             }
-            atmibuf tmp = ndrx_from_py(obj.cast<py::object>());
+            atmibuf tmp = ndrx_from_py(obj.cast<py::object>(), false);
             
             buf.mutate([&](UBFH *fbfr)
                     { 
@@ -569,6 +622,12 @@ expublic void ndrxpy_from_py_ubf(py::dict obj, atmibuf &b)
  */
 expublic void ndrxpy_register_ubf(py::module &m)
 {
+    //Load Enduro/X module used for Python object instatiation
+    M_endurox = py::module::import("endurox");
+
+    //never call destructor?
+    M_endurox.inc_ref();
+
     m.def(
         "Bfldtype", [](BFLDID fldid)
         { return Bfldtype(fldid); },
@@ -761,7 +820,7 @@ expublic void ndrxpy_register_ubf(py::module &m)
             {
                 throw ubf_exception(Berror);
             }
-            auto buf = ndrx_from_py(fbfr);
+            auto buf = ndrx_from_py(fbfr, false);
             auto rc = Bboolev(*buf.fbfr(), guard.get());
             if (rc == -1)
             {
@@ -818,7 +877,7 @@ expublic void ndrxpy_register_ubf(py::module &m)
             {
                 throw ubf_exception(Berror);
             }
-            auto buf = ndrx_from_py(fbfr);
+            auto buf = ndrx_from_py(fbfr, false);
             auto rc = Bfloatev(*buf.fbfr(), guard.get());
             if (rc == -1)
             {
@@ -869,7 +928,7 @@ expublic void ndrxpy_register_ubf(py::module &m)
         "Bfprint",
         [](py::object fbfr, py::object iop)
         {
-            auto buf = ndrx_from_py(fbfr);
+            auto buf = ndrx_from_py(fbfr, false);
             int fd = iop.attr("fileno")().cast<py::int_>();
             std::unique_ptr<FILE, decltype(&fclose)> fiop(fdopen(dup(fd), "w"),
                                                           &fclose);
@@ -902,7 +961,7 @@ expublic void ndrxpy_register_ubf(py::module &m)
         "Bprint",
         [](py::object fbfr)
         {
-            auto buf = ndrx_from_py(fbfr);
+            auto buf = ndrx_from_py(fbfr, false);
             auto rc = Bprint(*buf.fbfr());
             if (rc == -1)
             {
@@ -935,7 +994,7 @@ expublic void ndrxpy_register_ubf(py::module &m)
                                                           &fclose);
             obuf.mutate([&](UBFH *fbfr)
                         { return Bextread(fbfr, fiop.get());}, NULL);
-            return ndrx_to_py(obuf);
+            return ndrx_to_py(obuf, false);
         },
         R"pbdoc(
         Restore ATMI UBF buffer from :func:`.Bfprint` output.
@@ -1077,9 +1136,7 @@ expublic void ndrxpy_register_ubf(py::module &m)
         [](py::object ubf_dict, py::object pyfldid)
         {
 		    BFLDID fldid = ndrxpy_fldid_resolve(pyfldid);
-            /* TODO: Import once??? */
-            auto ex = py::module::import("endurox");
-            py::object UbfDictFld = ex.attr("UbfDictFld");
+            py::object UbfDictFld = M_endurox.attr("UbfDictFld");
             //Allocate Python Object
             py::object dictfld = UbfDictFld();
             dictfld.attr("fldid") = fldid;

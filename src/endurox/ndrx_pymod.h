@@ -382,13 +382,16 @@ struct pytpgetctxtret
 
 extern xao_svc_ctx *xao_svc_ctx_ptr;
 
-extern atmibuf ndrx_from_py(py::object obj);
-extern py::object ndrx_to_py(atmibuf &buf);
+extern atmibuf ndrx_from_py(py::object obj, bool reset_ptr);
+extern py::object ndrx_to_py(atmibuf &buf, bool is_sub_buffer);
 
 //Buffer conversion support:
 extern void ndrxpy_from_py_view(py::dict obj, atmibuf &b, const char *view);
 extern py::object ndrxpy_to_py_view(char *cstruct, char *vname, long size);
 
+extern bool ndrxpy_is_UbfDict(py::object data);
+extern void ndrxpy_reset_ptr_UbfDict(py::object data);
+extern py::object ndrxpy_alloc_UbfDict(char *data, bool is_sub_buffer);
 extern py::object ndrxpy_to_py_ubf(UBFH *fbfr, BFLDLEN buflen);
 extern void ndrxpy_from_py_ubf(py::dict obj, atmibuf &b);
 

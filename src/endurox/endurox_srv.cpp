@@ -59,18 +59,21 @@ std::map<std::string, py::function> M_dispmap {};
     
 expublic void ndrxpy_pytpreturn(int rval, long rcode, py::object data, long flags)
 {
-    auto &&odata = ndrx_from_py(data);
-    tpreturn(rval, rcode, odata.p, odata.len, 0);
+    //In case if having UbfDict buffer, reset their ptr...
+    auto &&odata = ndrx_from_py(data, true);
+    tpreturn(rval, rcode, *odata.pp, odata.len, 0);
     //Normal destructors apply... as running in nojump mode
     //well.. tpreturn will free up the buffer
     //no need to destruct it one more time?
     odata.release();
+
 }
 
 expublic void ndrxpy_pytpforward(const std::string &svc, py::object data, long flags)
 {
-    auto &&odata = ndrx_from_py(data);
-    tpforward(const_cast<char*>(svc.c_str()), odata.p, odata.len, 0);
+    //In case if having UbfDict buffer, reset their ptr...
+    auto &&odata = ndrx_from_py(data, true);
+    tpforward(const_cast<char*>(svc.c_str()), *odata.pp, odata.len, 0);
     //Normal destructors apply... as running in nojump mode.
     odata.release();
 }
@@ -154,7 +157,7 @@ void PY(TPSVCINFO *svcinfo)
         //Destruct the auto-buf when goes out of the scope
         {
             auto ibuf=atmibuf(svcinfo);
-            auto idata = ndrx_to_py(ibuf);
+            auto idata = ndrx_to_py(ibuf, false);
             info.data = idata;
         }
 
@@ -275,7 +278,6 @@ exprivate void ndrxpy_tpsrvsetctxdata(struct pytpsrvctxdata* ctxt, long flags)
     {
         throw atmi_exception(tperrno);
     }
-
 }
 
 /**

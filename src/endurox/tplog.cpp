@@ -310,7 +310,8 @@ expublic void ndrxpy_register_tplog(py::module &m)
 
             if (!py::isinstance<py::none>(data))
             {
-                in = ndrx_from_py(data);
+                //After the call, org buffer is not valid anymore
+                in = ndrx_from_py(data, true);
             }
             
             {
@@ -338,7 +339,14 @@ expublic void ndrxpy_register_tplog(py::module &m)
             }
 
             //Return python object... (in case if one was passed in...)
-            return ndrx_to_py(in);
+            auto ret = ndrx_to_py(in, false);
+
+            if (ndrxpy_is_UbfDict(data))
+            {
+                ndrxpy_reset_ptr_UbfDict(data);
+            }
+            
+            return ret;
         },
         R"pbdoc(
         Redirect logger to request file extracted from buffer, filename or file name service.
@@ -417,7 +425,7 @@ expublic void ndrxpy_register_tplog(py::module &m)
         [](py::object data)
         {
             char filename[PATH_MAX+1];
-            auto in = ndrx_from_py(data);
+            auto in = ndrx_from_py(data, false);
             {
                 py::gil_scoped_release release;
                 if (EXSUCCEED!=tploggetbufreqfile(*in.pp, filename, sizeof(filename)))
@@ -477,7 +485,7 @@ expublic void ndrxpy_register_tplog(py::module &m)
         "tplogdelbufreqfile",
         [](py::object data)
         {
-            auto in = ndrx_from_py(data);
+            auto in = ndrx_from_py(data, true);
             {
                 py::gil_scoped_release release;
                 if (EXSUCCEED!=tplogdelbufreqfile(*in.pp))
@@ -486,7 +494,13 @@ expublic void ndrxpy_register_tplog(py::module &m)
                 }
             }
 
-            return ndrx_to_py(in);
+            //Clear ptr ot UBF buffer for origin call.
+            if (ndrxpy_is_UbfDict(data))
+            {
+                ndrxpy_reset_ptr_UbfDict(data);
+            }
+
+            return ndrx_to_py(in, false);
         },
         R"pbdoc(
         Delete request file name from the given UBF buffer. Altered buffer
@@ -739,7 +753,7 @@ expublic void ndrxpy_register_tplog(py::module &m)
         "tplogprintubf",
         [](int lev, const char *title, py::object data)
         {
-            auto in = ndrx_from_py(data);
+            auto in = ndrx_from_py(data, false);
             py::gil_scoped_release release;
             tplogprintubf(lev, const_cast<char *>(title), reinterpret_cast<UBFH *>(*in.pp));
         },

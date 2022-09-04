@@ -64,16 +64,17 @@ namespace py = pybind11;
  * @brief This will add all ATMI related stuff under the {"data":<ATMI data...>}
  *  TODO: Free incoming UBF buffer (somehere marking shall be put)
  * @param buf ATMI buffer to conver to Python
- * @param is_master is master buffer (from atmi?)
+ * @param is_sub_buffer is master buffer (from atmi?)
  * @return python object (dict)
  */
-expublic py::object ndrx_to_py(atmibuf &buf)
+expublic py::object ndrx_to_py(atmibuf &buf, bool is_sub_buffer)
 {
     char type[8]={EXEOS};
     char subtype[16]={EXEOS};
     long size;
     py::dict result;
     int ret;
+    char *tmp_ptr;
 
     if ((size=tptypes(*buf.pp, type, subtype)) == EXFAIL)
     {
@@ -104,7 +105,13 @@ expublic py::object ndrx_to_py(atmibuf &buf)
     }
     else if (strcmp(type, "UBF") == 0)
     {
-        result["data"]=ndrxpy_to_py_ubf(*buf.fbfr(), 0);
+        //result["data"]=ndrxpy_to_py_ubf(*buf.fbfr(), 0);
+        
+        result["data"]=ndrxpy_alloc_UbfDict(*buf.pp, is_sub_buffer);
+        tmp_ptr = buf.p;
+        buf.pp = &tmp_ptr;
+        //release buffer ptr, as now handled by data
+        buf.p=nullptr;
     }
     else if (strcmp(type, "VIEW") == 0)
     {
@@ -128,6 +135,7 @@ expublic py::object ndrx_to_py(atmibuf &buf)
         if (EXTRUE==ret)
         {
             // setup callinfo block
+            //TODO: Convert to UbfDict()
             result[NDRXPY_DATA_CALLINFO]=ndrxpy_to_py_ubf(*cibuf.fbfr(), 0);
         }
         else if (EXFAIL==ret)
@@ -184,9 +192,11 @@ exprivate void set_callinfo(py::dict & dict, atmibuf &buf)
  * For NULL buffers, data field is not present.
  * 
  * @param obj Pyton object
+ * @param reset_ptr reset Python buffer ptr (as no longer valid). 
+ *  This is in case of UbfDict
  * @return converted ATMI buffer
  */
-expublic atmibuf ndrx_from_py(py::object obj)
+expublic atmibuf ndrx_from_py(py::object obj, bool reset_ptr)
 {
     std::string buftype = "";
     std::string subtype = "";
@@ -273,6 +283,19 @@ expublic atmibuf ndrx_from_py(py::object obj)
     {
         NDRX_LOG(log_debug, "Converting out NULL buffer");
         buf = atmibuf("NULL", 1024);
+    }
+    else if (ndrxpy_is_UbfDict(data))
+    {
+        NDRX_LOG(log_debug, "Converting out UbfDict...");
+
+        ndrx_longptr_t ptr = data.attr("buf").cast<py::int_>();
+        atmibuf *data_buf = reinterpret_cast<atmibuf *>(ptr);
+        buf.p = data_buf->p;
+
+        if (reset_ptr)
+        {
+            ndrxpy_reset_ptr_UbfDict(data);
+        }
     }
     else if (py::isinstance<py::dict>(data))
     {
