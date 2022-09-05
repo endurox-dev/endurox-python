@@ -627,7 +627,16 @@ expublic void ndrxpy_register_ubf(py::module &m)
     M_endurox = py::module::import("endurox");
 
     //never call destructor?
-    M_endurox.inc_ref();
+    //M_endurox.inc_ref();
+
+    auto cleanup_callback = []()
+    {
+        //Clean up niceley...
+        M_endurox.dec_ref();
+        M_endurox.release();
+    };
+
+    m.add_object("_cleanup", py::capsule(cleanup_callback));
 
     m.def(
         "Bfldtype", [](BFLDID fldid)
