@@ -290,11 +290,18 @@ expublic atmibuf ndrx_from_py(py::object obj, bool reset_ptr)
 
         ndrx_longptr_t ptr = data.attr("buf").cast<py::int_>();
         atmibuf *data_buf = reinterpret_cast<atmibuf *>(ptr);
-        buf.p = data_buf->p;
 
         if (reset_ptr)
         {
+            buf.p = data_buf->p;
             ndrxpy_reset_ptr_UbfDict(data);
+        }
+        else
+        {
+            //If no reset, then let return buffer
+            //not to free up, just use reference to UbfDict()
+            buf.pp=data_buf->pp;
+            buf.p = nullptr;
         }
     }
     else if (py::isinstance<py::dict>(data))

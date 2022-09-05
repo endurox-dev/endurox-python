@@ -70,13 +70,14 @@ py::module_ M_endurox;    /**< Loader module handle. Any houskeeping on unload? 
 expublic bool ndrxpy_is_UbfDict(py::object data)
 {
     py::object UbfDict = M_endurox.attr("UbfDict");
+    auto ret = data.is(UbfDict);
+    auto type1 = py::type::of(data);
 
-    if (typeid(UbfDict) == typeid(data))
-    {
-        return true;
-    }
+    ret = type1.is(UbfDict);
 
-    return false;
+    NDRX_LOG(log_debug, "testing UbfDict = %d", ret);
+
+    return ret;
 }
 
 /**
