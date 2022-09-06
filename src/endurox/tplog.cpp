@@ -310,8 +310,7 @@ expublic void ndrxpy_register_tplog(py::module &m)
 
             if (!py::isinstance<py::none>(data))
             {
-                //After the call, org buffer is not valid anymore
-                in = ndrx_from_py(data, true);
+                in = ndrx_from_py(data, false);
             }
             
             {
@@ -338,15 +337,14 @@ expublic void ndrxpy_register_tplog(py::module &m)
                 in.p=*in.pp;
             }
 
-            //Return python object... (in case if one was passed in...)
-            auto ret = ndrx_to_py(in, false);
-
             if (ndrxpy_is_UbfDict(data))
             {
-                ndrxpy_reset_ptr_UbfDict(data);
+                return data;
             }
-            
-            return ret;
+            else
+            {
+                return ndrx_to_py(in, false);
+            }
         },
         R"pbdoc(
         Redirect logger to request file extracted from buffer, filename or file name service.
@@ -485,7 +483,7 @@ expublic void ndrxpy_register_tplog(py::module &m)
         "tplogdelbufreqfile",
         [](py::object data)
         {
-            auto in = ndrx_from_py(data, true);
+            auto in = ndrx_from_py(data, false);
             {
                 py::gil_scoped_release release;
                 if (EXSUCCEED!=tplogdelbufreqfile(*in.pp))
@@ -494,13 +492,15 @@ expublic void ndrxpy_register_tplog(py::module &m)
                 }
             }
 
-            //Clear ptr ot UBF buffer for origin call.
+            //Re-use the same object on return...
             if (ndrxpy_is_UbfDict(data))
             {
-                ndrxpy_reset_ptr_UbfDict(data);
+                return data;
             }
-
-            return ndrx_to_py(in, false);
+            else
+            {
+                return ndrx_to_py(in, false);
+            }
         },
         R"pbdoc(
         Delete request file name from the given UBF buffer. Altered buffer

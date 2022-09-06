@@ -43,7 +43,7 @@ if(${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.12.0")
     # Find the python...
     find_package (Python3 COMPONENTS Development Interpreter)
 else()
-    set(Python3_EXECUTABLE, "python3")
+    set(Python3_EXECUTABLE "python3")
 endif()
 
 ################################################################################
