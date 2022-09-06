@@ -41,17 +41,22 @@ class UbfDict(MutableMapping):
     # XATMI buffer ptr
     buf = 0
 
-    # 
+    #  TODO: 
     is_rw_ptr = True
 
-    # TODO: In case if UbfDict passed to constructor
-    # then just copy the UBF buffer.
+    # Create new buffer from dictionary
+    # or if UbfDict passed, then do direct copy
     def __init__(self, *args, **kwargs):
-        # allocate UBF
-        #self.store = dict()
-        self.buf = tpalloc("UBF", "", 1024)
-        # Load the dictionary with fields
-        UbfDict_load(self.buf, dict(*args, **kwargs))
+
+        if len(args) == 1 and isinstance(args[0], UbfDict):
+            # Copy buffer
+            self.buf = UbfDict_copy(args[0].buf)
+        else:
+            # allocate UBF
+            #self.store = dict()
+            self.buf = tpalloc("UBF", "", 1024)
+            # Load the dictionary with fields
+            UbfDict_load(self.buf, dict(*args, **kwargs))
 
     # In case if having ptr, to UBF -> return new buffer
     # In case if having VIEW -> convert to dict()

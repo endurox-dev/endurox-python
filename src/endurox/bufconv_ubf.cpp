@@ -1198,6 +1198,76 @@ expublic void ndrxpy_register_ubf(py::module &m)
         )pbdoc", py::arg("ptr"), py::arg("fldid"));
 
     m.def(
+        "UbfDict_copy",
+        [](ndrx_longptr_t src_ptr)
+        {
+		    atmibuf *src_buf = reinterpret_cast<atmibuf *>(src_ptr);
+            char btype[16];
+            char stype[16];
+
+            NDRX_LOG(log_debug, "UbfDict_copy src_buf (atmi): %p", *src_buf->pp);
+
+            long len = tptypes(*src_buf->pp, btype, stype);
+
+            if (EXFAIL==len)
+            {
+                throw atmi_exception(tperrno);
+            }
+
+            if (0!=strcmp(btype, "UBF"))
+            {
+                throw std::invalid_argument("Epxected UBF typed buffer, but got ["+std::string(btype)+"]");
+            }
+
+            auto used = Bused(reinterpret_cast<UBFH *> (*src_buf->pp));
+
+            if (EXFAIL==used)
+            {
+                NDRX_LOG(log_error, "Failed to get buffer [%p] used size: %s", 
+                    *src_buf->pp, Bstrerror(Berror));
+                throw ubf_exception(Berror);
+            }
+
+            char *ret_buf = tpalloc(btype, NULL, used);
+
+            if (nullptr==ret_buf)
+            {
+                throw atmi_exception(tperrno);
+            }
+
+            try
+            {
+                //OK copy
+                memcpy(ret_buf, *src_buf->pp, used);
+                auto ret_atmibuf = new atmibuf();
+                ret_atmibuf->p = ret_buf;
+                ndrx_longptr_t ptr = reinterpret_cast<ndrx_longptr_t>(ret_atmibuf);
+                return ptr;
+            }
+            catch(const std::exception& e)
+            {
+                NDRX_LOG(log_error, "got exception [%s] buffer cleanup...", e.what());
+                //Free up ATMI buffer, avoid leak...
+                tpfree(ret_buf);
+                throw e;
+            }
+        },
+        R"pbdoc(
+        Allocate and copy the UBF buffer.
+
+        Parameters
+        ----------
+        ptr: int
+            C pointer to atmibuf from which to copy data.
+
+        Returns
+        -------
+        ret : int
+            POinter to atmibuf
+
+        )pbdoc", py::arg("ptr"));
+
+    m.def(
         "UbfDict_len",
         [](ndrx_longptr_t ptr)
         {
