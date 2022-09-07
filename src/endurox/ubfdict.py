@@ -6,7 +6,7 @@ from .endurox import *
 class UbfDictFld(MutableSequence):
     """Access to UBF field dictionary"""
     # parent buffer to access to
-    ubf_dict = ""
+    _ubf_dict = ""
     # Resolved field id we want to access
     fldid = 0
 
@@ -39,7 +39,7 @@ class UbfDict(MutableMapping):
     is_sub_buffer = False
     
     # XATMI buffer ptr
-    buf = 0
+    _buf = 0
 
     #  TODO: 
     is_rw_ptr = True
@@ -50,13 +50,13 @@ class UbfDict(MutableMapping):
 
         if len(args) == 1 and isinstance(args[0], UbfDict):
             # Copy buffer
-            self.buf = UbfDict_copy(args[0].buf)
+            self._buf = UbfDict_copy(args[0]._buf)
         else:
             # allocate UBF
             #self.store = dict()
-            self.buf = tpalloc("UBF", "", 1024)
+            self._buf = tpalloc("UBF", "", 1024)
             # Load the dictionary with fields
-            UbfDict_load(self.buf, dict(*args, **kwargs))
+            UbfDict_load(self._buf, dict(*args, **kwargs))
 
     # In case if having ptr, to UBF -> return new buffer
     # In case if having VIEW -> convert to dict()
@@ -72,33 +72,47 @@ class UbfDict(MutableMapping):
     # with dict only for FLD_PTR or FLD_UFB. And UbfDictFld the same as LFD_UBF
     # 
     def __setitem__(self, key, value):
-        UbfDict_set(self.buf, key, value)
-        #self.store[self._keytransform(key)] = value
+        UbfDict_set(self._buf, key, value)
 
     #
     # Delete full key (all occs)
     #
     def __delitem__(self, key):
-        return UbfDict_del(self.buf, key)
+        return UbfDict_del(self._buf, key)
 
     # Start iteration
     def __iter__(self):
-        return UbfDict_iter(self.buf)
+        return UbfDict_iter(self, self._buf)
     
     # next field
-    def __next__(next):
-        return UbfDict_next(self.buf)
+    def __next__(self):
+        return UbfDict_next(self, self._buf)
 
     # number of fields?
     def __len__(self):
-        return UbfDict_len(self.buf)
+        return UbfDict_len(self._buf)
 
     # Deleting (Calling destructor)
     def __del__(self):
-        #print('Destructor called, Employee deleted.')
-        if self.buf!=0:
-            tpfree(self.buf);
-            self.buf=0
+        if self._buf!=0:
+            tpfree(self._buf);
+            self._buf=0
+
+    # Override copy interface, without this _buf is
+    # copied over resulting in two objects pointing
+    # to the one Ubf...
+    def __copy__(self):
+        inst = UbfDict()
+        inst._buf = UbfDict_copy(self._buf)
+        return inst
+
+    #
+    # Copy in the same way...
+    #
+    def __deepcopy__(self, memodict={}):
+        inst = UbfDict()
+        inst._buf = UbfDict_copy(self._buf)
+        return inst
 
     # manual free up of the buffer
     def free(self):

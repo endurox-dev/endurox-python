@@ -86,12 +86,12 @@ expublic bool ndrxpy_is_UbfDict(py::object data)
  */
 expublic void ndrxpy_reset_ptr_UbfDict(py::object data)
 {
-    ndrx_longptr_t ptr = data.attr("buf").cast<py::int_>();
+    ndrx_longptr_t ptr = data.attr("_buf").cast<py::int_>();
     atmibuf *data_buf = reinterpret_cast<atmibuf *>(ptr);
     //Org buffer shall be deallocated..
     data_buf->p = nullptr;
     delete data_buf;
-    data.attr("buf")=0;//Reset org buffer ptr too..
+    data.attr("_buf")=0;//Reset org buffer ptr too..
 }
 
 /**
@@ -106,7 +106,7 @@ expublic py::object ndrxpy_alloc_UbfDict(char *data, bool is_sub_buffer)
     //Allocate Python Object
     py::object ret = UbfDict();
     ret.attr("is_sub_buffer") = is_sub_buffer;
-    ret.attr("buf") = reinterpret_cast<ndrx_longptr_t>(b);
+    ret.attr("_buf") = reinterpret_cast<ndrx_longptr_t>(b);
     return ret;    
 }
 
@@ -1150,7 +1150,7 @@ expublic void ndrxpy_register_ubf(py::module &m)
             //Allocate Python Object
             py::object dictfld = UbfDictFld();
             dictfld.attr("fldid") = fldid;
-            dictfld.attr("ubf_dict") = ubf_dict;
+            dictfld.attr("_ubf_dict") = ubf_dict;
 
             return dictfld;
         },
@@ -1201,7 +1201,7 @@ expublic void ndrxpy_register_ubf(py::module &m)
         "UbfDict_copy",
         [](ndrx_longptr_t src_ptr)
         {
-		    atmibuf *src_buf = reinterpret_cast<atmibuf *>(src_ptr);
+            atmibuf *src_buf = reinterpret_cast<atmibuf *>(src_ptr);
             char btype[16];
             char stype[16];
 
@@ -1305,35 +1305,11 @@ expublic void ndrxpy_register_ubf(py::module &m)
 
         m.def(
         "UbfDict_iter",
-        [](ndrx_longptr_t ptr)
+        [](py::object self, ndrx_longptr_t ptr)
         {
-            int ret;
-            py::object ret_val;
 		    atmibuf *buf = reinterpret_cast<atmibuf *>(ptr);
-            BFLDOCC oc;
-            char *d_ptr;
-            BFLDLEN len;
-
             buf->iter_fldid = BFIRSTFLDID;
-
-            ret=Bnext2(&buf->iter_state, *(buf->fbfr()), &buf->iter_fldid, &oc, NULL, &len, &d_ptr);
-
-            if (1==ret)
-            {
-                /* return value... directly, for performance reasons... */
-                ret_val = ndrxpy_to_py_ubf_fld(d_ptr, buf->iter_fldid, oc, len, Bsizeof(*(buf->fbfr())));
-            }
-            else if (0==ret)
-            {
-                /* EOF found */
-                throw py::stop_iteration();
-            }
-            else
-            {
-                throw ubf_exception(Berror);
-            }
-
-            return ret_val;
+            return self;
         },
         R"pbdoc(
         Start iteration over UBF buffer.
@@ -1342,30 +1318,52 @@ expublic void ndrxpy_register_ubf(py::module &m)
         ----------
         ptr: int
             C pointer to buffer
+        self: object
+            UbfDict Object iterating
+
         Returns
         -------
         ret : object
-            Field value at occurrence. Occurrence. How about occ? TODO!
+            Ptr to self 
 
-        )pbdoc", py::arg("ptr"));
+        )pbdoc", py::arg("self"), py::arg("ptr"));
 
+
+        // having issue with dict(UbfDict()), if we just return tuple of key/value, then
+        // occurrances will not be processed...
+        // However if we return, list (or ptr to UbfDictFld()), then it might not be very
+        // optimal toloop over whole buffer, as access to UbfDictFld() case UBF lib to
+        // search the position again.
+        // One option could be to provide additional object such as UbfDictOccIter.
+        // and provide method for UbfDict.occitems() which would provide Bnext() style iteration
         m.def(
         "UbfDict_next",
-        [](ndrx_longptr_t ptr)
+        [](py::object self, ndrx_longptr_t ptr)
         {
-            int ret;
+            int ret=1;
             py::object ret_val;
-		    atmibuf *buf = reinterpret_cast<atmibuf *>(ptr);
-            BFLDOCC oc;
-            BFLDLEN len;
+	        atmibuf *buf = reinterpret_cast<atmibuf *>(ptr);
+            BFLDOCC oc=0;
             char *d_ptr;
+            BFLDLEN len;
+            py::object dictfld;
 
-            ret=Bnext2(&buf->iter_state, *(buf->fbfr()), &buf->iter_fldid, &oc, NULL, &len, &d_ptr);
+            do
+            {
+                ret=Bnext2(&buf->iter_state, *(buf->fbfr()), &buf->iter_fldid, &oc, NULL, &len, &d_ptr);
+
+            } while (oc > 0 && 1==ret); /* skip the occurrences */
 
             if (1==ret)
             {
-                /* return value... directly, for performance reasons... */
+                /* return value... directly, for performance reasons... 
                 ret_val = ndrxpy_to_py_ubf_fld(d_ptr, buf->iter_fldid, oc, len, Bsizeof(*(buf->fbfr())));
+                */
+                py::object UbfDictFld = M_endurox.attr("UbfDictFld");
+                //Allocate Python Object
+                dictfld = UbfDictFld();
+                dictfld.attr("fldid") = buf->iter_fldid;
+                dictfld.attr("_ubf_dict") = self;
             }
             else if (0==ret)
             {
@@ -1377,29 +1375,41 @@ expublic void ndrxpy_register_ubf(py::module &m)
                 throw ubf_exception(Berror);
             }
 
-            return ret_val;
+            char *fname = Bfname(buf->iter_fldid);
+
+            if (NULL!=fname)
+            {
+                return py::make_tuple(fname, dictfld);
+            }
+            else
+            {
+                return py::make_tuple(buf->iter_fldid, dictfld);
+            }
         },
         R"pbdoc(
         Next iteration over UBF buffer.
 
         Parameters
         ----------
+        self: UbfDict
+            UbfDict object
         ptr: int
             C pointer to buffer
+
         Returns
         -------
         ret_val : object
             Field value at occurrence. Occurrence. How about occ? TODO!
 
-        )pbdoc", py::arg("ptr"));
+        )pbdoc", py::arg("self"), py::arg("ptr"));
 
         m.def(
         "UbfDictFld_set",
         [](py::object ubf_dict_fld, BFLDOCC oc, py::object data)
         {
             py::object ret;
-            py::object ubf_dict = ubf_dict_fld.attr("ubf_dict");
-            ndrx_longptr_t ptr = ubf_dict.attr("buf").cast<py::int_>();
+            py::object ubf_dict = ubf_dict_fld.attr("_ubf_dict");
+            ndrx_longptr_t ptr = ubf_dict.attr("_buf").cast<py::int_>();
             BFLDID fldid = ubf_dict_fld.attr("fldid").cast<py::int_>();
             atmibuf *buf = reinterpret_cast<atmibuf *>(ptr);
             atmibuf b;
@@ -1427,12 +1437,12 @@ expublic void ndrxpy_register_ubf(py::module &m)
         {
             py::object ret;
             BFLDLEN len;
-            py::object ubf_dict = ubf_dict_fld.attr("ubf_dict");
-            ndrx_longptr_t ptr = ubf_dict.attr("buf").cast<py::int_>();
+            py::object ubf_dict = ubf_dict_fld.attr("_ubf_dict");
+            ndrx_longptr_t ptr = ubf_dict.attr("_buf").cast<py::int_>();
             BFLDID fldid = ubf_dict_fld.attr("fldid").cast<py::int_>();
             atmibuf *buf = reinterpret_cast<atmibuf *>(ptr);
 
-            NDRX_LOG(log_debug, "Into UbfDictFld_del(fldid=%d, oc=%d)", fldid, oc);
+            NDRX_LOG(log_debug, "Into UbfDictFld_get(fldid=%d, oc=%d)", fldid, oc);
             char *d_ptr = Bfind (*(buf->fbfr()), fldid, oc, &len);
 
             if (nullptr==d_ptr)
@@ -1468,8 +1478,8 @@ expublic void ndrxpy_register_ubf(py::module &m)
         [](py::object ubf_dict_fld, BFLDOCC oc)
         {
             py::object ret;
-            py::object ubf_dict = ubf_dict_fld.attr("ubf_dict");
-            ndrx_longptr_t ptr = ubf_dict.attr("buf").cast<py::int_>();
+            py::object ubf_dict = ubf_dict_fld.attr("_ubf_dict");
+            ndrx_longptr_t ptr = ubf_dict.attr("_buf").cast<py::int_>();
             BFLDID fldid = ubf_dict_fld.attr("fldid").cast<py::int_>();
             atmibuf *buf = reinterpret_cast<atmibuf *>(ptr);
 
@@ -1497,8 +1507,8 @@ expublic void ndrxpy_register_ubf(py::module &m)
         [](py::object ubf_dict_fld)
         {
             BFLDOCC ret;
-            py::object ubf_dict = ubf_dict_fld.attr("ubf_dict");
-            ndrx_longptr_t ptr = ubf_dict.attr("buf").cast<py::int_>();
+            py::object ubf_dict = ubf_dict_fld.attr("_ubf_dict");
+            ndrx_longptr_t ptr = ubf_dict.attr("_buf").cast<py::int_>();
             BFLDID fldid = ubf_dict_fld.attr("fldid").cast<py::int_>();
 
             atmibuf *buf = reinterpret_cast<atmibuf *>(ptr);
