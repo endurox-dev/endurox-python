@@ -88,13 +88,17 @@ class UbfDict(MutableMapping):
     def __next__(self):
         return UbfDict_next(self, self._buf)
 
+    # compare this Ubf with Other...
+    def __eq__(self, other):
+        return UbfDict_cmp(self._buf, other._buf)
+
     # number of fields?
     def __len__(self):
         return UbfDict_len(self._buf)
 
     # Deleting (Calling destructor)
     def __del__(self):
-        if self._buf!=0:
+        if self._buf!=0 and not self.is_sub_buffer:
             tpfree(self._buf);
             self._buf=0
 

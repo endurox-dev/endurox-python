@@ -82,8 +82,8 @@ expublic py::object ndrx_to_py(atmibuf &buf, bool is_sub_buffer)
         throw std::invalid_argument("Invalid buffer type");
     }
 
-    NDRX_LOG(log_debug, "Into ndrx_to_py() type=[%s] subtype=[%s] size=%ld pp=%p", 
-        type, subtype, size, *buf.pp);
+    NDRX_LOG(log_debug, "Into ndrx_to_py() type=[%s] subtype=[%s] size=%ld pp=%p is_sub_buffer=%d", 
+        type, subtype, size, *buf.pp, is_sub_buffer);
 
     //Return buffer sub-type
     result["buftype"] = type;
@@ -105,13 +105,16 @@ expublic py::object ndrx_to_py(atmibuf &buf, bool is_sub_buffer)
     }
     else if (strcmp(type, "UBF") == 0)
     {
-        //result["data"]=ndrxpy_to_py_ubf(*buf.fbfr(), 0);
-        
         result["data"]=ndrxpy_alloc_UbfDict(*buf.pp, is_sub_buffer);
-        tmp_ptr = buf.p;
-        buf.pp = &tmp_ptr;
-        //release buffer ptr, as now handled by data
-        buf.p=nullptr;
+
+        //Parent may free up master buffers...
+        if (!is_sub_buffer)
+        {
+            tmp_ptr = buf.p;
+            buf.pp = &tmp_ptr;
+            //release buffer ptr, as now handled by data
+            buf.p=nullptr;
+        }
     }
     else if (strcmp(type, "VIEW") == 0)
     {
@@ -127,16 +130,15 @@ expublic py::object ndrx_to_py(atmibuf &buf, bool is_sub_buffer)
     }
 
     // attach call info, if have any.
-    atmibuf cibuf;
     if (strcmp(type, "NULL") != 0)
     {
-        ret = tpgetcallinfo(*buf.pp, reinterpret_cast<UBFH **>(cibuf.pp), TPCI_NOEOFERR);
+        char *p_buf = nullptr;
+        ret = tpgetcallinfo(*buf.pp, reinterpret_cast<UBFH **>(&p_buf), TPCI_NOEOFERR);
         
         if (EXTRUE==ret)
         {
             // setup callinfo block
-            //TODO: Convert to UbfDict()
-            result[NDRXPY_DATA_CALLINFO]=ndrxpy_to_py_ubf(*cibuf.fbfr(), 0);
+            result[NDRXPY_DATA_CALLINFO]=ndrxpy_alloc_UbfDict(p_buf, true);
         }
         else if (EXFAIL==ret)
         {
@@ -159,15 +161,10 @@ exprivate void set_callinfo(py::dict & dict, atmibuf &buf)
     if (dict.contains(NDRXPY_DATA_CALLINFO))
     {
         atmibuf cibuf;
+        char *ci_ptr = nullptr;
         auto cibufdata = dict[NDRXPY_DATA_CALLINFO];
 
         NDRX_LOG(log_debug, "Setting call info");
-
-        if (!py::isinstance<py::dict>(cibufdata))
-        {
-            NDRX_LOG(log_error, "callinfo must be dictionary but is not!");
-            throw std::invalid_argument("callinfo must be dictionary but is not!");
-        }
 
         if (NULL==*buf.pp)
         {
@@ -175,9 +172,26 @@ exprivate void set_callinfo(py::dict & dict, atmibuf &buf)
             throw std::invalid_argument("callinfo cannot be set for NULL buffers");
         }
 
-        ndrxpy_from_py_ubf(static_cast<py::dict>(cibufdata), cibuf);
+        //OK we have support of UbfDict Too
+        if (py::isinstance<py::dict>(cibufdata))
+        {
+            ndrxpy_from_py_ubf(static_cast<py::dict>(cibufdata), cibuf);   
 
-        if (EXSUCCEED!=tpsetcallinfo(*buf.pp, *cibuf.fbfr(), 0))
+            ci_ptr = *cibuf.pp;
+        }
+        else if (ndrxpy_is_UbfDict(cibufdata))
+        {
+            ndrx_longptr_t ptr = cibufdata.attr("_buf").cast<py::int_>();
+            atmibuf *data_buf = reinterpret_cast<atmibuf *>(ptr);
+            ci_ptr = data_buf->p;
+        }
+        else
+        {
+            NDRX_LOG(log_error, "callinfo must be dict or UbfDict but is not!");
+            throw std::invalid_argument("callinfo must be dict or UbfDict but is not!");
+        }
+
+        if (EXSUCCEED!=tpsetcallinfo(*buf.pp, reinterpret_cast<UBFH *>(ci_ptr), 0))
         {
             throw atmi_exception(tperrno);
         }
@@ -286,9 +300,9 @@ expublic atmibuf ndrx_from_py(py::object obj, bool reset_ptr)
     }
     else if (ndrxpy_is_UbfDict(data))
     {
-        NDRX_LOG(log_debug, "Converting out UbfDict...");
+        NDRX_LOG(log_debug, "Converting out UBF/UbfDict...");
 
-        ndrx_longptr_t ptr = data.attr("buf").cast<py::int_>();
+        ndrx_longptr_t ptr = data.attr("_buf").cast<py::int_>();
         atmibuf *data_buf = reinterpret_cast<atmibuf *>(ptr);
 
         if (reset_ptr)
@@ -306,7 +320,7 @@ expublic atmibuf ndrx_from_py(py::object obj, bool reset_ptr)
     }
     else if (py::isinstance<py::dict>(data))
     {
-        NDRX_LOG(log_debug, "Converting out UBF dict...");
+        NDRX_LOG(log_debug, "Converting out UBF/pydict...");
 
         if (buftype!="" && buftype!="UBF")
         {

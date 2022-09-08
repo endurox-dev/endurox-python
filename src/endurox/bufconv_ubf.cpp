@@ -102,6 +102,7 @@ expublic py::object ndrxpy_alloc_UbfDict(char *data, bool is_sub_buffer)
 {
     atmibuf *b = new atmibuf();
     b->p = data;
+    //TODO: Do not alloc the buffer....
     py::object UbfDict = M_endurox.attr("UbfDict");
     //Allocate Python Object
     py::object ret = UbfDict();
@@ -514,11 +515,14 @@ static void from_py1_ubf(atmibuf &buf, BFLDID fldid, BFLDOCC oc,
 
 /**
  * Resolve field id.
+ * @param fld python string / field name
+ * @return resolved E/X field id
  */
 exprivate BFLDID ndrxpy_fldid_resolve(py::handle fld)
 {
 	BFLDID fldid;
-	if (py::isinstance<py::int_>(fld))
+
+    if (py::isinstance<py::int_>(fld))
 	{
 		fldid = fld.cast<py::int_>();
 
@@ -530,14 +534,7 @@ exprivate BFLDID ndrxpy_fldid_resolve(py::handle fld)
 	}
 	else
 	{
-		//std::string s(py::str(fld));
-        //char *str = py::str(fld).str//s.c_str();
-
-        //auto str = py::str(fld);
-
         std::string s = std::string(py::str(fld));
-
-
 		char *fldstr = const_cast<char *>(s.c_str());
 		fldid = Bfldid(fldstr);
 
@@ -1404,6 +1401,46 @@ expublic void ndrxpy_register_ubf(py::module &m)
         )pbdoc", py::arg("self"), py::arg("ptr"));
 
         m.def(
+        "UbfDict_cmp",
+        [](ndrx_longptr_t ptr1, ndrx_longptr_t ptr2)
+        {
+		    atmibuf *buf1 = reinterpret_cast<atmibuf *>(ptr1);
+            atmibuf *buf2 = reinterpret_cast<atmibuf *>(ptr2);
+
+            auto ret = Bcmp(*buf1->fbfr(), *buf2->fbfr());
+
+            if (-2==ret)
+            {
+                throw ubf_exception(Berror);
+            }
+            
+            if (0==ret)
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        },
+        R"pbdoc(
+        Compare two UbfDict() objects.
+
+        Parameters
+        ----------
+        ptr1: int
+            Pointer to atmibuf 1.
+        ptr2: int
+            Pointer to atmibuf 2.
+
+        Returns
+        -------
+        ret : bool
+            true for equal, false not equal
+
+        )pbdoc", py::arg("self"), py::arg("ptr"));
+
+        m.def(
         "UbfDictFld_set",
         [](py::object ubf_dict_fld, BFLDOCC oc, py::object data)
         {
@@ -1430,7 +1467,12 @@ expublic void ndrxpy_register_ubf(py::module &m)
             Data to load into occurrance
         )pbdoc", py::arg("ubf_dict_fld"), py::arg("oc"), py::arg("data"));
 
+        /*
+         random fields non existing are told to be:
+        >>> print ('T_STRING_3_FLD' in cc)
+        True
 
+        */ 
         m.def(
         "UbfDictFld_get",
         [](py::object ubf_dict_fld, BFLDOCC oc)
