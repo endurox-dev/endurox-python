@@ -101,13 +101,19 @@ expublic void ndrxpy_reset_ptr_UbfDict(py::object data)
 expublic py::object ndrxpy_alloc_UbfDict(char *data, bool is_sub_buffer)
 {
     atmibuf *b = new atmibuf();
-    b->p = data;
-    //TODO: Do not alloc the buffer....
     py::object UbfDict = M_endurox.attr("UbfDict");
     //Allocate Python Object
-    py::object ret = UbfDict();
-    ret.attr("is_sub_buffer") = is_sub_buffer;
+    py::object ret;
+
+    b->p = data;
+    //Do not alloc the buffer...., as we give ptr..
+    ret = UbfDict(false);
+
+    //ok, if it is just ptr to-sub-buffer
+    //then free only atmibuf ptr...
     ret.attr("_buf") = reinterpret_cast<ndrx_longptr_t>(b);
+    ret.attr("is_sub_buffer") = is_sub_buffer;
+    
     return ret;    
 }
 
@@ -169,8 +175,7 @@ exprivate py::object ndrxpy_to_py_ubf_fld(char *d_ptr, BFLDID fldid,
             ret=py::bytes(d_ptr, len);
             break;
         case BFLD_UBF:
-            /*ret=ndrxpy_to_py_ubf(reinterpret_cast<UBFH *>(d_ptr), buflen);*/
-            
+        
             //Avoid buffer changing... if we are sub-buffers...
             ret=ndrxpy_alloc_UbfDict(d_ptr, true);
 
@@ -1065,9 +1070,18 @@ expublic void ndrxpy_register_ubf(py::module &m)
     
     m.def(
         "tpfree",
-        [](ndrx_longptr_t ptr)
+        [](ndrx_longptr_t ptr, bool is_sub_buffer)
         {
 	        atmibuf *buf = reinterpret_cast<atmibuf *>(ptr);
+
+            /*
+             * Do not remove xatmi buffer
+             */
+            if (is_sub_buffer)
+            {
+                buf->p = nullptr;
+            }
+            
             delete buf;
         },
         R"pbdoc(
@@ -1077,8 +1091,10 @@ expublic void ndrxpy_register_ubf(py::module &m)
         ----------
         ptr: int
             C pointer to XATMI buffer object
+        is_sub_buffer: bool
+            Is this sub-buffer? If so remove only atmibuf object.
 
-        )pbdoc", py::arg("ptr"));
+        )pbdoc", py::arg("ptr"), py::arg("is_sub_buffer"));
 
     m.def(
         "UbfDict_load",
