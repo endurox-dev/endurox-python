@@ -346,8 +346,12 @@ exprivate void notification_callback (char *data, long len, long flags)
     auto buf = ndrx_to_py(b, false);
     obj_ptr->obj(buf);
 
-    //Clear ptr to UBF...
-    buf.attr("buf")=0;
+    if (ndrxpy_is_UbfDict(buf))
+    {
+        //In case if it is UbfDict()
+        //Clear ptr to UBF...
+        buf.attr("_buf")=0;
+    }
 }
 
 /**

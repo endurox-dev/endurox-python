@@ -54,7 +54,7 @@ xadmin down -y
 
 
 # monitor our test instance, 0myWI5nu -> this is const by xadmin provision
-xmemck -m "0myWI5nu|unittest" 2>$XMEMCK_LOG 1>$XMEMCK_OUT &
+xmemck -v10 -d1 -s20 -t95 -m "0myWI5nu|unittest" 2>$XMEMCK_LOG 1>$XMEMCK_OUT &
 MEMCK_PID=$!
 echo "Memck pid = $MEMCK_PID"
 
