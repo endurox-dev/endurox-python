@@ -6,7 +6,8 @@ from .endurox import *
 class UbfDictFld(MutableSequence):
     """Access to UBF field dictionary"""
     # parent buffer to access to
-    _ubf_dict = ""
+    # TODO: Validate that we have a buffer set..
+    _ubf_dict = None
     # Resolved field id we want to access
     fldid = 0
 
@@ -29,6 +30,13 @@ class UbfDictFld(MutableSequence):
     # insert item
     def insert(self, i, value):
         return UbfDictFld_set(self, i, value)
+
+    # Compare two lists...
+    def __eq__(self, other):
+        for a, b in zip(self, other):
+            if a != b:
+                return False
+        return True
         
 # UBF <-> Dictionary mapping
 class UbfDict(MutableMapping):
@@ -40,9 +48,6 @@ class UbfDict(MutableMapping):
     
     # XATMI buffer ptr
     _buf = 0
-
-    #  TODO: 
-    is_rw_ptr = True
 
     # Create new buffer from dictionary
     # or if UbfDict passed, then do direct copy
@@ -72,12 +77,20 @@ class UbfDict(MutableMapping):
     # with dict only for FLD_PTR or FLD_UFB. And UbfDictFld the same as LFD_UBF
     # 
     def __setitem__(self, key, value):
+
+        if self.is_sub_buffer:
+            raise AttributeError("Sub-buffer cannot be modified.")
+
         UbfDict_set(self._buf, key, value)
 
     #
     # Delete full key (all occs)
     #
     def __delitem__(self, key):
+
+        if self.is_sub_buffer:
+            raise AttributeError("Sub-buffer cannot be modified.")
+
         return UbfDict_del(self._buf, key)
 
     # Start iteration
