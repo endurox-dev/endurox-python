@@ -56,6 +56,13 @@ class UbfDict(MutableMapping):
         if len(args) == 1 and isinstance(args[0], UbfDict):
             # Copy buffer
             self._buf = UbfDict_copy(args[0]._buf)
+        elif len(args) == 1 and isinstance(args[0], bool):
+
+            # Just allocate empty buffer on True
+            # For False, keep null, used for constructing
+            # the object.
+            if True==args[0]:
+                self._buf = tpalloc("UBF", "", 1024)
         else:
             # allocate UBF
             #self.store = dict()
@@ -111,8 +118,8 @@ class UbfDict(MutableMapping):
 
     # Deleting (Calling destructor)
     def __del__(self):
-        if self._buf!=0 and not self.is_sub_buffer:
-            tpfree(self._buf);
+        if self._buf!=0:
+            tpfree(self._buf, self.is_sub_buffer);
             self._buf=0
 
     # Override copy interface, without this _buf is

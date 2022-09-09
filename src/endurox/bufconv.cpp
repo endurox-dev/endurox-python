@@ -138,7 +138,7 @@ expublic py::object ndrx_to_py(atmibuf &buf, bool is_sub_buffer)
         if (EXTRUE==ret)
         {
             // setup callinfo block
-            result[NDRXPY_DATA_CALLINFO]=ndrxpy_alloc_UbfDict(p_buf, true);
+            result[NDRXPY_DATA_CALLINFO]=ndrxpy_alloc_UbfDict(p_buf, false);
         }
         else if (EXFAIL==ret)
         {
