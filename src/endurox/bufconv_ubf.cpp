@@ -627,15 +627,14 @@ expublic void ndrxpy_register_ubf(py::module &m)
 {
     //Load Enduro/X module used for Python object instatiation
     M_endurox = py::module::import("endurox");
-
-    //never call destructor?
-    //M_endurox.inc_ref();
-
+    
     auto cleanup_callback = []()
     {
         //Clean up niceley...
         M_endurox.dec_ref();
         M_endurox.release();
+
+    
     };
 
     m.add_object("_cleanup", py::capsule(cleanup_callback));
@@ -1158,8 +1157,27 @@ expublic void ndrxpy_register_ubf(py::module &m)
         "UbfDict_get",
         [](py::object ubf_dict, py::object pyfldid)
         {
-		    BFLDID fldid = ndrxpy_fldid_resolve(pyfldid);
-            py::object UbfDictFld = M_endurox.attr("UbfDictFld");
+		    py::object UbfDictFld = M_endurox.attr("UbfDictFld");
+            BFLDID fldid;
+            #if 0
+            if (py::isinstance<py::tuple>(pyfldid))
+            {
+                //Extract field ID from the UbfDictFld
+                //As this stuff may be preset for buffer compare ops
+                auto fldtuple = pyfldid.cast<py::tuple>();
+
+                //From UbfDictFld()
+                fldid = fldtuple[1].attr("fldid").cast<py::int_>();
+            }
+            else
+            {
+                #endif
+
+            fldid = ndrxpy_fldid_resolve(pyfldid);
+                #if 0
+            }
+            #endif
+
             //Allocate Python Object
             py::object dictfld = UbfDictFld();
             dictfld.attr("fldid") = fldid;
@@ -1289,12 +1307,15 @@ expublic void ndrxpy_register_ubf(py::module &m)
 		    BFLDID fldid = BFIRSTFLDID;
             BFLDOCC oc;
             Bnext_state_t state;
-            BFLDOCC cnt;
+            BFLDOCC cnt=0;
 
             /* count only the ids... As occurrences are arrays... */
             while(1==Bnext2(&state, *(buf->fbfr()), &fldid, &oc, NULL, NULL, NULL))
             {
-                cnt++;
+                if (oc==0)
+                {
+                    cnt++;
+                }
             }
 
             UBF_LOG(log_debug, "found %d unq field ids", cnt);
@@ -1369,9 +1390,6 @@ expublic void ndrxpy_register_ubf(py::module &m)
 
             if (1==ret)
             {
-                /* return value... directly, for performance reasons... 
-                ret_val = ndrxpy_to_py_ubf_fld(d_ptr, buf->iter_fldid, oc, len, Bsizeof(*(buf->fbfr())));
-                */
                 py::object UbfDictFld = M_endurox.attr("UbfDictFld");
                 //Allocate Python Object
                 dictfld = UbfDictFld();
@@ -1413,6 +1431,66 @@ expublic void ndrxpy_register_ubf(py::module &m)
         -------
         ret_val : object
             Field value at occurrence. Occurrence. How about occ? TODO!
+
+        )pbdoc", py::arg("self"), py::arg("ptr"));
+
+        // Continue iterate, keys only.
+        m.def(
+        "UbfDict_next_keys",
+        [](py::object self, ndrx_longptr_t ptr)
+        {
+            int ret;
+            py::object ret_val;
+	        atmibuf *buf = reinterpret_cast<atmibuf *>(ptr);
+            BFLDOCC oc=0;
+
+            do
+            {
+                ret=Bnext2(&buf->iter_state, *(buf->fbfr()), &buf->iter_fldid, &oc, NULL, NULL, NULL);
+
+            } while (oc > 0 && 1==ret); /* skip the occurrences */
+
+            if (1==ret)
+            {
+                /* OK */
+            }
+            else if (0==ret)
+            {
+                /* EOF found */
+                throw py::stop_iteration();
+            }
+            else
+            {
+                throw ubf_exception(Berror);
+            }
+
+            char *fname = Bfname(buf->iter_fldid);
+
+            if (nullptr==fname)
+            {
+                ret_val=(py::object)py::int_(buf->iter_fldid);
+            }
+            else
+            {
+                ret_val=(py::object)py::str(fname);
+            }
+
+            return ret_val;
+        },
+        R"pbdoc(
+        Next iteration over UBF buffer. Return keys only
+
+        Parameters
+        ----------
+        self: UbfDict
+            UbfDict object
+        ptr: int
+            C pointer to buffer
+
+        Returns
+        -------
+        ret_val : object
+            String key name or integer field id (if not found ubf tab)
 
         )pbdoc", py::arg("self"), py::arg("ptr"));
 
@@ -1505,8 +1583,17 @@ expublic void ndrxpy_register_ubf(py::module &m)
 
             if (nullptr==d_ptr)
             {
-                /* TODO: Add support for KeyError */
+                /* TODO: Add support for KeyError 
                 throw ubf_exception(Berror);
+                */
+               if (BNOTPRES==Berror)
+               {
+                    throw py::index_error("BNOTPRES");
+               }
+               else
+               {
+                    throw ubf_exception(Berror);
+               }
             }
 
             ret = ndrxpy_to_py_ubf_fld(d_ptr, fldid, oc, len, Bsizeof(*(buf->fbfr())));

@@ -17,6 +17,11 @@ class UbfDictFld(MutableSequence):
 
     # delete the item
     def __delitem__(self, i):
+
+        # Valdiat ethe parent buffer
+        if _ubf_dict.is_sub_buffer:
+            raise AttributeError('Cannot change sub-buffer')
+
         return UbfDictFld_del(self, i)
     
     # get field length / occurrences
@@ -25,19 +30,48 @@ class UbfDictFld(MutableSequence):
     
     # set item
     def __setitem__(self, i, value):
+
+        # Valdiat ethe parent buffer
+        if _ubf_dict.is_sub_buffer:
+            raise AttributeError('Cannot change sub-buffer')
+
         return UbfDictFld_set(self, i, value)
 
     # insert item
     def insert(self, i, value):
+
+        # Valdiat ethe parent buffer
+        if _ubf_dict.is_sub_buffer:
+            raise AttributeError('Cannot change sub-buffer')
+
         return UbfDictFld_set(self, i, value)
 
     # Compare two lists...
     def __eq__(self, other):
+
+        if (len(self)!=len(other)):
+            return False
+
         for a, b in zip(self, other):
             if a != b:
                 return False
         return True
-        
+
+# items iteration class    
+class UbfDictItems:
+
+    def __init__(self, ubf_dict):
+        self.ubf_dict = ubf_dict
+        self._buf = ubf_dict._buf
+
+    # Start iteration
+    def __iter__(self):
+        return UbfDict_iter(self, self._buf)
+    
+    # next field
+    def __next__(self): 
+        return UbfDict_next(self, self._buf)
+
 # UBF <-> Dictionary mapping
 class UbfDict(MutableMapping):
     """UBF Based dictionary, direct access to fields
@@ -85,8 +119,9 @@ class UbfDict(MutableMapping):
     # 
     def __setitem__(self, key, value):
 
+        # validate the parent buffer
         if self.is_sub_buffer:
-            raise AttributeError("Sub-buffer cannot be modified.")
+            raise AttributeError('Cannot change sub-buffer')
 
         UbfDict_set(self._buf, key, value)
 
@@ -95,22 +130,43 @@ class UbfDict(MutableMapping):
     #
     def __delitem__(self, key):
 
+        # validate the parent buffer
         if self.is_sub_buffer:
-            raise AttributeError("Sub-buffer cannot be modified.")
+            raise AttributeError('Cannot change sub-buffer')
 
         return UbfDict_del(self._buf, key)
 
-    # Start iteration
-    def __iter__(self):
-        return UbfDict_iter(self, self._buf)
-    
-    # next field
-    def __next__(self):
-        return UbfDict_next(self, self._buf)
+    #
+    # Have some object loop over
+    #
+    def items(self):
+        iter = UbfDictItems(self)
+        return  iter
 
-    # compare this Ubf with Other...
+    def items(self):
+        iter = UbfDictItems(self)
+        return  iter
+
+    # Compare two lists...
     def __eq__(self, other):
-        return UbfDict_cmp(self._buf, other._buf)
+
+        # in case if both are UbfDict()
+        # to UBF level compare, it is faster of course
+        if isinstance( other, UbfDict):
+            return UbfDict_cmp(self._buf, other._buf)
+
+        if len(self)!=len(other):
+            return False
+
+        # iterate our keys...
+        # check in theirs...
+        # check length...
+        for k,v in self.items():
+            vv = other[k]
+            if v!=vv:
+                return False
+
+        return True
 
     # number of fields?
     def __len__(self):
@@ -140,6 +196,20 @@ class UbfDict(MutableMapping):
 
     # manual free up of the buffer
     def free(self):
+
+        # validate the parent buffer
+        if self.is_sub_buffer:
+            raise AttributeError('Cannot change sub-buffer')
+
         __del__(self)
+
+    # Start iteration
+    def __iter__(self):
+        return UbfDict_iter(self, self._buf)
+    
+    # next field, keys only
+    def __next__(self):
+        return UbfDict_next_keys(self, self._buf)
+
 
 # vim: set ts=4 sw=4 et smartindent:
