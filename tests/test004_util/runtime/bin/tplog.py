@@ -63,6 +63,7 @@ class TestTplog(unittest.TestCase):
         out = e.tplogsetreqfile({"data":{"EX_NREQLOGFILE":filename}}, None, None)
         self.assertEqual(e.tploggetreqfile(), filename)
         self.assertEqual(e.tploggetbufreqfile(out), filename)
+        e.Bprint(out)
         out = e.tplogdelbufreqfile(out)
 
         with self.assertRaises(e.AtmiException):

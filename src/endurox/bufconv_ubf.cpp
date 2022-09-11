@@ -81,6 +81,21 @@ expublic bool ndrxpy_is_UbfDict(py::object data)
 }
 
 /**
+ * Wrapper for Atmi buf wrapped UbfDict
+ */
+expublic bool ndrxpy_is_atmibuf_UbfDict(py::object data)
+{
+    if (py::isinstance<py::dict>(data) && data.contains(NDRXPY_DATA_DATA))
+    {
+        return ndrxpy_is_UbfDict(data[NDRXPY_DATA_DATA]);
+    }
+    else
+    {
+        return false;
+    }
+}
+
+/**
  * Reset UbfDict ptr to buffer
  * @param data buffer to reset, release the atmibuf
  */
@@ -616,6 +631,26 @@ expublic void ndrxpy_from_py_ubf(py::dict obj, atmibuf &b)
     }
 
     //Bprint(*b.fbfr());
+}
+
+
+/**
+ * Callback for UBF buffer priting
+ * @param buffer data buffer
+ * @param datalen data len in buffer
+ * @param dataptr1 custom pointer passed by parent func
+ * @param do_write ignore
+ * @param outf ignore
+ * @param fid ignore
+ * @return EXSUCCEED/EXFAIL
+ */
+exprivate int print_buffer(char **buffer, long datalen, void *dataptr1, 
+        int *do_write, FILE *outf, BFLDID fid)
+{
+    std::string *s = reinterpret_cast<std::string *>(dataptr1);
+    s->append(*buffer);
+
+    return EXSUCCEED;
 }
 
 /**
@@ -1212,8 +1247,14 @@ expublic void ndrxpy_register_ubf(py::module &m)
 		    
             if (EXSUCCEED!=Bdelall(*(buf->fbfr()), fldid))
             {
-                /* TODO: Add support for KeyError */
-                throw ubf_exception(Berror);
+                if (BNOTPRES==Berror)
+                {
+                    throw py::key_error(Bstrerror(Berror));
+                }
+                else
+                {
+                    throw ubf_exception(Berror);
+                }
             }
 
         },
@@ -1333,9 +1374,45 @@ expublic void ndrxpy_register_ubf(py::module &m)
         Returns
         -------
         cnt : int
-            Number of fields in UBF buffer, including occurrences.
+            Number of fields in UBF buffer, excluding occurrences.
 
         )pbdoc", py::arg("ptr"));
+
+        m.def(
+        "UbfDict_len_occ",
+        [](ndrx_longptr_t ptr)
+        {
+            atmibuf f;
+		    atmibuf *buf = reinterpret_cast<atmibuf *>(ptr);
+		    BFLDID fldid = BFIRSTFLDID;
+            BFLDOCC oc;
+            Bnext_state_t state;
+            BFLDOCC cnt=0;
+
+            /* count only the ids... As occurrences are arrays... */
+            while(1==Bnext2(&state, *(buf->fbfr()), &fldid, &oc, NULL, NULL, NULL))
+            {
+                cnt++;
+            }
+
+            UBF_LOG(log_debug, "found %d unq field ids", cnt);
+
+            return cnt;
+        },
+        R"pbdoc(
+        Get number fields in UBF buffer, count all occurrences.
+
+        Parameters
+        ----------
+        ptr: int
+            C pointer to buffer
+
+        Returns
+        -------
+        cnt : int
+            Number of fields in UBF buffer, including occurrences.
+
+        )pbdoc", py::arg("ptr"));        
 
         m.def(
         "UbfDict_iter",
@@ -1430,7 +1507,64 @@ expublic void ndrxpy_register_ubf(py::module &m)
         Returns
         -------
         ret_val : object
-            Field value at occurrence. Occurrence. How about occ? TODO!
+            List object which points to the occurrences.
+
+        )pbdoc", py::arg("self"), py::arg("ptr"));
+
+        //Expand all occurrences to the fields
+        m.def(
+        "UbfDict_next_occ",
+        [](py::object self, ndrx_longptr_t ptr)
+        {
+            int ret=1;
+            py::object ret_val;
+	        atmibuf *buf = reinterpret_cast<atmibuf *>(ptr);
+            BFLDOCC oc=0;
+            char *d_ptr;
+            BFLDLEN len;
+            py::object val;
+
+            ret=Bnext2(&buf->iter_state, *(buf->fbfr()), &buf->iter_fldid, &oc, NULL, &len, &d_ptr);
+
+            if (1==ret)
+            {
+                val=ndrxpy_to_py_ubf_fld(d_ptr, buf->iter_fldid, oc, len, Bsizeof(*(buf->fbfr())));
+            }
+            else if (0==ret)
+            {
+                /* EOF found */
+                throw py::stop_iteration();
+            }
+            else
+            {
+                throw ubf_exception(Berror);
+            }
+
+            char *fname = Bfname(buf->iter_fldid);
+
+            if (NULL!=fname)
+            {
+                return py::make_tuple(fname, val);
+            }
+            else
+            {
+                return py::make_tuple(buf->iter_fldid, val);
+            }
+        },
+        R"pbdoc(
+        Next iteration over UBF buffer, expand all occrrences to the key/values tuples
+
+        Parameters
+        ----------
+        self: UbfDict
+            UbfDict object
+        ptr: int
+            C pointer to buffer
+
+        Returns
+        -------
+        ret_val : tuple
+            Contains key/value for all occurrences
 
         )pbdoc", py::arg("self"), py::arg("ptr"));
 
@@ -1534,6 +1668,80 @@ expublic void ndrxpy_register_ubf(py::module &m)
 
         )pbdoc", py::arg("self"), py::arg("ptr"));
 
+        // Continue iterate, keys only.
+        m.def(
+        "UbfDict_repr",
+        [](py::object self, ndrx_longptr_t ptr)
+        {
+            int ret;
+            std::string ret_val;
+	        atmibuf *buf = reinterpret_cast<atmibuf *>(ptr);
+            BFLDOCC oc=0;
+
+            if (EXSUCCEED!=Bfprintcb(*buf->fbfr(), print_buffer, reinterpret_cast<void *>(&ret_val)))
+            {
+                throw ubf_exception(Berror);
+            }
+
+            return ret_val;
+        },
+        R"pbdoc(
+        Print the UbfDict object
+
+        Parameters
+        ----------
+        self: UbfDict
+            UbfDict object
+        ptr: int
+            C pointer to buffer
+            
+        Returns
+        -------
+        ret_val : str
+            Buffer representation
+
+        )pbdoc", py::arg("self"), py::arg("ptr"));
+
+        m.def(
+        "UbfDict_cmp",
+        [](ndrx_longptr_t ptr1, ndrx_longptr_t ptr2)
+        {
+		    atmibuf *buf1 = reinterpret_cast<atmibuf *>(ptr1);
+            atmibuf *buf2 = reinterpret_cast<atmibuf *>(ptr2);
+
+            auto ret = Bcmp(*buf1->fbfr(), *buf2->fbfr());
+
+            if (-2==ret)
+            {
+                throw ubf_exception(Berror);
+            }
+            
+            if (0==ret)
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        },
+        R"pbdoc(
+        Compare two UbfDict() objects.
+
+        Parameters
+        ----------
+        ptr1: int
+            Pointer to atmibuf 1.
+        ptr2: int
+            Pointer to atmibuf 2.
+
+        Returns
+        -------
+        ret : bool
+            true for equal, false not equal
+
+        )pbdoc", py::arg("self"), py::arg("ptr"));
+
         m.def(
         "UbfDictFld_set",
         [](py::object ubf_dict_fld, BFLDOCC oc, py::object data)
@@ -1562,6 +1770,7 @@ expublic void ndrxpy_register_ubf(py::module &m)
         )pbdoc", py::arg("ubf_dict_fld"), py::arg("oc"), py::arg("data"));
 
         /*
+        TODO:
          random fields non existing are told to be:
         >>> print ('T_STRING_3_FLD' in cc)
         True
@@ -1583,17 +1792,14 @@ expublic void ndrxpy_register_ubf(py::module &m)
 
             if (nullptr==d_ptr)
             {
-                /* TODO: Add support for KeyError 
-                throw ubf_exception(Berror);
-                */
-               if (BNOTPRES==Berror)
-               {
-                    throw py::index_error("BNOTPRES");
-               }
-               else
-               {
+                if (BNOTPRES==Berror)
+                {
+                    throw py::index_error(Bstrerror(Berror));
+                }
+                else
+                {
                     throw ubf_exception(Berror);
-               }
+                }
             }
 
             ret = ndrxpy_to_py_ubf_fld(d_ptr, fldid, oc, len, Bsizeof(*(buf->fbfr())));
@@ -1632,8 +1838,14 @@ expublic void ndrxpy_register_ubf(py::module &m)
 
             if (EXSUCCEED!=Bdel (*(buf->fbfr()), fldid, oc))
             {
-                /* TODO: Add support for KeyError */
-                throw ubf_exception(Berror);
+                if (BNOTPRES==Berror)
+                {
+                    throw py::index_error(Bstrerror(Berror));
+                }
+                else
+                {
+                    throw ubf_exception(Berror);
+                }
             }
         },
         R"pbdoc(
@@ -1676,6 +1888,87 @@ expublic void ndrxpy_register_ubf(py::module &m)
         -------
         len : int
             Number of field occurrences in UBF buffer.
+
+        )pbdoc", py::arg("ubf_dict_fld"));
+
+        // Represent dictionary key
+        m.def(
+        "UbfDictFld_repr",
+        [](py::object ubf_dict_fld)
+        {
+            BFLDOCC ret;
+            py::object ubf_dict = ubf_dict_fld.attr("_ubf_dict");
+            ndrx_longptr_t ptr = ubf_dict.attr("_buf").cast<py::int_>();
+            BFLDID fldid = ubf_dict_fld.attr("fldid").cast<py::int_>();
+            atmibuf *src_buf = reinterpret_cast<atmibuf *>(ptr);
+            char btype[16];
+            char stype[16];
+            BFLDID flist[] = {fldid, BBADFLDID};
+
+            NDRX_LOG(log_debug, "UbfDict_copy src_buf (atmi): %p", *src_buf->pp);
+
+            long len = tptypes(*src_buf->pp, btype, stype);
+
+            if (EXFAIL==len)
+            {
+                throw atmi_exception(tperrno);
+            }
+
+            if (0!=strcmp(btype, "UBF"))
+            {
+                throw std::invalid_argument("Epxected UBF typed buffer, but got ["+std::string(btype)+"]");
+            }
+
+            auto used = Bused(reinterpret_cast<UBFH *> (*src_buf->pp));
+
+            if (EXFAIL==used)
+            {
+                NDRX_LOG(log_error, "Failed to get buffer [%p] used size: %s", 
+                    *src_buf->pp, Bstrerror(Berror));
+                throw ubf_exception(Berror);
+            }
+
+            char *ret_buf = tpalloc(btype, NULL, used);
+
+            if (nullptr==ret_buf)
+            {
+                throw atmi_exception(tperrno);
+            }
+
+            if (EXSUCCEED!=Bprojcpy (reinterpret_cast<UBFH *>(ret_buf), *src_buf->fbfr(), flist))
+            {
+                tpfree(ret_buf);
+                throw ubf_exception(Berror);
+            }
+            
+            std::string ret_val;
+	        atmibuf *buf = reinterpret_cast<atmibuf *>(ptr);
+            BFLDOCC oc=0;
+
+            if (EXSUCCEED!=Bfprintcb(reinterpret_cast<UBFH *>(ret_buf), print_buffer, 
+                reinterpret_cast<void *>(&ret_val)))
+            {
+                tpfree(ret_buf);
+                throw ubf_exception(Berror);
+            }
+            tpfree(ret_buf);
+            
+            return ret_val;
+        },
+        R"pbdoc(
+        Print the UbfDictFld object (in ud format)
+
+        Parameters
+        ----------
+        ubf_dict_fld: UbfDictFld
+            UbfDictFld object
+        ptr: int
+            C pointer to buffer
+            
+        Returns
+        -------
+        ret_val : str
+            Buffer representation
 
         )pbdoc", py::arg("ubf_dict_fld"));
 

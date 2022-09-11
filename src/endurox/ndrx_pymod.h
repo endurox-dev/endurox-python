@@ -390,6 +390,7 @@ extern void ndrxpy_from_py_view(py::dict obj, atmibuf &b, const char *view);
 extern py::object ndrxpy_to_py_view(char *cstruct, char *vname, long size);
 
 extern bool ndrxpy_is_UbfDict(py::object data);
+extern bool ndrxpy_is_atmibuf_UbfDict(py::object data);
 extern void ndrxpy_reset_ptr_UbfDict(py::object data);
 extern py::object ndrxpy_alloc_UbfDict(char *data, bool is_sub_buffer);
 extern py::object ndrxpy_to_py_ubf(UBFH *fbfr, BFLDLEN buflen);

@@ -118,7 +118,7 @@ expublic py::object ndrxpy_pytpimport(const std::string istr, long flags)
         throw atmi_exception(tperrno);
     }
 
-    return ndrx_to_py(obuf, true);
+    return ndrx_to_py(obuf, false);
 }
 
 /**
@@ -336,8 +336,7 @@ exprivate void notification_callback (char *data, long len, long flags)
 {
     atmibuf b;
     b.len = len;
-    b.p=nullptr;//do not free the master buffer.
-    b.pp = &data;
+    b.p=data;
 
     ndrx_ctx_priv_t* priv = ndrx_ctx_priv_get();
     ndrxpy_object_t *obj_ptr = reinterpret_cast<ndrxpy_object_t *>(priv->integptr1);
@@ -352,6 +351,8 @@ exprivate void notification_callback (char *data, long len, long flags)
         //Clear ptr to UBF...
         buf.attr("_buf")=0;
     }
+
+    b.p = nullptr; //Do not free!
 }
 
 /**

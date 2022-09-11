@@ -336,8 +336,8 @@ expublic void ndrxpy_register_tplog(py::module &m)
                 // In case if buffer changed..
                 in.p=*in.pp;
             }
-
-            if (ndrxpy_is_UbfDict(data))
+            
+            if (ndrxpy_is_atmibuf_UbfDict(data))
             {
                 return data;
             }
@@ -483,17 +483,18 @@ expublic void ndrxpy_register_tplog(py::module &m)
         "tplogdelbufreqfile",
         [](py::object data)
         {
+            NDRX_LOG(1, "Into tplogdelbufreqfile()");
             auto in = ndrx_from_py(data, false);
             {
                 py::gil_scoped_release release;
                 if (EXSUCCEED!=tplogdelbufreqfile(*in.pp))
                 {
-                        throw atmi_exception(tperrno);
+                    throw atmi_exception(tperrno);
                 }
             }
 
             //Re-use the same object on return...
-            if (ndrxpy_is_UbfDict(data))
+            if (ndrxpy_is_atmibuf_UbfDict(data))
             {
                 return data;
             }

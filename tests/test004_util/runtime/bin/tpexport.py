@@ -12,12 +12,12 @@ class TestTpexport(unittest.TestCase):
             # binary data:
             buf=e.tpexport({"buftype":"UBF", "data":{"T_STRING_FLD":["HELLO TEST", "HELLO 2"]}})
             buf2=e.tpimport(buf)
-            self.assertEqual(buf2, {"buftype":"UBF", "data":{"T_STRING_FLD":["HELLO TEST", "HELLO 2"]}})
+            self.assertEqual( (buf2=={"buftype":"UBF", "data":{"T_STRING_FLD":["HELLO TEST", "HELLO 2"]}}), True)
 
             # string fmt
             buf=e.tpexport({"buftype":"UBF", "data":{"T_STRING_FLD":["HELLO TEST", "HELLO 2"]}}, e.TPEX_STRING)
             buf2=e.tpimport(buf, e.TPEX_STRING)
-            self.assertEqual(buf2, {"buftype":"UBF", "data":{"T_STRING_FLD":["HELLO TEST", "HELLO 2"]}})
+            self.assertEqual( (buf2=={"buftype":"UBF", "data":{"T_STRING_FLD":["HELLO TEST", "HELLO 2"]}}), True)
             
 
 if __name__ == '__main__':

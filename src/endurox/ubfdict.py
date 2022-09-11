@@ -57,6 +57,10 @@ class UbfDictFld(MutableSequence):
                 return False
         return True
 
+    # print the field occs... in UD format
+    def __repr__(self) -> str:
+        return UbfDictFld_repr(self);
+
 # items iteration class    
 class UbfDictItems:
 
@@ -71,6 +75,26 @@ class UbfDictItems:
     # next field
     def __next__(self): 
         return UbfDict_next(self, self._buf)
+
+# Items expanded to occurrences
+# instead of the lists
+class UbfDictItemsOcc:
+
+    def __init__(self, ubf_dict):
+        self.ubf_dict = ubf_dict
+        self._buf = ubf_dict._buf
+
+    # Start iteration
+    def __iter__(self):
+        return UbfDict_iter(self, self._buf)
+    
+    # next field
+    def __next__(self): 
+        return UbfDict_next_occ(self, self._buf)
+
+    # return len by counting occurrences, instead of the keys
+    def __len__(self): 
+        return UbfDict_len_occ(self, self._buf)
 
 # UBF <-> Dictionary mapping
 class UbfDict(MutableMapping):
@@ -143,6 +167,13 @@ class UbfDict(MutableMapping):
         iter = UbfDictItems(self)
         return  iter
 
+    #
+    # Expand occurrances
+    #
+    def itemsocc(self):
+        iter = UbfDictItemsOcc(self)
+        return  iter
+
     def items(self):
         iter = UbfDictItems(self)
         return  iter
@@ -196,11 +227,9 @@ class UbfDict(MutableMapping):
 
     # manual free up of the buffer
     def free(self):
-
         # validate the parent buffer
         if self.is_sub_buffer:
             raise AttributeError('Cannot change sub-buffer')
-
         __del__(self)
 
     # Start iteration
@@ -210,6 +239,14 @@ class UbfDict(MutableMapping):
     # next field, keys only
     def __next__(self):
         return UbfDict_next_keys(self, self._buf)
+
+    # return the UBF buffer..
+    def __repr__(self):
+        return UbfDict_repr(self, self._buf)
+
+    # Convert given UbfDict() to generic Python dictionary
+    def to_dict(self):
+        pass
 
 
 # vim: set ts=4 sw=4 et smartindent:
