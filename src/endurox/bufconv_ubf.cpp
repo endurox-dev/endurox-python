@@ -660,19 +660,24 @@ exprivate int print_buffer(char **buffer, long datalen, void *dataptr1,
  */
 expublic void ndrxpy_register_ubf(py::module &m)
 {
+    printf("Loading mod...\n");
     //Load Enduro/X module used for Python object instatiation
     M_endurox = py::module::import("endurox");
+    //If we get unclean shutdown, do not destruct the object
+    //otherwise runtime is dead and destructor fails with core dump.
+    M_endurox.inc_ref();
     
+    #if 0
     auto cleanup_callback = []()
     {
-        //Clean up niceley...
+        //At clean shutdown, most likely we will not get signal here...?
+        M_endurox.dec_ref();
         M_endurox.dec_ref();
         M_endurox.release();
-
-    
     };
 
     m.add_object("_cleanup", py::capsule(cleanup_callback));
+    #endif
 
     m.def(
         "Bfldtype", [](BFLDID fldid)
@@ -1635,7 +1640,6 @@ expublic void ndrxpy_register_ubf(py::module &m)
             int ret;
             py::object ret_val;
 	        atmibuf *buf = reinterpret_cast<atmibuf *>(ptr);
-
             return ndrxpy_to_py_ubf(*buf->fbfr());
         },
         R"pbdoc(
