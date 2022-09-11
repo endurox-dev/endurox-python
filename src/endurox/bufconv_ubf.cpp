@@ -1629,6 +1629,34 @@ expublic void ndrxpy_register_ubf(py::module &m)
         )pbdoc", py::arg("self"), py::arg("ptr"));
 
         m.def(
+        "UbfDict_to_dict",
+        [](py::object self, ndrx_longptr_t ptr)
+        {
+            int ret;
+            py::object ret_val;
+	        atmibuf *buf = reinterpret_cast<atmibuf *>(ptr);
+
+            return ndrxpy_to_py_ubf(*buf->fbfr());
+        },
+        R"pbdoc(
+        Return Python dictionary from current UbfDict
+
+        Parameters
+        ----------
+        self: UbfDict
+            UbfDict object
+
+        ptr: int
+            C pointer to buffer
+
+        Returns
+        -------
+        ret_val : dict
+            return current buffer as python standard dict()
+
+        )pbdoc", py::arg("self"), py::arg("ptr"));
+
+        m.def(
         "UbfDict_cmp",
         [](ndrx_longptr_t ptr1, ndrx_longptr_t ptr2)
         {

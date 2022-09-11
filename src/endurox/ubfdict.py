@@ -246,7 +246,7 @@ class UbfDict(MutableMapping):
 
     # Convert given UbfDict() to generic Python dictionary
     def to_dict(self):
-        pass
+        return UbfDict_to_dict(self, self._buf)
 
 
 # vim: set ts=4 sw=4 et smartindent:
