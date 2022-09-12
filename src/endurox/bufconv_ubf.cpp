@@ -111,9 +111,10 @@ expublic void ndrxpy_reset_ptr_UbfDict(py::object data)
 
 /**
  * Allocate UBF Dictionary object
- * @param p_ub PTR to UBF handle 
+ * @param data PTR to UBF handle 
+ * @param buflen data len
  */
-expublic py::object ndrxpy_alloc_UbfDict(char *data, bool is_sub_buffer)
+expublic py::object ndrxpy_alloc_UbfDict(char *data, bool is_sub_buffer, BFLDLEN buflen)
 {
     atmibuf *b = new atmibuf();
     py::object UbfDict = M_endurox.attr("UbfDict");
@@ -121,6 +122,7 @@ expublic py::object ndrxpy_alloc_UbfDict(char *data, bool is_sub_buffer)
     py::object ret;
 
     b->p = data;
+    b->len=buflen;
     //Do not alloc the buffer...., as we give ptr..
     ret = UbfDict(false);
 
@@ -191,9 +193,15 @@ exprivate py::object ndrxpy_to_py_ubf_fld(char *d_ptr, BFLDID fldid,
             break;
         case BFLD_UBF:
         
-            //Avoid buffer changing... if we are sub-buffers...
-            ret=ndrxpy_alloc_UbfDict(d_ptr, true);
-
+            if (ndrxpy_G_use_ubfdict)
+            {
+                //Avoid buffer changing... if we are sub-buffers...
+                ret=ndrxpy_alloc_UbfDict(d_ptr, true, buflen);
+            }
+            else
+            {
+                ret=ndrxpy_to_py_ubf(reinterpret_cast<UBFH *>(d_ptr), buflen);
+            }
             break;
         case BFLD_VIEW:
         {
@@ -298,7 +306,7 @@ expublic py::object ndrxpy_to_py_ubf(UBFH *fbfr, BFLDLEN buflen = 0)
 /**
  * @brief Build UBF buffer from PY dict
  * 
- * @param buf 
+ * @param buf C++ Wrapper for ATMI buffer
  * @param fldid 
  * @param oc 
  * @param obj 
@@ -1199,25 +1207,7 @@ expublic void ndrxpy_register_ubf(py::module &m)
         {
 		    py::object UbfDictFld = M_endurox.attr("UbfDictFld");
             BFLDID fldid;
-            #if 0
-            if (py::isinstance<py::tuple>(pyfldid))
-            {
-                //Extract field ID from the UbfDictFld
-                //As this stuff may be preset for buffer compare ops
-                auto fldtuple = pyfldid.cast<py::tuple>();
-
-                //From UbfDictFld()
-                fldid = fldtuple[1].attr("fldid").cast<py::int_>();
-            }
-            else
-            {
-                #endif
-
             fldid = ndrxpy_fldid_resolve(pyfldid);
-                #if 0
-            }
-            #endif
-
             //Allocate Python Object
             py::object dictfld = UbfDictFld();
             dictfld.attr("fldid") = fldid;
@@ -2003,6 +1993,46 @@ expublic void ndrxpy_register_ubf(py::module &m)
             Buffer representation
 
         )pbdoc", py::arg("ubf_dict_fld"));
+
+
+        // Represent dictionary key
+        m.def(
+        "ndrxpy_ubfdict_disable",
+        [](bool disable)
+        {
+            auto prev = ndrxpy_G_use_ubfdict;
+
+            if (disable)
+            {
+                ndrxpy_G_use_ubfdict=false;
+                NDRX_LOG(log_debug, "UbfDict disable, fallback to dict");
+            }
+            else
+            {
+                NDRX_LOG(log_debug, "UbfDict enabled");
+                ndrxpy_G_use_ubfdict=false;
+            }
+
+            return prev;
+        },
+        R"pbdoc(
+        Disable UbfDict mode. When disable, pure dict objects are
+        used to represent UBF buffers. However this mode is slower, due to
+        for all interactions with XATMI bufer is marshalled from XATMI UBF to dict
+        and vice versa.
+
+        Parameters
+        ----------
+        disable: bool
+            If set to **true**, dict() is used for UBF representation.
+            If set to **false**, UbfDict() is used for UBF representation.
+            
+        Returns
+        -------
+        prev : bool
+            Previous setting
+
+        )pbdoc", py::arg("disable"));
 
 }
 

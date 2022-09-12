@@ -159,10 +159,15 @@ void PY(TPSVCINFO *svcinfo)
             auto ibuf=atmibuf(svcinfo);
             auto idata = ndrx_to_py(ibuf, false);
             info.data = idata;
+            //No reset if using UbfDict() XATMI ptr
+            //becomes linked to the python object.
+            if (ndrxpy_is_atmibuf_UbfDict(idata))
+            {
+                ibuf.p=nullptr;
+            }
         }
 
         auto && func = M_dispmap[svcinfo->fname];
-
         func(server, &info);
 
     }

@@ -19,7 +19,7 @@ class UbfDictFld(MutableSequence):
     def __delitem__(self, i):
 
         # Valdiat ethe parent buffer
-        if _ubf_dict.is_sub_buffer:
+        if self._ubf_dict.is_sub_buffer:
             raise AttributeError('Cannot change sub-buffer')
 
         return UbfDictFld_del(self, i)
@@ -32,7 +32,7 @@ class UbfDictFld(MutableSequence):
     def __setitem__(self, i, value):
 
         # Valdiat ethe parent buffer
-        if _ubf_dict.is_sub_buffer:
+        if self._ubf_dict.is_sub_buffer:
             raise AttributeError('Cannot change sub-buffer')
 
         return UbfDictFld_set(self, i, value)
@@ -41,7 +41,7 @@ class UbfDictFld(MutableSequence):
     def insert(self, i, value):
 
         # Valdiat ethe parent buffer
-        if _ubf_dict.is_sub_buffer:
+        if self._ubf_dict.is_sub_buffer:
             raise AttributeError('Cannot change sub-buffer')
 
         return UbfDictFld_set(self, i, value)

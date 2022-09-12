@@ -57,6 +57,7 @@
 /*---------------------------Typedefs-----------------------------------*/
 /*---------------------------Globals------------------------------------*/
 /*---------------------------Statics------------------------------------*/
+expublic bool ndrxpy_G_use_ubfdict = true; /**< Use UbfDict() by default */
 /*---------------------------Prototypes---------------------------------*/
 namespace py = pybind11;
 
@@ -105,15 +106,25 @@ expublic py::object ndrx_to_py(atmibuf &buf, bool is_sub_buffer)
     }
     else if (strcmp(type, "UBF") == 0)
     {
-        result["data"]=ndrxpy_alloc_UbfDict(*buf.pp, is_sub_buffer);
-
-        //Parent may free up master buffers...
-        if (!is_sub_buffer)
+        if (ndrxpy_G_use_ubfdict)
         {
-            tmp_ptr = buf.p;
-            buf.pp = &tmp_ptr;
-            //release buffer ptr, as now handled by data
-            buf.p=nullptr;
+            NDRX_LOG(log_debug, "Using UbfDict() len =%ld", size);
+
+            result["data"]=ndrxpy_alloc_UbfDict(*buf.pp, is_sub_buffer, size);
+
+            //Parent may free up master buffers...
+            if (!is_sub_buffer)
+            {
+                tmp_ptr = buf.p;
+                buf.pp = &tmp_ptr;
+                //release buffer ptr, as now handled by data
+                buf.p=nullptr;
+            }
+        }
+        else
+        {
+            NDRX_LOG(log_debug, "Using dict()");
+            result["data"]=ndrxpy_to_py_ubf(*buf.fbfr(), 0);
         }
     }
     else if (strcmp(type, "VIEW") == 0)
@@ -137,8 +148,14 @@ expublic py::object ndrx_to_py(atmibuf &buf, bool is_sub_buffer)
         
         if (EXTRUE==ret)
         {
+            //Get buffer size, as later used by auto-realloc
+            if ((size=tptypes(p_buf, type, subtype)) == EXFAIL)
+            {
+                throw std::invalid_argument("Failed to get callinfo buffer size");
+            }
+
             // setup callinfo block
-            result[NDRXPY_DATA_CALLINFO]=ndrxpy_alloc_UbfDict(p_buf, false);
+            result[NDRXPY_DATA_CALLINFO]=ndrxpy_alloc_UbfDict(p_buf, false, size);
         }
         else if (EXFAIL==ret)
         {
