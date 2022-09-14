@@ -7,6 +7,7 @@
 export XMEMCK_LOG=`pwd`/xmemck.log
 export XMEMCK_OUT=`pwd`/xmemck.out
 export TEST_OUT=`pwd`/test.out
+rm $TESTOUT 2>/dev/null
 (
 #
 # Load system settings...

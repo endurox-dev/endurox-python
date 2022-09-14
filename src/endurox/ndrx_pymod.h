@@ -44,7 +44,7 @@
 
 /*---------------------------Externs------------------------------------*/
 
-extern bool ndrxpy_G_use_ubfdict; /**< Use UbfDict() by default */
+extern thread_local bool ndrxpy_G_use_ubfdict; /**< Use UbfDict() by default */
 
 /*---------------------------Macros-------------------------------------*/
 #define NDRXPY_DATA_DATA        "data"      /**< Actual data field          */

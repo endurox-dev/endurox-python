@@ -710,6 +710,15 @@ expublic void ndrxpy_register_ubf(py::module &m)
     m.add_object("_cleanup", py::capsule(cleanup_callback));
     #endif
 
+    //Pull in any Enduor/X Core inits
+    NDRX_LOG(log_debug, "Enduro/X Python module init...");
+
+    if (nullptr!=tuxgetenv(const_cast<char *>("NDRXPY_UBFDICT_DISABLE")))
+    {
+        NDRX_LOG(log_debug, "UbfDict mode disabled");
+        ndrxpy_G_use_ubfdict=false;
+    }
+
     m.def(
         "Bfldtype", [](BFLDID fldid)
         { return Bfldtype(fldid); },
@@ -1436,8 +1445,8 @@ expublic void ndrxpy_register_ubf(py::module &m)
         [](ndrx_longptr_t ptr)
         {
             atmibuf f;
-		    atmibuf *buf = reinterpret_cast<atmibuf *>(ptr);
-		    BFLDID fldid = BFIRSTFLDID;
+            atmibuf *buf = reinterpret_cast<atmibuf *>(ptr);
+            BFLDID fldid = BFIRSTFLDID;
             BFLDOCC oc;
             Bnext_state_t state;
             BFLDOCC cnt=0;
@@ -2048,21 +2057,20 @@ expublic void ndrxpy_register_ubf(py::module &m)
 
         // Represent dictionary key
         m.def(
-        "ndrxpy_ubfdict_disable",
-        [](bool disable)
+        "ndrxpy_use_ubfdict",
+        [](bool do_use)
         {
             auto prev = ndrxpy_G_use_ubfdict;
 
-            if (disable)
+            if (do_use)
             {
-                ndrxpy_G_use_ubfdict=false;
                 NDRX_LOG(log_debug, "UbfDict disable, fallback to dict");
             }
             else
             {
                 NDRX_LOG(log_debug, "UbfDict enabled");
-                ndrxpy_G_use_ubfdict=false;
             }
+            ndrxpy_G_use_ubfdict=do_use;
 
             return prev;
         },
@@ -2074,16 +2082,16 @@ expublic void ndrxpy_register_ubf(py::module &m)
 
         Parameters
         ----------
-        disable: bool
-            If set to **true**, dict() is used for UBF representation.
-            If set to **false**, UbfDict() is used for UBF representation.
+        do_use: bool
+            If set to **true**, UbfDict is used for UBF representation.
+            If set to **false**, dict is used for UBF representation.
             
         Returns
         -------
         prev : bool
             Previous setting
 
-        )pbdoc", py::arg("disable"));
+        )pbdoc", py::arg("do_use"));
 
 }
 

@@ -94,7 +94,7 @@ class UbfDictItemsOcc:
 
     # return len by counting occurrences, instead of the keys
     def __len__(self): 
-        return UbfDict_len_occ(self, self._buf)
+        return UbfDict_len_occ(self._buf)
 
 # UBF <-> Dictionary mapping
 class UbfDict(MutableMapping):

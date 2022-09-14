@@ -57,7 +57,7 @@
 /*---------------------------Typedefs-----------------------------------*/
 /*---------------------------Globals------------------------------------*/
 /*---------------------------Statics------------------------------------*/
-expublic bool ndrxpy_G_use_ubfdict = true; /**< Use UbfDict() by default */
+expublic thread_local bool ndrxpy_G_use_ubfdict = true; /**< Use UbfDict() by default */
 /*---------------------------Prototypes---------------------------------*/
 namespace py = pybind11;
 
