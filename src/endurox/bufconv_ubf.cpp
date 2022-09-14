@@ -67,7 +67,7 @@ py::module_ M_endurox;    /**< Loader module handle. Any houskeeping on unload? 
  * @param data Python data object
  * @return true/false
  */
-expublic bool ndrxpy_is_UbfDict(py::object data)
+expublic bool ndrxpy_is_UbfDict(py::handle data)
 {
     py::object UbfDict = M_endurox.attr("UbfDict");
     auto ret = data.is(UbfDict);
@@ -318,6 +318,7 @@ static void from_py1_ubf(atmibuf &buf, BFLDID fldid, BFLDOCC oc,
                      py::handle obj, atmibuf &b, Bfld_loc_info_t *loc,
                      bool chg)
 {
+
     if (obj.is_none())
     {
 
@@ -432,6 +433,29 @@ static void from_py1_ubf(atmibuf &buf, BFLDID fldid, BFLDOCC oc,
                                   
                     }, loc);
     }
+    else if (ndrxpy_is_UbfDict(obj))
+    {
+        if (BFLD_UBF==Bfldtype(fldid) || BFLD_PTR==Bfldtype(fldid))
+        {
+            ndrx_longptr_t ptr = obj.attr("_buf").cast<py::int_>();
+            atmibuf *p_buf = reinterpret_cast<atmibuf *>(ptr);
+            buf.mutate([&](UBFH *fbfr)
+                    { 
+                        if (chg)
+                        {
+                            return Bchg(fbfr, fldid, oc, *p_buf->pp, 0); 
+                        }
+                        else
+                        {
+                            return Baddfast(fbfr, fldid, *p_buf->pp, 0, loc); 
+                        }
+                    }, loc);
+        }
+        else
+        {
+            throw std::invalid_argument("Unsupported type for UbfDict()");
+        }
+    }
     else if (py::isinstance<py::dict>(obj))
     {
         if (BFLD_UBF==Bfldtype(fldid))
@@ -509,14 +533,6 @@ static void from_py1_ubf(atmibuf &buf, BFLDID fldid, BFLDOCC oc,
         }
         else if (BFLD_PTR==Bfldtype(fldid))
         {
-            if (!py::isinstance<py::dict>(obj))
-            {
-                char tmp[128];
-                snprintf(tmp, sizeof(tmp), "Field id=%d is PTR, expected dictionary, but is not", 
-                        fldid);
-                NDRX_LOG(log_error, "%s", tmp);
-                throw std::invalid_argument(tmp);
-            }
             atmibuf tmp = ndrx_from_py(obj.cast<py::object>(), false);
             
             buf.mutate([&](UBFH *fbfr)
@@ -557,7 +573,10 @@ exprivate BFLDID ndrxpy_fldid_resolve(py::handle fld)
 		if (fldid<=BBADFLDID)
 		{
 			NDRX_LOG(log_error, "Invalid field id %d", fldid);
-			throw ubf_exception(BBADFLD);
+            char msgbuf[128];
+            snprintf(msgbuf, sizeof(msgbuf), "Invalid field id %d", fldid);
+			//throw ubf_exception(BBADFLD);
+            throw py::key_error(msgbuf);
 		}
 	}
 	else
@@ -568,8 +587,13 @@ exprivate BFLDID ndrxpy_fldid_resolve(py::handle fld)
 
 		if (BBADFLDID==fldid)
 		{
-			NDRX_LOG(log_error, "Failed to resolve field [%s]: %s", fldstr, Bstrerror(Berror));
-			throw ubf_exception(Berror);
+            char msgbuf[256];
+
+            snprintf(msgbuf, sizeof(msgbuf), 
+                "Failed to resolve field [%s]: %s", fldstr, Bstrerror(Berror));
+			NDRX_LOG(log_warn, "%s", msgbuf);
+			//throw ubf_exception(Berror);
+            throw py::key_error(msgbuf);
 		}
 	}
 	
@@ -668,7 +692,6 @@ exprivate int print_buffer(char **buffer, long datalen, void *dataptr1,
  */
 expublic void ndrxpy_register_ubf(py::module &m)
 {
-    printf("Loading mod...\n");
     //Load Enduro/X module used for Python object instatiation
     M_endurox = py::module::import("endurox");
     //If we get unclean shutdown, do not destruct the object
@@ -1265,6 +1288,41 @@ expublic void ndrxpy_register_ubf(py::module &m)
         )pbdoc", py::arg("ptr"), py::arg("fldid"));
 
     m.def(
+        "UbfDict_contains",
+        [](ndrx_longptr_t ptr, py::object pyfldid)
+        {
+            atmibuf f;
+		    atmibuf *buf = reinterpret_cast<atmibuf *>(ptr);
+		    BFLDID fldid = ndrxpy_fldid_resolve(pyfldid);
+		    
+            if (EXTRUE==Bpres(*(buf->fbfr()), fldid, 0))
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+
+        },
+        R"pbdoc(
+        Check is field present in UBF buffer
+
+        Parameters
+        ----------
+        ptr: int
+            C pointer to buffer
+        fldid: object
+            String or integer field id
+            
+        Returns
+        -------
+        ret : bool
+            True (present), False (not)
+
+        )pbdoc", py::arg("ptr"), py::arg("fldid"));
+
+    m.def(
         "UbfDict_copy",
         [](ndrx_longptr_t src_ptr)
         {
@@ -1791,13 +1849,6 @@ expublic void ndrxpy_register_ubf(py::module &m)
             Data to load into occurrance
         )pbdoc", py::arg("ubf_dict_fld"), py::arg("oc"), py::arg("data"));
 
-        /*
-        TODO:
-         random fields non existing are told to be:
-        >>> print ('T_STRING_3_FLD' in cc)
-        True
-
-        */ 
         m.def(
         "UbfDictFld_get",
         [](py::object ubf_dict_fld, BFLDOCC oc)

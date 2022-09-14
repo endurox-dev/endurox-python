@@ -244,6 +244,18 @@ class UbfDict(MutableMapping):
     def __repr__(self):
         return UbfDict_repr(self, self._buf)
 
+    def __contains__(self, key):
+        """Check the UBF field is present in UBF buffer
+        
+        Returns
+        -------
+        result : bool
+            **True** if present, **False** if not
+
+        """
+
+        return UbfDict_contains(self._buf, key)
+
     # Convert given UbfDict() to generic Python dictionary
     def to_dict(self):
         return UbfDict_to_dict(self, self._buf)
