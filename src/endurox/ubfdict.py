@@ -260,5 +260,24 @@ class UbfDict(MutableMapping):
     def to_dict(self):
         return UbfDict_to_dict(self, self._buf)
 
+    # access as attribs
+    def __getattr__(self, attr):
+
+        if attr=="is_sub_buffer":
+            super(UbfDict, self).__getattr__(attr)
+        elif attr=="_buf":
+            super(UbfDict, self).__getattr__(attr)
+        else:
+            return self[attr]
+
+    # access as attribs
+    def __setattr__(self, attr, value):
+
+        if attr=="is_sub_buffer":
+            super(UbfDict, self).__setattr__(attr, value)
+        elif attr=="_buf":
+            super(UbfDict, self).__setattr__(attr, value)
+        else:
+            self[attr] = value
 
 # vim: set ts=4 sw=4 et smartindent:

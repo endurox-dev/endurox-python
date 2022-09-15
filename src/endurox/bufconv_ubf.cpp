@@ -685,6 +685,33 @@ exprivate int print_buffer(char **buffer, long datalen, void *dataptr1,
     return EXSUCCEED;
 }
 
+
+/**
+ * Fix occurrence, in case if it is negative, take value from the end
+ * @param buf XATMI buffer wrapper
+ * @param fldid field to fix used to count occurences
+ * @param oc index
+ * @return non negative index
+ */
+exprivate BFLDOCC fix_occ(atmibuf *buf, BFLDID fldid, BFLDOCC oc)
+{
+    if (oc < 0 )
+    {
+        int ocs = Boccur( *buf->fbfr(), fldid);
+
+        if (EXFAIL==ocs)
+        {
+            NDRX_LOG(log_error, "Failed to get occurrences for fldid=%d: %s", 
+                fldid, Bstrerror(Berror));
+            throw ubf_exception(Berror);
+        }
+
+        oc = ocs + oc; /* oc is negative... */
+    }
+
+    return oc;
+}
+
 /**
  * @brief Register UBF specific functions
  * 
@@ -1216,7 +1243,7 @@ expublic void ndrxpy_register_ubf(py::module &m)
 		    else
 		    {
 			    // Handle single elements instead of lists for convenience
-			    from_py1_ubf(*buf, fldid, 0, data, f, &loc, false);
+			    from_py1_ubf(*buf, fldid, 0, data, f, &loc, true);
 		    }
         },
         R"pbdoc(
@@ -1843,6 +1870,7 @@ expublic void ndrxpy_register_ubf(py::module &m)
             atmibuf b;
             Bfld_loc_info_t loc;
             memset(&loc, 0, sizeof(loc));
+            oc = fix_occ(buf, fldid, oc);
             from_py1_ubf(*buf, fldid, oc, data, b, &loc, true);
         },
         R"pbdoc(
@@ -1869,7 +1897,9 @@ expublic void ndrxpy_register_ubf(py::module &m)
             BFLDID fldid = ubf_dict_fld.attr("fldid").cast<py::int_>();
             atmibuf *buf = reinterpret_cast<atmibuf *>(ptr);
 
+            oc = fix_occ(buf, fldid, oc);
             NDRX_LOG(log_debug, "Into UbfDictFld_get(fldid=%d, oc=%d)", fldid, oc);
+
             char *d_ptr = Bfind (*(buf->fbfr()), fldid, oc, &len);
 
             if (nullptr==d_ptr)
@@ -1916,6 +1946,7 @@ expublic void ndrxpy_register_ubf(py::module &m)
             BFLDID fldid = ubf_dict_fld.attr("fldid").cast<py::int_>();
             atmibuf *buf = reinterpret_cast<atmibuf *>(ptr);
 
+            oc = fix_occ(buf, fldid, oc);
             NDRX_LOG(log_debug, "Into UbfDictFld_del(fldid=%d, oc=%d)", fldid, oc);
 
             if (EXSUCCEED!=Bdel (*(buf->fbfr()), fldid, oc))
