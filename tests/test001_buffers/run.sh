@@ -148,7 +148,7 @@ echo "Running callinfo test"
 ################################################################################
 
 # prints error...
-NDRX_CCTAG=low python3 -m unittest client-null-callinfo.py
+NDRX_DEBUG_STR="ndrx=1 ubf=2 tp=2" python3 -m unittest client-null-callinfo.py
 
 RET=$?
 

@@ -355,10 +355,7 @@ expublic atmibuf ndrx_from_py(py::object obj, bool reset_ptr)
         throw std::invalid_argument("Unsupported buffer type");
     }
 
-    if (nullptr!=buf.pp)
-    {
-        set_callinfo(dict, buf);
-    }
+    set_callinfo(dict, buf);
 
     return buf;
 }
