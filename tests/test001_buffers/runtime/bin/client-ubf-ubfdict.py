@@ -152,5 +152,62 @@ T_STRING_FLD\N{TAB}WORLD
             self.assertEqual(type(retbuf["data"]["T_UBF_FLD"][0]), type(UbfDict()))
 
 
+    # Field sequence.
+    def test_ubf_ubfdictfld_seq(self):
+        w = u.NdrxStopwatch()
+
+        while w.get_delta_sec() < u.test_duratation():
+            
+             b1 = e.UbfDict({"T_SHORT_FLD":[100,99,7,4]})
+             seq = [100,99,7,4]
+             i=0
+             for v in b1["T_SHORT_FLD"]:
+                self.assertEqual(v, seq[i])
+                i+=1
+
+    # Test buffer representation
+    def test_ubfdictfld_repr(self):
+        w = u.NdrxStopwatch()
+
+        while w.get_delta_sec() < u.test_duratation():
+            b1 = e.UbfDict({"T_SHORT_FLD":[100,99], "T_STRING_FLD":["HELLO", "WORLD"]})
+            str1 = str(b1["T_SHORT_FLD"])
+            comp='''\
+T_SHORT_FLD\N{TAB}100
+T_SHORT_FLD\N{TAB}99
+'''
+            self.assertEqual(str1, comp)
+
+    def test_ubfdictfld_len(self):
+        w = u.NdrxStopwatch()
+        while w.get_delta_sec() < u.test_duratation():
+            b1 = e.UbfDict({"T_SHORT_FLD":[100,99], "T_STRING_FLD":["HELLO", "WORLD"]})
+            self.assertEqual(len(b1["T_SHORT_FLD"]), 2)
+            self.assertEqual(b1["T_SHORT_FLD"].pop(), 99)
+            self.assertEqual(len(b1["T_SHORT_FLD"]), 1)
+
+    def test_ubfdict_attribs(self):
+        w = u.NdrxStopwatch()
+        while w.get_delta_sec() < u.test_duratation():
+            b1 = e.UbfDict({"T_SHORT_FLD":[100,99], "T_STRING_FLD":["HELLO", "WORLD"]})
+            b1.T_STRING_2_FLD="OK1"
+            b1.T_STRING_2_FLD="OK2"
+            b1.T_STRING_2_FLD="OK3"
+
+            self.assertEqual(len(b1.T_STRING_2_FLD), 1)
+            self.assertEqual(b1.T_STRING_2_FLD[0], "OK3")
+
+    # check negative index access to fields.
+    def test_ubfdictfld_neg_index(self):
+        w = u.NdrxStopwatch()
+        while w.get_delta_sec() < u.test_duratation():
+            b1 = e.UbfDict({"T_SHORT_FLD":[100,99,11,33,8]})
+            b1.T_SHORT_FLD[-2]=5
+
+            self.assertEqual(b1.T_SHORT_FLD[3], 5)
+            self.assertEqual(b1.T_SHORT_FLD[-2], 5)
+            del (b1.T_SHORT_FLD[-2])
+            self.assertEqual(b1.T_SHORT_FLD[-2], 11)
+
 if __name__ == '__main__':
     unittest.main()

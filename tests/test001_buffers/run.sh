@@ -148,7 +148,7 @@ echo "Running callinfo test"
 ################################################################################
 
 # prints error...
-NDRX_CCTAG=low python3 -m unittest client-null-callinfo.py
+NDRX_DEBUG_STR="ndrx=1 ubf=2 tp=2" python3 -m unittest client-null-callinfo.py
 
 RET=$?
 
@@ -238,6 +238,19 @@ RET=$?
 
 if [ $RET != 0 ]; then
     echo "client-ubf-api.py failed"
+    go_out -1
+fi
+
+################################################################################
+echo "UbfDict checks"
+################################################################################
+
+NDRXPY_TEST_DURATATION=5 NDRX_CCTAG=low python3 -m unittest client-ubf-ubfdict.py
+
+RET=$?
+
+if [ $RET != 0 ]; then
+    echo "client-ubf-ubfdict.py failed"
     go_out -1
 fi
 
