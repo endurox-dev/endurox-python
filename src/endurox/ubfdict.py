@@ -4,15 +4,41 @@ from .endurox import *
 
 # UBF Dictionary field, kind of array
 class UbfDictFld(MutableSequence):
-    """Access to UBF field dictionary"""
+    """Access to UBF field dictionary. Provides
+    list-like interface for UBF buffer field occurrences
+    """
+
     # parent buffer to access to
-    # TODO: Validate that we have a buffer set..
     _ubf_dict = None
+
+
     # Resolved field id we want to access
     fldid = 0
 
     # get the item
     def __getitem__(self, i):
+        """
+        Get UBF dictionary field object
+
+        Parameters
+        ----------
+        i: int
+            Index/occurrence to get
+
+        Returns
+        -------
+        ret : object
+            Value from UBF buffer field.
+
+        Raises
+        ------
+        IndexError
+            Invalid index specified
+        UbfException
+            | Following error codes may be present:
+            | :data:`.BALIGNERR` - Corrupted UBF buffer
+            | :data:`.BNOTFLD` - Buffer not UBF
+        """
         return UbfDictFld_get(self, i)
 
     # delete the item
