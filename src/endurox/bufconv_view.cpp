@@ -264,7 +264,7 @@ static void from_py1_view(atmibuf &buf, const char *view, const char *cname, BFL
                     const_cast<char *>(cname), oc, ptr_val,
                     len, BFLD_CARRAY))
         {
-            NDRX_LOG(log_error, "Failed to set view=[%s] cname=[%s] occ=%d: %s",
+            NDRX_LOG(log_warn, "Failed to set view=[%s] cname=[%s] occ=%d: %s",
                 view, cname, oc, Bstrerror(Berror));
             throw ubf_exception(Berror); 
         }
