@@ -342,6 +342,26 @@ static void from_py1_ubf(atmibuf &buf, BFLDID fldid, BFLDOCC oc,
                     }
                                   
                 }, loc);
+    }
+    else if (py::isinstance<py::bytearray>(obj))
+    {
+        std::string val(PyByteArray_AsString(obj.ptr()), PyByteArray_Size(obj.ptr()));
+
+        buf.mutate([&](UBFH *fbfr)
+                { 
+                    if (chg)
+                    {
+                        return CBchg(fbfr, fldid, oc, const_cast<char *>(val.data()),
+                                  val.size(), BFLD_CARRAY); 
+                    }
+                    else
+                    {
+                        return CBaddfast(fbfr, fldid, const_cast<char *>(val.data()),
+                                  val.size(), BFLD_CARRAY, loc); 
+                    }
+                                  
+                }, loc);
+    
 #endif
     }
     else if (py::isinstance<py::str>(obj))

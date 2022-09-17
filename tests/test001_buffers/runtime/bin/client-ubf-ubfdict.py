@@ -209,5 +209,32 @@ T_SHORT_FLD\N{TAB}99
             del (b1.T_SHORT_FLD[-2])
             self.assertEqual(b1.T_SHORT_FLD[-2], 11)
 
+    # server reallocates and returns 56k of data
+    def test_ubfdict_svrealloc(self):
+        w = u.NdrxStopwatch()
+        while w.get_delta_sec() < u.test_duratation():
+            errno, tpurcode, buf = e.tpcall("REALLOC", {"data":{}})
+            self.assertEqual(errno, 0)
+            self.assertEqual(tpurcode, 0)
+            self.assertEqual(len(buf["data"].T_CARRAY_FLD[0]), 56000)
+
+    # Ready only checks..
+    def test_ubfdict_ro(self):
+        w = u.NdrxStopwatch()
+        while w.get_delta_sec() < u.test_duratation():
+            
+            b1 = UbfDict({"T_UBF_FLD":{"T_STRING_FLD":"OK"}, "T_UBF_2_FLD":{"T_STRING_FLD":"OK2"}})
+            b1.T_UBF_FLD[2]={"T_STRING_3_FLD":"HELLO"}
+
+            # cannot modify sub-buffers
+            with self.assertRaises(AttributeError):
+                b1.T_UBF_FLD[2].T_STRING_3_FLD[4]="WORLD"
+
+            with self.assertRaises(AttributeError):
+                del b1.T_UBF_FLD[2].T_STRING_3_FLD[4]
+
+            with self.assertRaises(AttributeError):
+                del b1.T_UBF_FLD[2].T_STRING_3_FLD
+
 if __name__ == '__main__':
     unittest.main()
