@@ -81,9 +81,29 @@ expublic bool ndrxpy_is_UbfDict(py::handle data)
 }
 
 /**
+ * Check is given handle a UbfDict field
+ * 
+ * @param data handle to object
+ * @return true/false
+ */
+expublic bool ndrxpy_is_UbfDictFld(py::handle data)
+{
+    py::object UbfDictFld = M_endurox.attr("UbfDictFld");
+    auto ret = data.is(UbfDictFld);
+    auto type1 = py::type::of(data);
+
+    ret = type1.is(UbfDictFld);
+
+    NDRX_LOG(log_debug, "testing UbfDictFld = %d", ret);
+
+    return ret;
+}
+
+
+/**
  * Wrapper for Atmi buf wrapped UbfDict
  */
-expublic bool ndrxpy_is_atmibuf_UbfDict(py::object data)
+expublic bool ndrxpy_is_atmibuf_UbfDict(py::handle data)
 {
     if (py::isinstance<py::dict>(data) && data.contains(NDRXPY_DATA_DATA))
     {
@@ -114,7 +134,7 @@ expublic void ndrxpy_reset_ptr_UbfDict(py::object data)
  * @param data PTR to UBF handle 
  * @param buflen data len
  */
-expublic py::object ndrxpy_alloc_UbfDict(char *data, bool is_sub_buffer, BFLDLEN buflen)
+expublic py::object ndrxpy_alloc_UbfDict(char *data, int is_sub_buffer, BFLDLEN buflen)
 {
     atmibuf *b = new atmibuf();
     py::object UbfDict = M_endurox.attr("UbfDict");
@@ -196,7 +216,7 @@ exprivate py::object ndrxpy_to_py_ubf_fld(char *d_ptr, BFLDID fldid,
             if (ndrxpy_G_use_ubfdict)
             {
                 //Avoid buffer changing... if we are sub-buffers...
-                ret=ndrxpy_alloc_UbfDict(d_ptr, true, buflen);
+                ret=ndrxpy_alloc_UbfDict(d_ptr, NDRXPY_SUBBUF_UBF, buflen);
             }
             else
             {
@@ -225,11 +245,12 @@ exprivate py::object ndrxpy_to_py_ubf_fld(char *d_ptr, BFLDID fldid,
             atmibuf ptrbuf;
             ptrbuf.p = nullptr;
             ptrbuf.pp = reinterpret_cast<char **>(d_ptr);
-
-            /* process stuff recursively + free up leave buffers,
-                * as we are not using them any more
-                */
-            ret=ndrx_to_py(ptrbuf, true);
+            /* 
+             * May allow to modify the ptr buffer as
+             * as Python objects keep ptr to atmibuf, instead of raw
+             * XATMI buffer.
+             */
+            ret=ndrx_to_py(ptrbuf, NDRXPY_SUBBUF_PTR);
         }
         break;
     default:
@@ -455,7 +476,7 @@ static void from_py1_ubf(atmibuf &buf, BFLDID fldid, BFLDOCC oc,
     }
     else if (ndrxpy_is_UbfDict(obj))
     {
-        if (BFLD_UBF==Bfldtype(fldid) || BFLD_PTR==Bfldtype(fldid))
+        if (BFLD_UBF==Bfldtype(fldid))
         {
             ndrx_longptr_t ptr = obj.attr("_buf").cast<py::int_>();
             atmibuf *p_buf = reinterpret_cast<atmibuf *>(ptr);
@@ -473,7 +494,37 @@ static void from_py1_ubf(atmibuf &buf, BFLDID fldid, BFLDOCC oc,
         }
         else
         {
-            throw std::invalid_argument("Unsupported type for UbfDict()");
+            NDRX_LOG(log_warn, "Passed UbfDict() to non BFLD_UBF field");
+            throw std::invalid_argument("Passed UbfDict() to non BFLD_UBF field");
+        }
+    }
+    else if (ndrxpy_is_atmibuf_UbfDict(obj))
+    {
+        if (BFLD_PTR==Bfldtype(fldid))
+        {
+            auto data = obj[NDRXPY_DATA_DATA];
+            
+            ndrx_longptr_t ptr = data.attr("_buf").cast<py::int_>();
+            atmibuf *p_buf = reinterpret_cast<atmibuf *>(ptr);
+            buf.mutate([&](UBFH *fbfr)
+                    { 
+                        if (chg)
+                        {
+                            return Bchg(fbfr, fldid, oc, reinterpret_cast<char *>(p_buf->pp), 0); 
+                        }
+                        else
+                        {
+                            return Baddfast(fbfr, fldid, reinterpret_cast<char *>(p_buf->pp), 0, loc); 
+                        }
+                    }, loc);
+            //Now this Ubf is master reference holder
+            //source object will not de-allocate the buffer.
+            data.attr("is_sub_buffer") = NDRXPY_SUBBUF_PTR;
+        }
+        else
+        {
+            NDRX_LOG(log_warn, "Passed Buffer with data set to UbfDict() to non BFLD_PTR field used");
+            throw std::invalid_argument("Passed Buffer with data set to UbfDict() to non BFLD_PTR field used");
         }
     }
     else if (py::isinstance<py::dict>(obj))
@@ -666,7 +717,7 @@ expublic void ndrxpy_from_py_ubf(py::dict obj, atmibuf &b)
         }
 
         py::handle o = it.second;
-        if (py::isinstance<py::list>(o))
+        if (py::isinstance<py::list>(o) || ndrxpy_is_UbfDictFld(o))
         {
             BFLDOCC oc = 0;
             
@@ -1132,7 +1183,7 @@ expublic void ndrxpy_register_ubf(py::module &m)
                                                           &fclose);
             obuf.mutate([&](UBFH *fbfr)
                         { return Bextread(fbfr, fiop.get());}, NULL);
-            return ndrx_to_py(obuf, false);
+            return ndrx_to_py(obuf, NDRXPY_SUBBUF_NORM);
         },
         R"pbdoc(
         Restore ATMI UBF buffer from :func:`.Bfprint` output.
@@ -1251,7 +1302,7 @@ expublic void ndrxpy_register_ubf(py::module &m)
 		    Bfld_loc_info_t loc;
             memset(&loc, 0, sizeof(loc));
 
-		    if (py::isinstance<py::list>(data))
+		    if (py::isinstance<py::list>(data) || ndrxpy_is_UbfDictFld(data))
 		    {
 			    BFLDOCC oc = 0;
 			

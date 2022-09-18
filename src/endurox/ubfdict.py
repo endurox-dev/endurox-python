@@ -2,6 +2,18 @@ from collections.abc import MutableMapping
 from collections.abc import MutableSequence
 from .endurox import *
 
+# Constants used in module
+class UbfDictConst:
+
+    # Normal XATMI buffer
+    NDRXPY_SUBBUF_NORM  = 0           
+
+    # Embedded UBF
+    NDRXPY_SUBBUF_UBF   = 1
+
+    # This is PTR buffer
+    NDRXPY_SUBBUF_PTR   = 2
+
 # UBF Dictionary field, kind of array
 class UbfDictFld(MutableSequence):
     """Access to UBF field dictionary. Provides
@@ -39,13 +51,34 @@ class UbfDictFld(MutableSequence):
             | :data:`.BALIGNERR` - Corrupted UBF buffer
             | :data:`.BNOTFLD` - Buffer not UBF
         """
+
         return UbfDictFld_get(self, i)
 
     # delete the item
     def __delitem__(self, i):
+        """
+        Delete UBF field occurrence
 
-        # Valdiat ethe parent buffer
-        if self._ubf_dict.is_sub_buffer:
+        Parameters
+        ----------
+        i: int
+            Index/occurrence to delete
+
+        Raises
+        ------
+        IndexError
+            Invalid index specified (occurrence not present)
+        AttributeError
+            Read only buffer (sub-UBF)
+        UbfException
+            | Following error codes may be present:
+            | :data:`.BALIGNERR` - Corrupted UBF buffer
+            | :data:`.BNOTFLD` - Buffer not UBF
+            | :data:`.BBADFLD` - Invalid field ID given (normally would not be thrown)
+        """
+
+        # Validate the parent buffer
+        if self._ubf_dict.is_sub_buffer==UbfDictConst.NDRXPY_SUBBUF_UBF:
             raise AttributeError('Cannot change sub-buffer')
 
         return UbfDictFld_del(self, i)
@@ -58,7 +91,7 @@ class UbfDictFld(MutableSequence):
     def __setitem__(self, i, value):
 
         # Valdiat ethe parent buffer
-        if self._ubf_dict.is_sub_buffer:
+        if self._ubf_dict.is_sub_buffer==UbfDictConst.NDRXPY_SUBBUF_UBF:
             raise AttributeError('Cannot change sub-buffer')
 
         return UbfDictFld_set(self, i, value)
@@ -67,7 +100,7 @@ class UbfDictFld(MutableSequence):
     def insert(self, i, value):
 
         # Valdiat ethe parent buffer
-        if self._ubf_dict.is_sub_buffer:
+        if self._ubf_dict.is_sub_buffer==UbfDictConst.NDRXPY_SUBBUF_UBF:
             raise AttributeError('Cannot change sub-buffer')
 
         return UbfDictFld_set(self, i, value)
@@ -128,7 +161,7 @@ class UbfDict(MutableMapping):
        without full transformation"""
 
     # are we operating from sub-buffer?
-    is_sub_buffer = False
+    is_sub_buffer = 0
     
     # XATMI buffer ptr
     _buf = 0
@@ -170,7 +203,7 @@ class UbfDict(MutableMapping):
     def __setitem__(self, key, value):
 
         # validate the parent buffer
-        if self.is_sub_buffer:
+        if self.is_sub_buffer==UbfDictConst.NDRXPY_SUBBUF_UBF:
             raise AttributeError('Cannot change sub-buffer')
 
         UbfDict_set(self._buf, key, value)
@@ -181,7 +214,7 @@ class UbfDict(MutableMapping):
     def __delitem__(self, key):
 
         # validate the parent buffer
-        if self.is_sub_buffer:
+        if self.is_sub_buffer==UbfDictConst.NDRXPY_SUBBUF_UBF:
             raise AttributeError('Cannot change sub-buffer')
 
         return UbfDict_del(self._buf, key)
@@ -254,8 +287,8 @@ class UbfDict(MutableMapping):
     # manual free up of the buffer
     def free(self):
         # validate the parent buffer
-        if self.is_sub_buffer:
-            raise AttributeError('Cannot change sub-buffer')
+        if self.is_sub_buffer > UbfDictConst.NDRXPY_SUBBUF_NORM:
+            raise AttributeError('Cannot free sub-buffer')
         __del__(self)
 
     # Start iteration
@@ -305,5 +338,9 @@ class UbfDict(MutableMapping):
             super(UbfDict, self).__setattr__(attr, value)
         else:
             self[attr] = value
+
+    # delete attribute
+    def __delattr__(self, name):
+        self.__delitem__(name)
 
 # vim: set ts=4 sw=4 et smartindent:

@@ -157,7 +157,7 @@ void PY(TPSVCINFO *svcinfo)
         //Destruct the auto-buf when goes out of the scope
         {
             auto ibuf=atmibuf(svcinfo);
-            auto idata = ndrx_to_py(ibuf, false);
+            auto idata = ndrx_to_py(ibuf, NDRXPY_SUBBUF_NORM);
             info.data = idata;
             //No reset if using UbfDict() XATMI ptr
             //becomes linked to the python object.
