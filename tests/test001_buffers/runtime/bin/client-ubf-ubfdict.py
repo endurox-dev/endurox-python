@@ -2,6 +2,7 @@ import unittest
 import endurox as e
 from endurox.ubfdict import UbfDict
 import exutils as u
+from copy import deepcopy
 
 # UBF Dicitionary tests
 class TestUbfDict(unittest.TestCase):
@@ -275,8 +276,25 @@ T_SHORT_FLD\N{TAB}99
             # causing segmentation fault.
             del b3.T_PTR_FLD
 
-    # TODO: Check buffer copy...
+    # Copy the buffer
+    def test_ubfdict_copy(self):
+        w = u.NdrxStopwatch()
+        while w.get_delta_sec() < u.test_duratation():
+            b1 = {"data":e.UbfDict({"T_STRING_FLD":["HELLO", "WORLD"], "T_PTR_FLD":{"data":{"T_STRING_2_FLD":"EHLO"}}})}
+            b2 = deepcopy(b1)
 
+            self.assertEqual(b1["data"].T_STRING_FLD, b2["data"].T_STRING_FLD)
+            self.assertEqual(b1["data"].T_PTR_FLD, b2["data"].T_PTR_FLD)
+
+            b1["data"].T_STRING_FLD.append("TEST1")
+            b1["data"].T_PTR_FLD[0]["data"].T_STRING_2_FLD.append("TEST2")
+            self.assertNotEqual(b1["data"].T_STRING_FLD, b2["data"].T_STRING_FLD)
+            self.assertEqual(b1["data"].T_PTR_FLD, b2["data"].T_PTR_FLD)
+
+            b3 = {"data":e.UbfDict(b1["data"])}
+            print(b3["data"].T_STRING_FLD)
+            
+            self.assertEqual(b1, b3)
 
     # check dict field assign
     def test_ubfdict_fldassign(self):
