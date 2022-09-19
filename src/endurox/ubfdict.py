@@ -85,12 +85,42 @@ class UbfDictFld(MutableSequence):
     
     # get field length / occurrences
     def __len__(self):
+        """
+        Return number field occurrences
+
+        Raises
+        ------
+        UbfException
+            | Following error codes may be present:
+            | :data:`.BALIGNERR` - Corrupted UBF buffer
+            | :data:`.BNOTFLD` - Buffer not UBF
+            | :data:`.BBADFLD` - Invalid field ID given (normally would not be thrown)
+        """
+
         return UbfDictFld_len(self)
     
     # set item
     def __setitem__(self, i, value):
+        """
+        Set UBF buffer field at given index
 
-        # Valdiat ethe parent buffer
+        Parameters
+        ----------
+        i: int
+            Index/occurrence to set
+        value: object
+            Value to set
+
+        Raises
+        ------
+        UbfException
+            | Following error codes may be present:
+            | :data:`.BALIGNERR` - Corrupted UBF buffer
+            | :data:`.BNOTFLD` - Buffer not UBF
+            | :data:`.BBADFLD` - Invalid field ID given (normally would not be thrown)
+        """
+
+        # Validate the parent buffer
         if self._ubf_dict.is_sub_buffer==UbfDictConst.NDRXPY_SUBBUF_UBF:
             raise AttributeError('Cannot change sub-buffer')
 
@@ -98,8 +128,26 @@ class UbfDictFld(MutableSequence):
 
     # insert item
     def insert(self, i, value):
+        """
+        Set UBF buffer field at given index
 
-        # Valdiat ethe parent buffer
+        Parameters
+        ----------
+        i: int
+            Index/occurrence to set
+        value: object
+            Value to set
+
+        Raises
+        ------
+        UbfException
+            | Following error codes may be present:
+            | :data:`.BALIGNERR` - Corrupted UBF buffer
+            | :data:`.BNOTFLD` - Buffer not UBF
+            | :data:`.BBADFLD` - Invalid field ID given (normally would not be thrown)
+        """
+
+        # Validate the parent buffer
         if self._ubf_dict.is_sub_buffer==UbfDictConst.NDRXPY_SUBBUF_UBF:
             raise AttributeError('Cannot change sub-buffer')
 
@@ -107,6 +155,30 @@ class UbfDictFld(MutableSequence):
 
     # Compare two lists...
     def __eq__(self, other):
+        """
+        Compare this field value with other field.
+        The other field shall be standard list or UbfDictFld.
+
+        Parameters
+        ----------
+        other: list or UbfDictFld
+            Field list to check with this one
+        value: object
+            Value to set
+
+        Returns
+        -------
+        ret : bool
+            True if matched, False if not.
+
+        Raises
+        ------
+        UbfException
+            | Following error codes may be present:
+            | :data:`.BALIGNERR` - Corrupted UBF buffer
+            | :data:`.BNOTFLD` - Buffer not UBF
+            | :data:`.BBADFLD` - Invalid field ID given (normally would not be thrown)
+        """
 
         if (len(self)!=len(other)):
             return False
@@ -116,14 +188,31 @@ class UbfDictFld(MutableSequence):
                 return False
         return True
 
-    # print the field occs... in UD format
+    # print the field occs... in standard list format
     def __repr__(self) -> str:
-        #return UbfDictFld_repr(self)
-        #convert to list... and give represntation
+        """
+        Return the field/occurrence representation in standard list format.
+        This transfers all UBF field occurrences to the standard Python list
+        and standard list generates the representation.
+
+        Returns
+        -------
+        ret : str
+            UBF field representation in standard list format.
+
+        Raises
+        ------
+        UbfException
+            | Following error codes may be present:
+            | :data:`.BALIGNERR` - Corrupted UBF buffer
+            | :data:`.BNOTFLD` - Buffer not UBF
+            | :data:`.BBADFLD` - Invalid field ID given (normally would not be thrown)
+        """
+
         ret = []
         for v in self:
-            ret.add(v)
-        return v.__repr__()
+            ret.append(v)
+        return ret.__repr__()
 
 # items iteration class    
 class UbfDictItems:

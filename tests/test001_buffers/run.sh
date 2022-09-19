@@ -245,7 +245,7 @@ fi
 echo "UbfDict checks"
 ################################################################################
 
-NDRXPY_TEST_DURATATION=5 NDRX_CCTAG=low python3 -m unittest client-ubf-ubfdict.py
+NDRXPY_TEST_DURATATION=30 NDRX_CCTAG=low python3 -m unittest client-ubf-ubfdict.py
 
 RET=$?
 

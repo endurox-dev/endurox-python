@@ -123,13 +123,7 @@ class TestUbfDict(unittest.TestCase):
         while w.get_delta_sec() < u.test_duratation():
             b1 = e.UbfDict({"T_SHORT_FLD":[100,99], "T_STRING_FLD":["HELLO", "WORLD"]})
             str1 = str(b1)
-            comp='''\
-T_SHORT_FLD\N{TAB}100
-T_SHORT_FLD\N{TAB}99
-T_STRING_FLD\N{TAB}HELLO
-T_STRING_FLD\N{TAB}WORLD
-'''
-            self.assertEqual(str1, comp)
+            self.assertEqual(str1, "{'T_SHORT_FLD': [100, 99], 'T_STRING_FLD': ['HELLO', 'WORLD']}")
 
     # Test UbfDict Disable
     def test_ubf_ubfdict_disable(self):
@@ -173,11 +167,7 @@ T_STRING_FLD\N{TAB}WORLD
         while w.get_delta_sec() < u.test_duratation():
             b1 = e.UbfDict({"T_SHORT_FLD":[100,99], "T_STRING_FLD":["HELLO", "WORLD"]})
             str1 = str(b1["T_SHORT_FLD"])
-            comp='''\
-T_SHORT_FLD\N{TAB}100
-T_SHORT_FLD\N{TAB}99
-'''
-            self.assertEqual(str1, comp)
+            self.assertEqual(str1, "[100, 99]")
 
     def test_ubfdictfld_len(self):
         w = u.NdrxStopwatch()
@@ -292,9 +282,9 @@ T_SHORT_FLD\N{TAB}99
             self.assertEqual(b1["data"].T_PTR_FLD, b2["data"].T_PTR_FLD)
 
             b3 = {"data":e.UbfDict(b1["data"])}
-            print(b3["data"].T_STRING_FLD)
-            
             self.assertEqual(b1, b3)
+            # delete ptr field from b3, as GC will remove the same PTR from b1 & b3 causing invalid buffers
+            del b3["data"].T_PTR_FLD
 
     # check dict field assign
     def test_ubfdict_fldassign(self):
