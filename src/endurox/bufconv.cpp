@@ -65,10 +65,10 @@ namespace py = pybind11;
  * @brief This will add all ATMI related stuff under the {"data":<ATMI data...>}
  *  TODO: Free incoming UBF buffer (somehere marking shall be put)
  * @param buf ATMI buffer to conver to Python
- * @param is_sub_buffer is master buffer (from atmi?)
+ * @param is_sub_buffer is master buffer, ubf or ptr?
  * @return python object (dict)
  */
-expublic py::object ndrx_to_py(atmibuf &buf, bool is_sub_buffer)
+expublic py::object ndrx_to_py(atmibuf &buf, int is_sub_buffer)
 {
     char type[8]={EXEOS};
     char subtype[16]={EXEOS};
@@ -79,7 +79,8 @@ expublic py::object ndrx_to_py(atmibuf &buf, bool is_sub_buffer)
 
     if ((size=tptypes(*buf.pp, type, subtype)) == EXFAIL)
     {
-        NDRX_LOG(log_error, "Invalid buffer type: %s", tpstrerror(tperrno));
+        NDRX_LOG(log_error, "Invalid buffer type (ptr=%p): %s", 
+            *buf.pp, tpstrerror(tperrno));
         throw std::invalid_argument("Invalid buffer type");
     }
 
@@ -113,7 +114,7 @@ expublic py::object ndrx_to_py(atmibuf &buf, bool is_sub_buffer)
             result["data"]=ndrxpy_alloc_UbfDict(*buf.pp, is_sub_buffer, size);
 
             //Parent may free up master buffers...
-            if (!is_sub_buffer)
+            if (NDRXPY_SUBBUF_NORM==is_sub_buffer)
             {
                 tmp_ptr = buf.p;
                 buf.pp = &tmp_ptr;
@@ -155,7 +156,7 @@ expublic py::object ndrx_to_py(atmibuf &buf, bool is_sub_buffer)
             }
 
             // setup callinfo block
-            result[NDRXPY_DATA_CALLINFO]=ndrxpy_alloc_UbfDict(p_buf, false, size);
+            result[NDRXPY_DATA_CALLINFO]=ndrxpy_alloc_UbfDict(p_buf, NDRXPY_SUBBUF_NORM, size);
         }
         else if (EXFAIL==ret)
         {

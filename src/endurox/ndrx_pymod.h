@@ -57,6 +57,10 @@ extern thread_local bool ndrxpy_G_use_ubfdict; /**< Use UbfDict() by default */
 #define NDRXPY_DO_FREE          1           /**< free up buffer recursive   */
 #define NDRXPY_DO_NEVERFREE     2           /**< never free up buffer , recu*/
 
+#define NDRXPY_SUBBUF_NORM      0           /**< Normal XATMI buffer        */
+#define NDRXPY_SUBBUF_UBF       1           /**< Embedded UBF               */
+#define NDRXPY_SUBBUF_PTR       2           /**< This is PTR buffer         */
+
 /*---------------------------Enums--------------------------------------*/
 /*---------------------------Typedefs-----------------------------------*/
 
@@ -386,16 +390,17 @@ struct pytpgetctxtret
 extern xao_svc_ctx *xao_svc_ctx_ptr;
 
 extern atmibuf ndrx_from_py(py::object obj, bool reset_ptr);
-extern py::object ndrx_to_py(atmibuf &buf, bool is_sub_buffer);
+extern py::object ndrx_to_py(atmibuf &buf, int is_sub_buffer);
 
 //Buffer conversion support:
 extern void ndrxpy_from_py_view(py::dict obj, atmibuf &b, const char *view);
 extern py::object ndrxpy_to_py_view(char *cstruct, char *vname, long size);
 
 extern bool ndrxpy_is_UbfDict(py::handle data);
-extern bool ndrxpy_is_atmibuf_UbfDict(py::object data);
+extern bool ndrxpy_is_UbfDictFld(py::handle data);
+extern bool ndrxpy_is_atmibuf_UbfDict(py::handle data);
 extern void ndrxpy_reset_ptr_UbfDict(py::object data);
-extern py::object ndrxpy_alloc_UbfDict(char *data, bool is_sub_buffer, BFLDLEN buflen);
+extern py::object ndrxpy_alloc_UbfDict(char *data, int is_sub_buffer, BFLDLEN buflen);
 extern py::object ndrxpy_to_py_ubf(UBFH *fbfr, BFLDLEN buflen);
 extern void ndrxpy_from_py_ubf(py::dict obj, atmibuf &b);
 

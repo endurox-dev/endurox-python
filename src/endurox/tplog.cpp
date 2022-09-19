@@ -343,7 +343,7 @@ expublic void ndrxpy_register_tplog(py::module &m)
             }
             else
             {
-                return ndrx_to_py(in, false);
+                return ndrx_to_py(in, NDRXPY_SUBBUF_NORM);
             }
         },
         R"pbdoc(
@@ -500,7 +500,7 @@ expublic void ndrxpy_register_tplog(py::module &m)
             }
             else
             {
-                return ndrx_to_py(in, false);
+                return ndrx_to_py(in, NDRXPY_SUBBUF_NORM);
             }
         },
         R"pbdoc(

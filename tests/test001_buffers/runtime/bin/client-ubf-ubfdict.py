@@ -2,6 +2,7 @@ import unittest
 import endurox as e
 from endurox.ubfdict import UbfDict
 import exutils as u
+from copy import deepcopy
 
 # UBF Dicitionary tests
 class TestUbfDict(unittest.TestCase):
@@ -15,7 +16,7 @@ class TestUbfDict(unittest.TestCase):
             b2 = e.UbfDict({"T_STRING_FLD":"HELLO WORLD"})
             b1["T_UBF_FLD"].append(b2)
             # have ptr to buffer...
-            b1["T_PTR_FLD"].append(b2)
+            b1["T_PTR_FLD"].append({"data":b2})
 
     def test_ubf_in(self):
         w = u.NdrxStopwatch()
@@ -208,6 +209,102 @@ T_SHORT_FLD\N{TAB}99
             self.assertEqual(b1.T_SHORT_FLD[-2], 5)
             del (b1.T_SHORT_FLD[-2])
             self.assertEqual(b1.T_SHORT_FLD[-2], 11)
+
+    # server reallocates and returns 56k of data
+    def test_ubfdict_svrealloc(self):
+        w = u.NdrxStopwatch()
+        while w.get_delta_sec() < u.test_duratation():
+            errno, tpurcode, buf = e.tpcall("REALLOC", {"data":{}})
+            self.assertEqual(errno, 0)
+            self.assertEqual(tpurcode, 0)
+            self.assertEqual(len(buf["data"].T_CARRAY_FLD[0]), 56000)
+
+    # Ready only checks..
+    def test_ubfdict_ro(self):
+        w = u.NdrxStopwatch()
+        while w.get_delta_sec() < u.test_duratation():
+            
+            b1 = UbfDict({"T_UBF_FLD":{"T_STRING_FLD":"OK"}
+                , "T_UBF_2_FLD":{"T_STRING_FLD":"OK2"}})
+            b1.T_UBF_FLD[2]={"T_STRING_3_FLD":"HELLO"}
+
+            # cannot modify sub-buffers
+            with self.assertRaises(AttributeError):
+                b1.T_UBF_FLD[2].T_STRING_3_FLD[4]="WORLD"
+
+            with self.assertRaises(AttributeError):
+                del b1.T_UBF_FLD[2].T_STRING_3_FLD[4]
+
+            with self.assertRaises(AttributeError):
+                del b1.T_UBF_FLD[2].T_STRING_3_FLD
+            
+    # PTR Checks.
+    def test_ubfdict_ptr(self):
+        w = u.NdrxStopwatch()
+        while w.get_delta_sec() < u.test_duratation():
+
+            tmp_b = e.UbfDict({"T_STRING_FLD":"PTR"})
+            
+            b2 = e.UbfDict({"T_PTR_FLD":{"data":tmp_b}})
+            self.assertEqual(b2.T_PTR_FLD[0]["data"].T_STRING_FLD[0], "PTR")
+            self.assertEqual(tmp_b.is_sub_buffer, 2)
+
+            # check that buffer keeps RO when extracted
+            tmp_b2 = b2.T_PTR_FLD[0]["data"]
+            self.assertEqual(tmp_b2.is_sub_buffer, 2)
+
+            self.assertEqual(tmp_b.T_STRING_FLD[0], "PTR")
+            self.assertEqual(b2.T_PTR_FLD[0]["data"].T_STRING_FLD[0], "PTR")
+            self.assertEqual(tmp_b2.T_STRING_FLD[0], "PTR")
+
+            # check transfer between Ubfs
+
+            tmp_b = e.UbfDict({"T_STRING_FLD":"PTR"})
+            self.assertEqual(tmp_b.is_sub_buffer, 0)
+            b2 = e.UbfDict({"T_PTR_FLD":{"data":tmp_b}})
+            self.assertEqual(tmp_b.is_sub_buffer, 2)
+            # we are sub-buffers also as free of the UBF will kill the sub-buffers...
+            self.assertEqual(b2.T_PTR_FLD[0]["data"].is_sub_buffer, 2)
+
+            # check the transfer to other ubf...
+            b3 = e.UbfDict()
+
+            b3.T_PTR_FLD = b2.T_PTR_FLD
+            self.assertEqual(b3.T_PTR_FLD[0]["data"].is_sub_buffer, 2)
+
+            # remove b3 field, as on GC, both b2 & b3 then would attempt to delete XAMTI buffer
+            # causing segmentation fault.
+            del b3.T_PTR_FLD
+
+    # Copy the buffer
+    def test_ubfdict_copy(self):
+        w = u.NdrxStopwatch()
+        while w.get_delta_sec() < u.test_duratation():
+            b1 = {"data":e.UbfDict({"T_STRING_FLD":["HELLO", "WORLD"], "T_PTR_FLD":{"data":{"T_STRING_2_FLD":"EHLO"}}})}
+            b2 = deepcopy(b1)
+
+            self.assertEqual(b1["data"].T_STRING_FLD, b2["data"].T_STRING_FLD)
+            self.assertEqual(b1["data"].T_PTR_FLD, b2["data"].T_PTR_FLD)
+
+            b1["data"].T_STRING_FLD.append("TEST1")
+            b1["data"].T_PTR_FLD[0]["data"].T_STRING_2_FLD.append("TEST2")
+            self.assertNotEqual(b1["data"].T_STRING_FLD, b2["data"].T_STRING_FLD)
+            self.assertEqual(b1["data"].T_PTR_FLD, b2["data"].T_PTR_FLD)
+
+            b3 = {"data":e.UbfDict(b1["data"])}
+            print(b3["data"].T_STRING_FLD)
+            
+            self.assertEqual(b1, b3)
+
+    # check dict field assign
+    def test_ubfdict_fldassign(self):
+        w = u.NdrxStopwatch()
+        while w.get_delta_sec() < u.test_duratation():
+            b1 = e.UbfDict({"T_STRING_FLD":["HELLO", "WORLD"]})
+            b2 = e.UbfDict({"T_STRING_FLD":b1.T_STRING_FLD})
+            self.assertEqual(b2.T_STRING_FLD[0], "HELLO")
+            self.assertEqual(b2.T_STRING_FLD[1], "WORLD")
+
 
 if __name__ == '__main__':
     unittest.main()
