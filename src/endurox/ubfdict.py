@@ -59,7 +59,12 @@ class UbfDictFld(MutableSequence):
 
     # print the field occs... in UD format
     def __repr__(self) -> str:
-        return UbfDictFld_repr(self);
+        #return UbfDictFld_repr(self)
+        #convert to list... and give represntation
+        ret = []
+        for v in self:
+            ret.add(v)
+        return v.__repr__()
 
 # items iteration class    
 class UbfDictItems:
@@ -242,7 +247,7 @@ class UbfDict(MutableMapping):
 
     # return the UBF buffer..
     def __repr__(self):
-        return UbfDict_repr(self, self._buf)
+        return self.to_dict().__repr__()
 
     def __contains__(self, key):
         """Check the UBF field is present in UBF buffer
