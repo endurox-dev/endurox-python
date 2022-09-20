@@ -23,7 +23,6 @@ class UbfDictFld(MutableSequence):
     # parent buffer to access to
     _ubf_dict = None
 
-
     # Resolved field id we want to access
     fldid = 0
 
@@ -47,9 +46,9 @@ class UbfDictFld(MutableSequence):
         IndexError
             Invalid index specified
         UbfException
-            | Following error codes may be present:
-            | :data:`.BALIGNERR` - Corrupted UBF buffer
-            | :data:`.BNOTFLD` - Buffer not UBF
+            Following error codes may be present:
+            :data:`.BALIGNERR` - Corrupted UBF buffer.
+            :data:`.BNOTFLD` - Buffer not UBF.
         """
 
         return UbfDictFld_get(self, i)
@@ -71,10 +70,10 @@ class UbfDictFld(MutableSequence):
         AttributeError
             Read only buffer (sub-UBF)
         UbfException
-            | Following error codes may be present:
-            | :data:`.BALIGNERR` - Corrupted UBF buffer
-            | :data:`.BNOTFLD` - Buffer not UBF
-            | :data:`.BBADFLD` - Invalid field ID given (normally would not be thrown)
+            Following error codes may be present:
+            :data:`.BALIGNERR` - Corrupted UBF buffer.
+            :data:`.BNOTFLD` - Buffer not UBF.
+            :data:`.BBADFLD` - Invalid field ID given (normally would not be thrown).
         """
 
         # Validate the parent buffer
@@ -91,10 +90,10 @@ class UbfDictFld(MutableSequence):
         Raises
         ------
         UbfException
-            | Following error codes may be present:
-            | :data:`.BALIGNERR` - Corrupted UBF buffer
-            | :data:`.BNOTFLD` - Buffer not UBF
-            | :data:`.BBADFLD` - Invalid field ID given (normally would not be thrown)
+            Following error codes may be present:
+            :data:`.BALIGNERR` - Corrupted UBF buffer.
+            :data:`.BNOTFLD` - Buffer not UBF.
+            :data:`.BBADFLD` - Invalid field ID given (normally would not be thrown).
         """
 
         return UbfDictFld_len(self)
@@ -114,10 +113,10 @@ class UbfDictFld(MutableSequence):
         Raises
         ------
         UbfException
-            | Following error codes may be present:
-            | :data:`.BALIGNERR` - Corrupted UBF buffer
-            | :data:`.BNOTFLD` - Buffer not UBF
-            | :data:`.BBADFLD` - Invalid field ID given (normally would not be thrown)
+            Following error codes may be present:
+            :data:`.BALIGNERR` - Corrupted UBF buffer.
+            :data:`.BNOTFLD` - Buffer not UBF.
+            :data:`.BBADFLD` - Invalid field ID given (normally would not be thrown).
         """
 
         # Validate the parent buffer
@@ -141,10 +140,10 @@ class UbfDictFld(MutableSequence):
         Raises
         ------
         UbfException
-            | Following error codes may be present:
-            | :data:`.BALIGNERR` - Corrupted UBF buffer
-            | :data:`.BNOTFLD` - Buffer not UBF
-            | :data:`.BBADFLD` - Invalid field ID given (normally would not be thrown)
+            Following error codes may be present:
+            :data:`.BALIGNERR` - Corrupted UBF buffer.
+            :data:`.BNOTFLD` - Buffer not UBF.
+            :data:`.BBADFLD` - Invalid field ID given (normally would not be thrown).
         """
 
         # Validate the parent buffer
@@ -174,10 +173,10 @@ class UbfDictFld(MutableSequence):
         Raises
         ------
         UbfException
-            | Following error codes may be present:
-            | :data:`.BALIGNERR` - Corrupted UBF buffer
-            | :data:`.BNOTFLD` - Buffer not UBF
-            | :data:`.BBADFLD` - Invalid field ID given (normally would not be thrown)
+            Following error codes may be present:
+            :data:`.BALIGNERR` - Corrupted UBF buffer.
+            :data:`.BNOTFLD` - Buffer not UBF.
+            :data:`.BBADFLD` - Invalid field ID given (normally would not be thrown).
         """
 
         if (len(self)!=len(other)):
@@ -203,10 +202,10 @@ class UbfDictFld(MutableSequence):
         Raises
         ------
         UbfException
-            | Following error codes may be present:
-            | :data:`.BALIGNERR` - Corrupted UBF buffer
-            | :data:`.BNOTFLD` - Buffer not UBF
-            | :data:`.BBADFLD` - Invalid field ID given (normally would not be thrown)
+            Following error codes may be present:
+            :data:`.BALIGNERR` - Corrupted UBF buffer.
+            :data:`.BNOTFLD` - Buffer not UBF.
+            :data:`.BBADFLD` - Invalid field ID given (normally would not be thrown).
         """
 
         ret = []
