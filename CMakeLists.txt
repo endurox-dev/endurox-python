@@ -127,7 +127,7 @@ if (DEFINED ENV{NDRXPY_SANITIZE})
 	SET(CMAKE_CXX_FLAGS "-fsanitize=address -fno-omit-frame-pointer -O0 -ggdb ${CMAKE_CXX_FLAGS}")
 ELSE()
     # TODO: Solaris? AIX? Compilers?
-    SET ( CMAKE_CXX_FLAGS "-O2 ${CMAKE_CXX_FLAGS}")
+    SET ( CMAKE_CXX_FLAGS "-O3 ${CMAKE_CXX_FLAGS}")
 ENDIF()
 
 if(CMAKE_OS_NAME STREQUAL "AIX")

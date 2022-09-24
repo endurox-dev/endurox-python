@@ -1297,9 +1297,9 @@ expublic void ndrxpy_register_ubf(py::module &m)
         [](ndrx_longptr_t ptr, py::object pyfldid, py::object data)
         {
             atmibuf f;
-		    atmibuf *buf = reinterpret_cast<atmibuf *>(ptr);
-		    BFLDID fldid = ndrxpy_fldid_resolve(pyfldid);
-		    Bfld_loc_info_t loc;
+            atmibuf *buf = reinterpret_cast<atmibuf *>(ptr);
+            BFLDID fldid = ndrxpy_fldid_resolve(pyfldid);
+            Bfld_loc_info_t loc;
             memset(&loc, 0, sizeof(loc));
 
 		    if (py::isinstance<py::list>(data) || ndrxpy_is_UbfDictFld(data))
@@ -1335,7 +1335,7 @@ expublic void ndrxpy_register_ubf(py::module &m)
         "UbfDict_get",
         [](py::object ubf_dict, py::object pyfldid)
         {
-		    py::object UbfDictFld = M_endurox.attr("UbfDictFld");
+            py::object UbfDictFld = M_endurox.attr("UbfDictFld");
             BFLDID fldid;
             fldid = ndrxpy_fldid_resolve(pyfldid);
             //Allocate Python Object
