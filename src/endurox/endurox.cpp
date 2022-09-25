@@ -594,7 +594,7 @@ How to read this documentation
 ==============================
 
 This documentation contains only short description of the API calls which mentions
-core functionality provided by the API. Each API call contains reference to underlaying
+core functionality provided by the API. Each API call contains reference to underlying
 C call which explains in deep details how exactly given function behaves.
 
 
@@ -672,10 +672,13 @@ ATMI Client
 
     def run():
 
+        #
         # Do some work here
-
-        buf = dict()
-        buf["data"] = dict()
+        # may use buf = {"data":{}} for dictionary based UBF buffer
+        # however, when tpcall returns, that would be converted to UbfDict, unless
+        # e.ndrxpy_use_ubfdict(False) is configured.
+        #
+        buf = {"data":e.UbfDict()}
         buf["data"]["T_STRING_FLD"] = "Hello world!"
         
         tperrno, tpurcode, buf = e.tpcall("TESTSV", buf)
@@ -730,9 +733,50 @@ Following chapters lists ATMI data encoding principles.
 UBF Data encoding
 -----------------
 
+UBF high speed key/value buffer, where value basically is list of value occurrences. Following
+list of field types are supported: :data:`.BFLD_SHORT`, :data:`.BFLD_LONG`, :data:`.BFLD_CHAR`,
+:data:`.BFLD_FLOAT`, :data:`.BFLD_DOUBLE`, :data:`.BFLD_STRING`, :data:`.BFLD_CARRAY`,
+:data:`.BFLD_PTR`, :data:`.BFLD_UBF`, :data:`.BFLD_VIEW`. All fields used in the system, must
+be declared previously by accessing the name, type and field id. See **mkfldhdr(8)** for
+format reference. Remember that declared field table files and directories where files
+exist, must be set in **FIELDTBLS** and **FLDTBLDIR** environment variables respectively, see
+**ex_env(5)** manpage for more information. The main benefit from the UBF buffer is that:
+it provides hash of lists dynamic access to fields in the buffer with having zero marshaling
+when buffer is sent between XATMI services. Also the buffer is typed, and the same field access
+is available in C/C++/Java and Go programming languages.
+
+Enduro/X Python module supports two approaches when working in UBF buffers.
+
+1) First approach is when working with UBF, standard Python dictionaries are used
+to represent the the UBF contents. However this approach requires dictionary marshaling
+whenever Enduro/X Core related call is issued. And in the same way to process the result
+marshaling is done from the UBF format to Python dictionary. With large buffers, this
+can be CPU time consuming, on the other hand when buffer is marshaled, the the field
+access is cheap, as operating with Python native objects.
+
+2) Second approach is to use special :class:`.UbfDict` class which provides the dictionary
+like interface for accessing the UBF data.
+In this mode, there is zero marshalling whenever data is sent and received from
+other Enduro/X programs (either Python or C/Go/Java based). This means if request consists
+of several hundreds of the fields, and the give Python code processes only few fields,
+then only those few fields are read and constructed in the Python space, thus reaching
+much higher transactions throughput.
+
+Mode 2) is available and made default approach from the module version 8.0.4. Mode 1)
+can be enabled by calling module function :func:`.ndrxpy_use_ubfdict` with **False** flag
+or provide **NDRXPY_UBFDICT_DISABLE** environment variable. Note that :func:`.ndrxpy_use_ubfdict`
+is per thread configuration flag.
+
+When :func:`.ndrxpy_use_ubfdict` set to **False**, incoming service requests are provided
+as standard Python dict types. Also when module returns buffers from Enduro/X (e.g. :func:`.tpcall`),
+then buffers are provided as dict types. When passing data to Enduro/X XATMI/UBF sub-system,
+both formats are accepted, regardless of the :func:`.ndrxpy_use_ubfdict` setting.
+
+For both buffer modes:
+
 When building ATMI buffer from Python dictionary, endurox-python library accepts
 values to be present as list of values, in such case values are loaded into UBF occurrences
-accordingly. value may be presented directly without the list, in such case the value
+accordingly. Value may be presented directly without the list, in such case the value
 is loaded into UBF field occurrence **0**.
 
 When ATMI UBF buffer dictionary is received from Enduro/X, all values are loaded into lists,
@@ -740,9 +784,9 @@ regardless of did field had several occurrences or just one.
 
 UBF buffer type is selected by following rules:
 
-- *data* key is dictionary and *buftype* key is not present.
+- *data* key is :class:`.UbfDict` or standard python dictionary and *buftype* key is not present.
 
-- *data* key is dictionary and *buftype* key is set to **UBF**.
+- *data* key is :class:`.UbfDict` or standard python dictionary and *buftype* key is set to **UBF**.
 
 Example call to echo service:
 
@@ -752,7 +796,7 @@ Example call to echo service:
 
     import endurox as e
 
-    tperrno, tpurcode, retbuf = e.tpcall("ECHO", { "data":{
+    tperrno, tpurcode, retbuf = e.tpcall("ECHO", { "data":e.UbfDict({
         # 3x occs:
         "T_CHAR_FLD": ["X", "Y", 0]
         , "T_SHORT_FLD": 3200
@@ -774,7 +818,7 @@ Example call to echo service:
                         }}]
         # contains pointer to STRING buffer:
         , "T_PTR_FLD":{"data":"HELLO WORLD"}
-    }})
+    }}))
     print(retbuf)
 
 
