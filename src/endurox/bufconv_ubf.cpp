@@ -149,7 +149,7 @@ expublic py::object ndrxpy_alloc_UbfDict(char *data, int is_sub_buffer, BFLDLEN 
     //ok, if it is just ptr to-sub-buffer
     //then free only atmibuf ptr...
     ret.attr("_buf") = reinterpret_cast<ndrx_longptr_t>(b);
-    ret.attr("is_sub_buffer") = is_sub_buffer;
+    ret.attr("_is_sub_buffer") = is_sub_buffer;
     
     return ret;    
 }
@@ -519,7 +519,7 @@ static void from_py1_ubf(atmibuf &buf, BFLDID fldid, BFLDOCC oc,
                     }, loc);
             //Now this Ubf is master reference holder
             //source object will not de-allocate the buffer.
-            data.attr("is_sub_buffer") = NDRXPY_SUBBUF_PTR;
+            data.attr("_is_sub_buffer") = NDRXPY_SUBBUF_PTR;
         }
         else
         {

@@ -76,7 +76,7 @@ class UbfDictFld(MutableSequence):
         """
 
         # Validate the parent buffer
-        if self._ubf_dict.is_sub_buffer==UbfDictConst.NDRXPY_SUBBUF_UBF:
+        if self._ubf_dict._is_sub_buffer==UbfDictConst.NDRXPY_SUBBUF_UBF:
             raise AttributeError('Cannot change sub-buffer')
 
         return UbfDictFld_del(self, i)
@@ -117,7 +117,7 @@ class UbfDictFld(MutableSequence):
         """
 
         # Validate the parent buffer
-        if self._ubf_dict.is_sub_buffer==UbfDictConst.NDRXPY_SUBBUF_UBF:
+        if self._ubf_dict._is_sub_buffer==UbfDictConst.NDRXPY_SUBBUF_UBF:
             raise AttributeError('Cannot change sub-buffer')
 
         return UbfDictFld_set(self, i, value)
@@ -143,7 +143,7 @@ class UbfDictFld(MutableSequence):
         """
 
         # Validate the parent buffer
-        if self._ubf_dict.is_sub_buffer==UbfDictConst.NDRXPY_SUBBUF_UBF:
+        if self._ubf_dict._is_sub_buffer==UbfDictConst.NDRXPY_SUBBUF_UBF:
             raise AttributeError('Cannot change sub-buffer')
 
         return UbfDictFld_set(self, i, value)
@@ -331,7 +331,7 @@ class UbfDict(MutableMapping):
        """
 
     # are we operating from sub-buffer?
-    is_sub_buffer = 0
+    _is_sub_buffer = 0
     
     # XATMI buffer ptr
     _buf = 0
@@ -473,7 +473,7 @@ class UbfDict(MutableMapping):
                 See logs i.e. user log, or debugs for more info.
         """
         # validate the parent buffer
-        if self.is_sub_buffer==UbfDictConst.NDRXPY_SUBBUF_UBF:
+        if self._is_sub_buffer==UbfDictConst.NDRXPY_SUBBUF_UBF:
             raise AttributeError('Cannot change sub-buffer')
 
         UbfDict_set(self._buf, key, value)
@@ -501,7 +501,7 @@ class UbfDict(MutableMapping):
         """
 
         # validate the parent buffer
-        if self.is_sub_buffer==UbfDictConst.NDRXPY_SUBBUF_UBF:
+        if self._is_sub_buffer==UbfDictConst.NDRXPY_SUBBUF_UBF:
             raise AttributeError('Cannot change sub-buffer')
 
         return UbfDict_del(self._buf, key)
@@ -603,11 +603,11 @@ class UbfDict(MutableMapping):
             This is sub-buffer and cannot be freed.
         """
 
-        if self.is_sub_buffer > UbfDictConst.NDRXPY_SUBBUF_NORM:
+        if self._is_sub_buffer > UbfDictConst.NDRXPY_SUBBUF_NORM:
             raise AttributeError('Cannot free sub-buffer')
 
         if self._buf!=0:
-            tpfree(self._buf, self.is_sub_buffer);
+            tpfree(self._buf, self._is_sub_buffer);
             self._buf=0
 
     # Override copy interface, without this _buf is
@@ -653,7 +653,7 @@ class UbfDict(MutableMapping):
         """
 
         # validate the parent buffer
-        if self.is_sub_buffer > UbfDictConst.NDRXPY_SUBBUF_NORM:
+        if self._is_sub_buffer > UbfDictConst.NDRXPY_SUBBUF_NORM:
             raise AttributeError('Cannot free sub-buffer')
         __del__(self)
 
@@ -725,7 +725,7 @@ class UbfDict(MutableMapping):
     # access as attribs
     def __getattr__(self, attr):
         """Access to UBF field values as of class attributes.
-        Attributed names **_is_sub_buffer** and **_buf** are
+        Attributed names **__is_sub_buffer** and **_buf** are
         reserved for internal purpose only.
         If such name shall be read from UBF buffer, access them by
         :func:`.UbfDict.__getitem__` (i.e. index access by the key).
@@ -745,7 +745,7 @@ class UbfDict(MutableMapping):
             :data:`.BNOTFLD` - Buffer not UBF.
 
         """
-        if attr=="is_sub_buffer":
+        if attr=="_is_sub_buffer":
             super(UbfDict, self).__getattr__(attr)
         elif attr=="_buf":
             super(UbfDict, self).__getattr__(attr)
@@ -756,7 +756,7 @@ class UbfDict(MutableMapping):
     def __setattr__(self, attr, value):
         """Set UBF field value as an attribute.
         Note that two names are reserved for this purpose:
-        **_is_sub_buffer** and **_buf**, which are internal
+        **__is_sub_buffer** and **_buf**, which are internal
         use members and for these values must not be changed.
         If such name shall be stored in UBF buffer, access them by
         :func:`.UbfDict.__setitem__` (i.e. index access by the key).
@@ -798,7 +798,7 @@ class UbfDict(MutableMapping):
                 See logs i.e. user log, or debugs for more info.
 
         """
-        if attr=="is_sub_buffer":
+        if attr=="_is_sub_buffer":
             super(UbfDict, self).__setattr__(attr, value)
         elif attr=="_buf":
             super(UbfDict, self).__setattr__(attr, value)
