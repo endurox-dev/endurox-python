@@ -2177,10 +2177,12 @@ expublic void ndrxpy_register_ubf(py::module &m)
             return prev;
         },
         R"pbdoc(
-        Disable UbfDict mode. When disable, pure dict objects are
+        Disable UbfDict mode. When disabled, pure dict objects are
         used to represent UBF buffers. However this mode is slower, due to
         for all interactions with XATMI bufer is marshalled from XATMI UBF to dict
-        and vice versa.
+        and vice versa. UbfDict mode however uses no marshaling for XATMI access,
+        thus service calls and other function calls does not require any
+        data buffer transaformation.
 
         Parameters
         ----------

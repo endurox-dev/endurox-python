@@ -16,6 +16,8 @@ sys.setdlopenflags(flags)
 
 from .ubfdict import UbfDict
 from .ubfdict import UbfDictFld
+from .ubfdict import UbfDictItems
+from .ubfdict import UbfDictItemsOcc
 
 __all__ = ['endurox']
 

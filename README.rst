@@ -447,4 +447,5 @@ Releases
 --------
 
 - Version 8.0.2 released on 18/08/2022 - First stable release
+- Version 8.0.4 marked on 25/09/2022 - Feature #790
 

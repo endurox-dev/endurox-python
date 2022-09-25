@@ -209,37 +209,106 @@ class UbfDictFld(MutableSequence):
 
 # items iteration class    
 class UbfDictItems:
+    """Class provides UbfDict key/value iteration interface
+    Object is created by :class:`.UbfDict.items()` method call.
+    """
 
     def __init__(self, ubf_dict):
+        """Internal initialised
+
+        Parameters
+        ----------
+        ubf_dict: UbfDict
+            UBF Dictionary object to iterate over
+        """
         self.ubf_dict = ubf_dict
         self._buf = ubf_dict._buf
 
     # Start iteration
     def __iter__(self):
+        """Start iteration over the dictionary.
+        """
         return UbfDict_iter(self, self._buf)
     
     # next field
     def __next__(self): 
+        """Return next field from UBF buffer
+
+        Returns
+        -------
+        fname : str or int
+            Field name, if not resolved int typed field id returned.
+
+        dictfld : UbfDictFld
+            UbfDictFld allocated object.
+
+        UbfException
+            Following error codes may be present:
+            :data:`.BALIGNERR` - Corrupted UBF buffer.
+            :data:`.BNOTFLD` Buffer not fielded, not correctly allocated or corrupted.
+        """
         return UbfDict_next(self, self._buf)
 
 # Items expanded to occurrences
 # instead of the lists
 class UbfDictItemsOcc:
+    """Class provides UbfDict key/value iteration interface
+    Object is created by :class:`.UbfDict.itemsocc()` method call.
+    This iterator returns each field occurrence value instead of the list of values
+    as with :class:`.UbfDictItems`.
+    """
 
     def __init__(self, ubf_dict):
+        """Internal initialised
+
+        Parameters
+        ----------
+        ubf_dict: UbfDict
+            UBF Dictionary object to iterate over
+        """
         self.ubf_dict = ubf_dict
         self._buf = ubf_dict._buf
 
     # Start iteration
     def __iter__(self):
+        """Start iteration over the dictionary.
+        """
         return UbfDict_iter(self, self._buf)
     
     # next field
     def __next__(self): 
+        """Return next field from UBF buffer
+
+        Returns
+        -------
+        fname : str or int
+            Field name, if not resolved int typed field id returned.
+
+        dictfld : object
+            Actual field value.
+
+        UbfException
+            Following error codes may be present:
+            :data:`.BALIGNERR` - Corrupted UBF buffer.
+            :data:`.BNOTFLD` Buffer not fielded, not correctly allocated or corrupted.
+        """
         return UbfDict_next_occ(self, self._buf)
 
     # return len by counting occurrences, instead of the keys
-    def __len__(self): 
+    def __len__(self):
+        """UBF Buffer length in number of fields in the buffer
+        thus counts every occurrence o
+
+        Returns
+        -------
+        cnt : int
+            Total number of fields present in UBF buffer.
+
+        UbfException
+            Following error codes may be present:
+            :data:`.BALIGNERR` - Corrupted UBF buffer.
+            :data:`.BNOTFLD` Buffer not fielded, not correctly allocated or corrupted.
+        """
         return UbfDict_len_occ(self._buf)
 
 # UBF <-> Dictionary mapping

@@ -588,6 +588,7 @@ Python3 bindings for writing Enduro/X clients and servers
         tpext_addpollerfd
         tpext_delpollerfd
         ndrx_epoll_mode
+        ndrxpy_use_ubfdict
 
 How to read this documentation
 ==============================
@@ -987,167 +988,6 @@ HTTP headers information, i.e. additional data linked to the message body.
 
     {'buftype': 'STRING', 'data': 'HELLO STRING'
         , 'callinfo': {'T_SHORT_FLD': [55], 'T_STRING_FLD': ['HELLO']}}
-
-Key Classes
-===========
-
-This section describes key classes used by Enduro/X API.
-
-TPSVCINFO
----------
-
-This class is used to deliver call information to the service.
-Object of this class is received after the self (Server instance)
-argument.
-
-.. py:class:: TPSVCINFO()
-   :module: endurox
-
-   Service call information.
-
-   .. attribute:: name
-
-      *str* -- Service name invoked.
-
-   .. attribute:: fname
-
-      *str* -- Function name invoked
-
-   .. attribute:: flags
-
-      *int* -- Matches flags set by service caller (e.g. :func:`tpcall`)
-
-   .. attribute:: appkey
-
-      *int* -- RFU.
-
-   .. attribute:: cd
-
-      *int* -- Call descriptor as seen by caller.
-
-   .. attribute:: cltid
-
-      *CLIENTID* -- Client ID making a call. May be used for :func:`tpnotify`
-
-   .. attribute:: data
-
-      *dict* -- XATMI data buffer.
-
-TPQCTL
-------
-
-This class is used to pass/receive additional information to/from
-tpenqueue() and tpdequeue() module function.
-
-.. py:class:: TPQCTL()
-   :module: endurox
-
-   Persistent queue API control class
-
-   .. attribute:: flags
-
-      *int* -- See bellow flags
-
-   .. attribute:: deq_time
-
-      *int* -- RFU
-
-   .. attribute:: msgid
-
-      *bytes* -- is assigned by Enduro/X when message is enqueued. 
-        Message id is 32 bytes long. When doing dequeue, may specify
-        message id to read from Q.
-
-   .. attribute:: diagnostic
-
-      *int* -- See exception codes bellow.
-
-   .. attribute:: diagmsg
-
-      *str* -- Diagnostic messages. Used in **QmException**.
-
-   .. attribute:: priority
-
-      *int* -- RFU.
-
-   .. attribute:: corrid
-
-      *bytes* -- is correlator between messages. ID is 32 bytes long.
-
-   .. attribute:: urcode
-
-      *int* -- RFU.
-
-   .. attribute:: cltid
-
-      *CLIENTID* -- RFU.
-
-   .. attribute:: replyqueue
-
-      *str* -- is queue name where automatic queues may post the
-        response provided by destination service.
-
-   .. attribute:: failurequeue
-
-      *str* -- is queue name where failed message 
-        (destination automatic service failed all attempts) are enqueued.
-
-   .. attribute:: delivery_qos
-
-      *int* -- RFU.
-
-   .. attribute:: reply_qos
-
-      *int* -- RFU.
-
-   .. attribute:: exp_time
-
-      *int* -- RFU.
-
-Following :attr:`TPQCTL.flags` are supported on Enduro/X platform:
-:data:`.TPQCORRID`, :data:`.TPQGETBYCORRID`, :data:`.TPQGETBYMSGID`,
-:data:`.TPQREPLYQ` and :data:`.TPQFAILUREQ`.
-
-TPEVCTL
--------
-
-Class used to control event subscription for the ATMI servers.
-Used by :func:`.tpsubscribe` and :func:`.tpunsubscribe`.
-
-.. py:class:: TPEVCTL()
-   :module: endurox
-
-   Event control class
-
-   .. attribute:: flags
-
-      *int* -- Bitwise flags of: :data:`.TPEVSERVICE` and :data:`.TPEVPERSIST`.
-
-   .. attribute:: name1
-
-      *str* -- Data field 1
-
-   .. attribute:: name2
-
-      *str* -- Data field 2
-
-
-PyTpSrvCtxtData
----------------
-
-Class is used for holding the XATMI server context, used by :func:`.tpsrvgetctxdata`
-and :func:`.tpsrvsetctxdata`.
-
-.. py:class:: PyTpSrvCtxtData(pyctxt: bytes)
-   :module: endurox
-
-   XATMI Server Context transfer type.
-
-   .. attribute:: pyctxt
-
-      *pyctxt* -- Serialized XATMI server context. This value may be tranfered to other
-        threads or processes. If transfering to other process than Enduro/X Python code,
-        remember to use **TPNOAUTBUF** flag there for tpsrvsetctxdata() call.
 
 Flags
 =====
@@ -1928,8 +1768,169 @@ Generic status codes
     
     Failure
 
-UbfDict support
+Key Classes
+===========
+
+This section describes key classes used by Enduro/X API.
+
+TPSVCINFO
+---------
+
+This class is used to deliver call information to the service.
+Object of this class is received after the self (Server instance)
+argument.
+
+.. py:class:: TPSVCINFO()
+   :module: endurox
+
+   Service call information.
+
+   .. attribute:: name
+
+      *str* -- Service name invoked.
+
+   .. attribute:: fname
+
+      *str* -- Function name invoked
+
+   .. attribute:: flags
+
+      *int* -- Matches flags set by service caller (e.g. :func:`tpcall`)
+
+   .. attribute:: appkey
+
+      *int* -- RFU.
+
+   .. attribute:: cd
+
+      *int* -- Call descriptor as seen by caller.
+
+   .. attribute:: cltid
+
+      *CLIENTID* -- Client ID making a call. May be used for :func:`tpnotify`
+
+   .. attribute:: data
+
+      *dict* -- XATMI data buffer.
+
+TPQCTL
+------
+
+This class is used to pass/receive additional information to/from
+tpenqueue() and tpdequeue() module function.
+
+.. py:class:: TPQCTL()
+   :module: endurox
+
+   Persistent queue API control class
+
+   .. attribute:: flags
+
+      *int* -- See bellow flags
+
+   .. attribute:: deq_time
+
+      *int* -- RFU
+
+   .. attribute:: msgid
+
+      *bytes* -- is assigned by Enduro/X when message is enqueued. 
+        Message id is 32 bytes long. When doing dequeue, may specify
+        message id to read from Q.
+
+   .. attribute:: diagnostic
+
+      *int* -- See exception codes bellow.
+
+   .. attribute:: diagmsg
+
+      *str* -- Diagnostic messages. Used in **QmException**.
+
+   .. attribute:: priority
+
+      *int* -- RFU.
+
+   .. attribute:: corrid
+
+      *bytes* -- is correlator between messages. ID is 32 bytes long.
+
+   .. attribute:: urcode
+
+      *int* -- RFU.
+
+   .. attribute:: cltid
+
+      *CLIENTID* -- RFU.
+
+   .. attribute:: replyqueue
+
+      *str* -- is queue name where automatic queues may post the
+        response provided by destination service.
+
+   .. attribute:: failurequeue
+
+      *str* -- is queue name where failed message 
+        (destination automatic service failed all attempts) are enqueued.
+
+   .. attribute:: delivery_qos
+
+      *int* -- RFU.
+
+   .. attribute:: reply_qos
+
+      *int* -- RFU.
+
+   .. attribute:: exp_time
+
+      *int* -- RFU.
+
+Following :attr:`TPQCTL.flags` are supported on Enduro/X platform:
+:data:`.TPQCORRID`, :data:`.TPQGETBYCORRID`, :data:`.TPQGETBYMSGID`,
+:data:`.TPQREPLYQ` and :data:`.TPQFAILUREQ`.
+
+TPEVCTL
+-------
+
+Class used to control event subscription for the ATMI servers.
+Used by :func:`.tpsubscribe` and :func:`.tpunsubscribe`.
+
+.. py:class:: TPEVCTL()
+   :module: endurox
+
+   Event control class
+
+   .. attribute:: flags
+
+      *int* -- Bitwise flags of: :data:`.TPEVSERVICE` and :data:`.TPEVPERSIST`.
+
+   .. attribute:: name1
+
+      *str* -- Data field 1
+
+   .. attribute:: name2
+
+      *str* -- Data field 2
+
+
+PyTpSrvCtxtData
 ---------------
+
+Class is used for holding the XATMI server context, used by :func:`.tpsrvgetctxdata`
+and :func:`.tpsrvsetctxdata`.
+
+.. py:class:: PyTpSrvCtxtData(pyctxt: bytes)
+   :module: endurox
+
+   XATMI Server Context transfer type.
+
+   .. attribute:: pyctxt
+
+      *pyctxt* -- Serialized XATMI server context. This value may be tranfered to other
+        threads or processes. If transfering to other process than Enduro/X Python code,
+        remember to use **TPNOAUTBUF** flag there for tpsrvsetctxdata() call.
+
+Ubf Dictionary related
+----------------------
 
 )pbdoc";
 }
