@@ -122,6 +122,7 @@ set (CMAKE_CXX_STANDARD 11)
 set (CMAKE_C_STANDARD 11)
 set (CMAKE_C_STANDARD_REQUIRED 99)
 
+# run with export LD_PRELOAD=$(gcc -print-file-name=libasan.so)
 if (DEFINED ENV{NDRXPY_SANITIZE})
 	SET(CMAKE_C_FLAGS "-fsanitize=address -fno-omit-frame-pointer -O0 -ggdb ${CMAKE_C_FLAGS}")
 	SET(CMAKE_CXX_FLAGS "-fsanitize=address -fno-omit-frame-pointer -O0 -ggdb ${CMAKE_CXX_FLAGS}")
