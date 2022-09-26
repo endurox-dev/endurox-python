@@ -16,7 +16,10 @@ class TestUbfDict(unittest.TestCase):
             b2 = e.UbfDict({"T_STRING_FLD":"HELLO WORLD"})
             b1["T_UBF_FLD"].append(b2)
             # have ptr to buffer...
+            # now b1 becomes master of the buffer.
             b1["T_PTR_FLD"].append({"data":b2})
+            # XATMI object ptr is reset.
+            self.assertEqual(b2._is_sub_buffer, 2)
 
     def test_ubf_in(self):
         w = u.NdrxStopwatch()

@@ -318,7 +318,9 @@ class UbfDict(MutableMapping):
 
        1) In case if using BFLD_PTR only one UBF buffer may hold the reference when
             the buffer are garbage collected. As when XATMI buffer is freed it removes
-            any ptrs inside the buffer.
+            any ptrs inside the buffer. When assinging free standing UbfDict object to
+            the BFLD_PTR field of some UBF buffer, the free standing buffer is marked
+	    as ptr kind sub-buffer for which GC is disabled.
 
        2) If different buffers reference the he same buffer via BFLD_PTR, then programmer
             is responsible for having the buffer alive (not freed).
@@ -596,16 +598,7 @@ class UbfDict(MutableMapping):
     # Deleting (Calling destructor)
     def __del__(self):
         """Free linked XATMI buffer.
-
-        Raises
-        ------
-        AttributeError
-            This is sub-buffer and cannot be freed.
         """
-
-        if self._is_sub_buffer > UbfDictConst.NDRXPY_SUBBUF_NORM:
-            raise AttributeError('Cannot free sub-buffer')
-
         if self._buf!=0:
             tpfree(self._buf, self._is_sub_buffer);
             self._buf=0
@@ -644,17 +637,8 @@ class UbfDict(MutableMapping):
 
     # manual free up of the buffer
     def free(self):
-        """Free linked XATMI buffer.
-
-        Raises
-        ------
-        AttributeError
-            This is sub-buffer and cannot be freed.
+        """Free linked XATMI buffer. Does nothing for sub-ubf buffers.
         """
-
-        # validate the parent buffer
-        if self._is_sub_buffer > UbfDictConst.NDRXPY_SUBBUF_NORM:
-            raise AttributeError('Cannot free sub-buffer')
         __del__(self)
 
     # Start iteration

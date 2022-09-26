@@ -40,6 +40,7 @@
 #include <xa.h>
 #include <ubf.h>
 #include <tmenv.h>
+#include <sys_unix.h>
 #undef _
 
 #include "exceptions.h"
@@ -2409,6 +2410,17 @@ expublic void ndrxpy_register_atmi(py::module &m)
         handle : int
             Oracle OCI service handle.
             )pbdoc");
+
+        m.def(
+        "ndrx_sys_banner",
+        []()
+        {
+            ndrx_sys_banner();
+        },
+        R"pbdoc(
+        Print Enduor/X standard utility banner.
+     )pbdoc"
+        );
     }
 
 /* vim: set ts=4 sw=4 et smartindent: */

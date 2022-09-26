@@ -1247,14 +1247,14 @@ expublic void ndrxpy_register_ubf(py::module &m)
     
     m.def(
         "tpfree",
-        [](ndrx_longptr_t ptr, bool is_sub_buffer)
+        [](ndrx_longptr_t ptr, int is_sub_buffer)
         {
 	        atmibuf *buf = reinterpret_cast<atmibuf *>(ptr);
 
             /*
-             * Do not remove xatmi buffer
+             * Do not remove sub-buffer (i.e. do not destruct!)
              */
-            if (is_sub_buffer)
+            if (is_sub_buffer!=NDRXPY_SUBBUF_NORM)
             {
                 buf->p = nullptr;
             }
@@ -1268,8 +1268,8 @@ expublic void ndrxpy_register_ubf(py::module &m)
         ----------
         ptr: int
             C pointer to XATMI buffer object
-        is_sub_buffer: bool
-            Is this sub-buffer? If so remove only atmibuf object.
+        is_sub_buffer: int
+            Is this sub-buffer (>0)? If so remove only atmibuf object.
 
         )pbdoc", py::arg("ptr"), py::arg("is_sub_buffer"));
 
