@@ -405,29 +405,23 @@ tmp = tempfile.NamedTemporaryFile(delete=False)
 c_file = open(tmp.name, 'w')
 
 #try:
-#print(tmp.name)
 e.tplog_debug("Temporary file open: %s" % tmp.name)
 
 c_file.write("#include <stdlib.h>\n\n")
 
+e.tplog_info("Generate main")
 gen_module_code(c_file, "main", args.m[0], M_main_code)
 
-
-#tmp.write("#include <stdlib.h>")
-
-#tmp.write(...)
+e.tplog_info("Generate packages")
+for p, pv in M_packages.items():
+	for m, mv in pv.modules.items():
+		gen_module_code(c_file, "pkg", m, mv)
 
 # generate array ....
-
 # generate index...
-
 # generate loader / main...
-
 # compile...
-
 
 #finally:
 #    tmp.close()
 #    os.unlink(tmp.name)
-
-
