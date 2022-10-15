@@ -60,15 +60,235 @@ class PackageEntry(object):
 # list of main modules
 M_main_code = None
 
+# PackageEntry of the main modules
+# key here is module name
+M_main_mods = {}
+
+#
+# Key is full module name
+# value is "table_ref".
+# afterwards this is being sorted
+# and c tables are generated
+#
+M_main_mods_flat = {}
+
 #
 # List of imported packages
 #
 M_packages = {}
 
+#
+# See M_main_mods_flat
+#
+M_packages_flat = {}
+
 # are -1, 0, 1 and 2.  A value of -1 means to use the optimization
 # -ON
 M_optimize = -1
 
+#
+# Counter using for numbering all package intems, to have unique name
+#
+M_lnk_counter = 0;
+
+def gen_index_search(c_file):
+	"""Gen resoruce search func 
+	
+	Parameters
+	----------
+	c_file: file
+		C temp output file
+	
+	"""
+
+	# This shall generate some caches too. Save & return last result for given
+	# table. As this might be used find_module() / load_module() in the sequence of calls.
+	# also slots shall be used for mainmods & pkg index tables.
+
+	c_file.write(
+r"""
+/**
+ * Search the module
+ * @param index package index table
+ * @param index_len index length (number of rows)
+ * @param module module name to search in the index
+ * @param data if return is TRUE, then code bytes
+ * @param dlen if return is TRUE, then code bytes length 
+ * @return See NDRXPY_RES_
+ */
+static int ndrxpy_get_mod(ndrxpy_module_indext_t *index, int index_len, 
+	char *module, char **data, ssize_t *dlen)
+{
+    /* perform binary search for class data */
+	int ret = NDRXPY_RES_NOMOD;
+    int first = 0;
+    int last = index_len - 1;
+    int middle = (first+last)/2;
+
+    while (first <= last) 
+    {
+        /* -1 mod < module */
+        /* 0 mod == module */
+        /* 1 mod > module */
+        int res = strcmp(index[middle].mod, module);
+
+        if (res < 0)
+        {
+            first = middle + 1;    
+        }
+        else if (res==0) 
+        {
+            break;
+        }
+        else
+        {
+            last = middle - 1;
+        }
+
+        middle = (first + last)/2;
+    }
+
+    if (first > last)
+    {
+		/* not found */
+        goto out;
+    }
+
+
+	*data = index[middle].data;
+	*dlen = index[middle].len;
+	ret=NDRXPY_RES_MOD_FOUND;
+
+out:	
+    return ret;
+}
+
+/**
+ * Resolve python module
+ * @param module module name to search for
+ * @param data output object data
+ * @param dlen object data len
+ * @param NDRXPY_NOMOD/NDRXPY_PKG_FOUND/NDRXPY_MOD_FOUND
+ */
+static int ndrxpy_resolve(char *module, char **data, ssize_t *dlen)
+{
+	int ret = NDRXPY_RES_NOMOD;
+	char tmpmod[PATH_MAX*2]="";
+	/* Maybe needs this to be dynamic? */
+	static __thread char cache_module[PATH_MAX*2]="";
+	static __thread char *cache_data=NULL;
+	static __thread ssize_t cache_dlen=0;
+	static __thread int cache_ret=NDRXPY_RES_NOMOD;
+
+#define DO_CACHE(MOD)	memcpy(cache_module, MOD); cache_data=*data; cache_dlen=*dlen; cache_ret=ret;
+	/*
+	 * Steps:
+	 * - Search for module direct in both table, if found, ok return bytes.
+	 * - If stuff is not found, try to add __init__ and search, only in second table.
+	 * Provide result as: then return NDRXPY_MOD_FOUND(1), NDRXPY_PKG_FOUND(2), NDRXPY_NOMOD 0
+	 */
+	if (0==strcmp(module, cache_module))
+	{
+		*data=cache_data;
+		*dlen = cache_dlen;
+		ret=cache_ret;
+		goto out;
+	}
+
+	/* Search main-module first */
+	ret=ndrxpy_get_mod(G_ndrxpy_mainmods_index, 
+		(sizeof(G_ndrxpy_mainmods_index)/sizeof(*(G_ndrxpy_mainmods_index))), 
+		module, data, dlen);
+
+	if (ret>NDRXPY_RES_NOMOD)
+	{
+		/* module found... */
+		DO_CACHE(module);
+		goto out;
+	}
+
+	/* Search pkg */
+	ret=ndrxpy_get_mod(G_ndrxpy_pkg_index, 
+		(sizeof(G_ndrxpy_pkg_index)/sizeof(*(G_ndrxpy_pkg_index))), 
+		module, data, dlen);
+
+	if (ret>NDRXPY_RES_NOMOD)
+	{
+		/* module found... */
+		DO_CACHE(module);
+		goto out;
+	}
+
+	/* If still not found, try __init__ and mark result as pkg */
+	snprintf(tmpmod, sizeof(tmpmod), "%s.__init__", module);
+
+	ret=ndrxpy_get_mod(G_ndrxpy_pkg_index, 
+		(sizeof(G_ndrxpy_pkg_index)/sizeof(*(G_ndrxpy_pkg_index))), 
+		tmpmod, data, dlen);
+
+	if (ret>NDRXPY_RES_NOMOD)
+	{
+		/* mark as package found */
+		ret=NDRXPY_RES_PKG_FOUND;
+		DO_CACHE(tmpmod);
+		goto out;
+	}
+
+out:
+	return ret;
+}
+
+""")
+
+
+def gen_index(c_file, index_name:str, flat_mods:dict):
+	""" Generate binary search index table.
+	Parameters
+	----------
+	c_file:
+		Output temporary file
+	index_name:str
+		Name of the table index to generate
+	flat_mods:dict
+		Loaded index table to generate	
+	"""
+	# sort & plot...
+	c_file.write(
+"""
+static ndrxpy_module_indext_t G_ndrxpy_%s_index [] =
+{
+""" % (index_name))
+
+	first=True
+	for k, v in sorted(flat_mods.items()):
+		if not first:
+			c_file.write(", \n")
+		c_file.write('\t{"%s", %s, %s_len}' % (k,v,v)
+			)
+		first=False
+
+	c_file.write("\n};")
+
+def gen_first(c_file):
+	"""Generate first things to the temp file"""
+
+    # have some index struct.
+	c_file.write(
+"""struct ndrxpy_module_index
+{
+	const char *mod;	/**< Module name 					*/
+	const char *data;	/**< bytes compiled 				*/
+	size_t len;			/**< bytes compiled lenght  		*/
+};
+
+typedef struct ndrxpy_module_index ndrxpy_module_indext_t;
+
+
+#define NDRXPY_RES_NOMOD 		0 /**< Module is not found 		*/
+#define NDRXPY_RES_MOD_FOUND	1 /**< Module is found			*/
+#define NDRXPY_RES_PKG_FOUND	2 /**< Package is found			*/
+
+""")
 
 def gen_module_code(c_file, prefix, module, code: bytes):
 	""" Generate C byte array for embedding.
@@ -109,8 +329,9 @@ def gen_module_code(c_file, prefix, module, code: bytes):
 
 	"""
 
+	global M_lnk_counter
 	c_mod = module.replace(".", "_")
-	c_name = "ndrxpy_G_%s_%s" % (prefix, c_mod)
+	c_name = "ndrxpy_G_%s_%s_%d" % (prefix, c_mod, M_lnk_counter)
 
 	# 
 	c_file.write("const char %s[] = {\n" % c_name)
@@ -135,14 +356,15 @@ def gen_module_code(c_file, prefix, module, code: bytes):
 	# close the def
 	c_file.write("\n};\n")
 
+	b_len = len(code)
 	# print the len handles
-	c_file.write("const size_t ndrxpy_G_%s_%s_len = 28;\n" % (prefix, c_mod))
-	c_file.write("#define ndrxpy_G_%s_%s_len_def 28\n\n" % (prefix, c_mod))
-	table = "ndrxpy_G_%s_%s" % (prefix, c_mod) 
+	c_file.write("const size_t %s_len = %d;\n" % (c_name, b_len))
+	c_file.write("#define %s_len_def %d\n\n" % (c_name, b_len))
 
-	e.tplog_debug("Generated table [%s]" % table)
+	e.tplog_debug("Generated table [%s]" % c_name)
+	M_lnk_counter+=1
 
-	return table
+	return c_name
 
 #
 # Generic module read
@@ -205,6 +427,30 @@ def read_module(resource):
 
 	return code
 
+
+def load_main_dir(resource):
+	"""Load main directory contents to separate index
+	This is required due to fact if loading any module, then program's directory
+	is scanned first for the module names and only then normal packages are loaded"""
+
+	global M_main_mods
+	path = os.path.realpath(os.path.dirname(resource))
+	e.tplog_info("Loading program directroy [%s]" % resource)
+
+	for f in os.listdir(path):
+
+		if not os.path.isfile(f):
+			continue
+
+		res_notext, extension = os.path.splitext(f)
+		e.tplog_info("Processing main directory, mod [%s]" % (res_notext))
+		if (extension==".py" or extension==".pyc"):
+			# Get the code object...
+			e.tplog_debug("Reading module root[%s] f=[%s]" % (path, f))
+			# Load the bytes
+			M_main_mods[res_notext] = read_module(str(Path(path, f)))
+
+
 ################################################################################
 # Load main, sytnax supported:
 # some_file.py
@@ -217,6 +463,7 @@ def read_module(resource):
 def load_main(resource):
 	global M_main_code
 	M_main_code = read_module(resource)
+	load_main_dir(resource)
 
 ################################################################################
 # This accepts following module names to build
@@ -275,9 +522,8 @@ def load_module(resource, recursive):
 		# This is package, lets scan it...
 		
 		for root, dir, files in os.walk(path_real):
-
 			e.tplog_info("%s %s %s" % (str(root), str(dir), str(files)))
-			# no cache please
+
 			if "/__pycache__/" in root+"/":
 				continue
 
@@ -292,11 +538,11 @@ def load_module(resource, recursive):
 			#	tmp_root, 	path_real+"/", len(root)
 			#))
 
+			# Resolve pckages & sub-packages
 			if tmp_root.startswith(path_real+"/") and len(root)>len_path_real:
 				sub_pkg = root[(len_path_real+1):].replace("/", ".")
-				#e.tplog_info("YOPT %s %s" %sub_pkg)
 				fin_pkg = resource+"."+sub_pkg
-				
+				#e.tplog_info("YOPT FIN_PKG [%s]" %fin_pkg)
 			else:
 				fin_pkg = resource
 
@@ -338,11 +584,10 @@ def load_module(resource, recursive):
 				res_notext, extension = os.path.splitext(f)
 				e.tplog_info("Processing pkg [%s] mod [%s]" % (fin_pkg, res_notext))
 				if (extension==".py" or extension==".pyc") and not res_notext in cur_pkg.modules:
-					
 					# Get the code object...
 					e.tplog_debug("root[%s] vs [%s] f=[%s]" % (root, path_real, f))
 					# Load the bytes
-					cur_pkg.modules[res_notext] = read_module(str(Path(root, f)))			
+					cur_pkg.modules[res_notext] = read_module(str(Path(root, f)))
 
 			# scan the directories...
 			if not recursive:
@@ -401,24 +646,33 @@ except SyntaxError:
 # Open the temporary file...
 ################################################################################
 
-tmp = tempfile.NamedTemporaryFile(delete=False)
+tmp = tempfile.NamedTemporaryFile(delete=False, suffix='.c')
 c_file = open(tmp.name, 'w')
 
-#try:
 e.tplog_debug("Temporary file open: %s" % tmp.name)
 
 c_file.write("#include <stdlib.h>\n\n")
+c_file.write("#include <string.h>\n\n")
 
+gen_first(c_file)
 e.tplog_info("Generate main")
 gen_module_code(c_file, "main", args.m[0], M_main_code)
+
+e.tplog_info("Generate main mods")
+for m, mv in M_main_mods.items():
+	# index the modules
+	M_main_mods_flat[m] = gen_module_code(c_file, "mmod", m, mv)
 
 e.tplog_info("Generate packages")
 for p, pv in M_packages.items():
 	for m, mv in pv.modules.items():
-		gen_module_code(c_file, "pkg", m, mv)
-
-# generate array ....
-# generate index...
+		# index the modules
+		M_packages_flat[p+"."+m] = gen_module_code(c_file, "pkg_"+p, m, mv)
+	
+# generate sorted index...
+gen_index(c_file, "mainmods", M_main_mods_flat)
+gen_index(c_file, "pkg", M_packages_flat)
+gen_index_search(c_file)
 # generate loader / main...
 # compile...
 
