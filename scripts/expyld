@@ -42,6 +42,8 @@ import importlib
 import py_compile as c
 import sys
 import tempfile
+import subprocess
+
 #
 # Single package entry
 #
@@ -117,7 +119,7 @@ r"""
  * @return See NDRXPY_RES_
  */
 static int ndrxpy_get_mod(ndrxpy_module_indext_t *index, int index_len, 
-	char *module, char **data, ssize_t *dlen)
+	char *module, const char **data, ssize_t *dlen)
 {
     /* perform binary search for class data */
 	int ret = NDRXPY_RES_NOMOD;
@@ -170,17 +172,17 @@ out:
  * @param dlen object data len
  * @param NDRXPY_NOMOD/NDRXPY_PKG_FOUND/NDRXPY_MOD_FOUND
  */
-static int ndrxpy_resolve(char *module, char **data, ssize_t *dlen)
+static int ndrxpy_resolve(char *module, const char **data, ssize_t *dlen)
 {
 	int ret = NDRXPY_RES_NOMOD;
 	char tmpmod[PATH_MAX*2]="";
 	/* Maybe needs this to be dynamic? */
 	static __thread char cache_module[PATH_MAX*2]="";
-	static __thread char *cache_data=NULL;
+	static __thread const char *cache_data=NULL;
 	static __thread ssize_t cache_dlen=0;
 	static __thread int cache_ret=NDRXPY_RES_NOMOD;
 
-#define DO_CACHE(MOD)	memcpy(cache_module, MOD); cache_data=*data; cache_dlen=*dlen; cache_ret=ret;
+#define DO_CACHE(MOD)	NDRX_STRCPY_SAFE(cache_module, MOD); cache_data=*data; cache_dlen=*dlen; cache_ret=ret;
 	/*
 	 * Steps:
 	 * - Search for module direct in both table, if found, ok return bytes.
@@ -236,6 +238,102 @@ static int ndrxpy_resolve(char *module, char **data, ssize_t *dlen)
 
 out:
 	return ret;
+}
+
+/**
+ * get bytes from the *.pyc compiled format.
+ * needs to get offset for (i.e after the):
+ * - PyMarshal_ReadLongFromFile()
+ * - PyMarshal_ReadLongFromFile()
+ * - PyMarshal_ReadLongFromFile()
+ * - PyMarshal_ReadLongFromFile()
+ */
+static const char *get_code_bytes(const char *data, ssize_t dlen, ssize_t *olen)
+{
+	const char *ret = NULL;
+	long magic = *(unsigned int *)data;
+
+	if (magic != PyImport_GetMagicNumber())
+	{
+		fprintf(stderr, "Invalid magic, expected %lx got %lx",
+			magic, PyImport_GetMagicNumber());\
+		goto out;
+	}
+
+	ret = (data + sizeof(int)*4);
+	*olen = dlen - sizeof(int)*4;
+
+out:
+
+	return ret;
+}
+
+int load_main(void)
+{
+    ssize_t size;
+	const char *data;
+
+    PyCodeObject *mainobj, *pycode;
+    PyObject *result, *mainmodule, *maindict;
+    mainmodule = PyImport_AddModule("__main__");
+    maindict = PyModule_GetDict(mainmodule);
+
+	data = get_code_bytes(ndrxpy_G_main_test_py_0, ndrxpy_G_main_test_py_0_len, &size);
+    pycode = (PyCodeObject *) PyMarshal_ReadObjectFromString(data, size);
+
+    if (pycode == NULL || !PyCode_Check(pycode))
+	{
+		Py_XDECREF(pycode);
+		PyErr_SetString(PyExc_RuntimeError,
+					"Bad code object in .pyc file");
+		fprintf(stderr, "Failed to load main\n");
+		return -1;
+	}
+
+    PyEval_EvalCode((PyObject *)pycode, maindict, maindict);
+    Py_Finalize();
+
+}
+
+static struct PyMethodDef methods[] = {
+    { "find_module", find_module, METH_VARARGS, "Returns module_loader if this is an encrypted module"},
+    { "load_module", load_module, METH_VARARGS, "Load an encrypted module" },
+    { NULL, NULL, 0, NULL }
+};
+
+static struct PyModuleDef modDef = {
+    PyModuleDef_HEAD_INIT, "8", NULL, -1, methods, 
+    NULL, NULL, NULL, NULL
+};
+
+static PyObject* PyInit_embedded(void)
+{
+    return PyModule_Create(&modDef);
+}
+
+/**
+ * main entry poin for the app
+ */
+int main(int argc, char **argv)
+{
+
+    PyImport_AppendInittab("embedded", &PyInit_embedded);
+
+	Py_SetProgramName((const char *)argv[0]);
+    Py_Initialize();
+	PySys_SetArgv(argc, argv);
+
+    int ret = PyRun_SimpleString("\
+import embedded, sys\n\
+class Importer:\n\
+    def find_module(self, fullpath, path=None):\n\
+        return self if embedded.find_module(fullpath) else None\n\
+    def load_module(self, fullpath):\n\
+        return embedded.load_module(fullpath)\n\
+sys.meta_path.append(Importer())\n\
+");
+
+	return load_main();
 }
 
 """)
@@ -651,8 +749,17 @@ c_file = open(tmp.name, 'w')
 
 e.tplog_debug("Temporary file open: %s" % tmp.name)
 
-c_file.write("#include <stdlib.h>\n\n")
-c_file.write("#include <string.h>\n\n")
+c_file.write("#include <stdlib.h>\n")
+c_file.write("#include <string.h>\n")
+c_file.write("#include <limits.h>\n")
+c_file.write("#include <stdio.h>\n")
+c_file.write("#include <ndrstandard.h>\n")
+c_file.write("#include <Python.h>\n")
+c_file.write("#include <marshal.h>\n")
+c_file.write("#include <object.h>\n")
+c_file.write("#include <compile.h>\n")
+c_file.write("#include <eval.h>\n\n")
+
 
 gen_first(c_file)
 e.tplog_info("Generate main")
@@ -675,6 +782,11 @@ gen_index(c_file, "pkg", M_packages_flat)
 gen_index_search(c_file)
 # generate loader / main...
 # compile...
+process = subprocess.Popen(['echo', 'More output'],
+                     stdout=subprocess.PIPE, 
+                     stderr=subprocess.PIPE)
+stdout, stderr = process.communicate()
+stdout, stderr
 
 #finally:
 #    tmp.close()
