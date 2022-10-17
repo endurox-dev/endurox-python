@@ -49,15 +49,20 @@ import subprocess
 #
 class PackageEntry(object):
 	# Package name
-	name=""
+	#name=""
 
 	# List of ModuleEntry in given package.
 	# key is string (file/mod name w/o extension)
 	# value is bytecode
-	modules = {}
+	#modules = {}
 
 	# is this package?
-	package = False
+	#package = False
+
+	def __init__(self):
+		self.modules={}
+		self.name=""
+		self.package=False
 
 # list of main modules
 M_main_code = None
@@ -933,7 +938,7 @@ for m, mv in M_main_mods.items():
 e.tplog_info("Generate packages")
 for p, pv in M_packages.items():
 	for m, mv in pv.modules.items():
-		# index the modules
+	#	# index the modules
 		M_packages_flat[p+"."+m] = gen_module_code(c_file, "pkg_"+p, m, mv)
 	
 # generate sorted index...
