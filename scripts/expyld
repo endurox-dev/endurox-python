@@ -98,6 +98,98 @@ M_optimize = -1
 #
 M_lnk_counter = 0;
 
+def get_cc_id(cc, cflags):
+	"""Get C compiler id
+
+	Parameters
+	----------
+	cc:str
+		Compiler binary name
+	clfags:str
+		Compiler flags
+
+	Returns
+	-------
+	compid:str
+		Compiler ID, gcc,clang,sunpro,xlC,unk (unknown)
+
+	"""
+
+	test_file_name = None
+	out_file_name = None
+
+	test_file_handle = None
+
+	try:
+		test_file_name = tempfile.NamedTemporaryFile(delete=False, suffix='.c')
+		test_file_handle = open(test_file_name.name, 'w')
+
+		test_file_handle.write(
+r"""
+#include <stdio.h>
+
+/* see https://sourceforge.net/p/predef/wiki/Compilers/ */
+int main(int argc, char **argv)
+{
+	int ret = 0;
+#if defined(__open_xl__)
+	printf("openxl\n");
+#elif defined(__xlC__) || defined(__ibmxl__)
+	printf("xlc\n");
+#elif defined(__GNUC__)
+	printf("gcc\n");
+#elif defined(__clang__)
+	printf("clang\n");
+#elif defined(__SUNPRO_C)
+	printf("sunpro\n");
+#else
+	printf("unk\n");
+	ret=-1;
+#endif
+
+	return ret;
+}
+
+""")
+		test_file_handle.close()
+		test_file_handle = None
+
+		out_file_name = tempfile.NamedTemporaryFile(delete=False)
+
+		if cflags is None:
+			cflags = ""
+
+		command = f"{cc} {cflags} -o {out_file_name.name} {test_file_name.name}"
+
+		e.tplog_info("Comp check [%s]" % command)
+		if 0!=os.system(command):
+			raise("Failed to invoke compiler")
+
+		# ?
+		output =  os.popen(out_file_name.name)
+		comp = output.read()
+
+		# check error ? 
+		e.tplog_debug("Compiler id: "+comp)
+
+		return comp
+
+	except Exception as ex:
+		e.tplog_error("Failed to check compiler version: %s" % ex)
+		raise
+
+	finally:
+		# close the handles
+
+		if test_file_name is not None:
+			os.unlink(test_file_name.name)
+			
+		if out_file_name is not None:
+			os.unlink(out_file_name.name)
+
+		if test_file_handle is not None:
+			test_file_handle.close()
+
 def gen_index_search(c_file):
 	"""Gen resoruce search func 
 	
@@ -787,10 +879,14 @@ def load_module(resource, recursive):
 		# This is package, lets scan it...
 		
 		for root, dir, files in os.walk(path_real):
+
 			e.tplog_info("%s %s %s" % (str(root), str(dir), str(files)))
 
+			# no cache check
 			if "/__pycache__/" in root+"/":
 				continue
+
+			# Also after the root, we do not want to directories with "." inside...
 
 			sub_pkg=""
 			fin_pkg = ""
@@ -799,15 +895,17 @@ def load_module(resource, recursive):
 
 			e.tplog_info(path_real+"/")
 
-			#e.tplog_info("YOPT: tmp_root[%s] path_real[%s] len=%d" % (
-			#	tmp_root, 	path_real+"/", len(root)
-			#))
-
-			# Resolve pckages & sub-packages
+			# Resolve packages & sub-packages
 			if tmp_root.startswith(path_real+"/") and len(root)>len_path_real:
-				sub_pkg = root[(len_path_real+1):].replace("/", ".")
+
+				sub_dirs = root[(len_path_real+1):]
+
+				# this is not pyton package
+				if "." in sub_dirs:
+					continue
+
+				sub_pkg = sub_dirs.replace("/", ".")
 				fin_pkg = resource+"."+sub_pkg
-				#e.tplog_info("YOPT FIN_PKG [%s]" %fin_pkg)
 			else:
 				fin_pkg = resource
 
@@ -888,6 +986,10 @@ if cc is None:
 
 # optional
 clfags = os.getenv("CFLAGS")
+
+# Get compiler id...
+# to configure it later.
+c_compiler = get_cc_id(cc, clfags)
 
 # Load main -> module name + bytecodes
 # args.infile compile...
