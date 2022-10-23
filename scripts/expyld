@@ -974,8 +974,8 @@ e.ndrx_sys_banner()
 
 parser = argparse.ArgumentParser(description='Enduro/X Python Linker')
 
-parser.add_argument('-m', metavar='main_module', type=str,
-					help='Main module to load as startup code', required=True)
+parser.add_argument('rest', metavar='main_module', type=str, nargs=argparse.REMAINDER,
+					help='Main module to load as startup code (single file)')
 
 parser.add_argument('-i', metavar='include', type=str, nargs='*',
                     help='Include package', action='append')
@@ -984,6 +984,10 @@ parser.add_argument('-o', metavar='output', type=str,
 					help='Output binary', default="a.out")
 
 args = parser.parse_args()
+
+if len(args.rest) != 1:
+	parser.print_help()
+	sys.exit(-1)
 
 ################################################################################
 # Prep the env.
@@ -1019,7 +1023,7 @@ e.tplog_info(str(args.i))
 
 try:
 	#for source in args.m:
-	load_main(args.m)
+	load_main(args.rest[0])
 
 	if args.i is not None:
 		for mod in args.i:
@@ -1089,7 +1093,7 @@ try:
 		# Chek the location of .so/.dy
 		soext = shlib.rfind(sosuff)
 		if soext == -1:
-			raise Exception("Missing shared library extension [%s] in [%s]" (sosuff, shlib))
+			raise Exception("Missing shared library extension [%s] in [%s]" % (sosuff, shlib))
 		shlib=shlib[:soext]
 		cmd = cmd+" -l"+shlib
 
