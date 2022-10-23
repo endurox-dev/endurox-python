@@ -51,7 +51,10 @@ class UbfDictFld(MutableSequence):
             :data:`.BNOTFLD` - Buffer not UBF.
         """
 
-        return UbfDictFld_get(self, i)
+        if isinstance(i, slice):
+            return UbfDictFld_slice_get(self, i)
+        else:
+            return UbfDictFld_get(self, i)
 
     # delete the item
     def __delitem__(self, i):

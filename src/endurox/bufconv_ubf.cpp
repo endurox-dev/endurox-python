@@ -275,7 +275,6 @@ expublic py::object ndrxpy_to_py_ubf(UBFH *fbfr, BFLDLEN buflen = 0)
     BFLDOCC oc = 0;
     char *d_ptr;
 
-
     py::dict result;
     py::list val;
 
@@ -1302,10 +1301,23 @@ expublic void ndrxpy_register_ubf(py::module &m)
             Bfld_loc_info_t loc;
             memset(&loc, 0, sizeof(loc));
 
+            if (nullptr==buf)
+            {
+                UBF_LOG(log_error, "ptr/buf is null");
+                std::runtime_error("ptr/buf is null");
+            }
+
+            //Delete the field fully...
+            //As new value will follow.
+            if (Boccur(*buf->fbfr(), fldid) > 0 && EXSUCCEED!=Bdelall(*buf->fbfr(), fldid))
+            {
+                throw ubf_exception(Berror);
+            }
+
 		    if (py::isinstance<py::list>(data) || ndrxpy_is_UbfDictFld(data))
 		    {
 			    BFLDOCC oc = 0;
-			
+
 			    for (auto e : data.cast<py::list>())
 			    {
 				    from_py1_ubf(*buf, fldid, oc++, e, f, &loc, false);
@@ -1313,7 +1325,7 @@ expublic void ndrxpy_register_ubf(py::module &m)
 		    }
 		    else
 		    {
-			    // Handle single elements instead of lists for convenience
+			    //Handle single elements instead of lists for convenience
 			    from_py1_ubf(*buf, fldid, 0, data, f, &loc, true);
 		    }
         },
@@ -2006,6 +2018,85 @@ expublic void ndrxpy_register_ubf(py::module &m)
             Value from UBF buffer field.
 
         )pbdoc", py::arg("ubf_dict_fld"), py::arg("oc"));
+
+
+        m.def(
+        "UbfDictFld_slice_get",
+        [](py::object ubf_dict_fld, py::slice sl)
+        {
+            py::object ubf_dict = ubf_dict_fld.attr("_ubf_dict");
+            ndrx_longptr_t ptr = ubf_dict.attr("_buf").cast<py::int_>();
+            BFLDID fldid = ubf_dict_fld.attr("fldid").cast<py::int_>();
+            atmibuf *buf = reinterpret_cast<atmibuf *>(ptr);
+            BFLDLEN len;
+            py::ssize_t start, stop, step, slicelength;
+            py::list ret = py::list();
+
+            /* validat the dict. */
+            if (nullptr==buf)
+            {
+                UBF_LOG(log_error, "_buf is null");
+                std::runtime_error("_buf is null");
+            }
+
+            int occs = Boccur(*buf->fbfr(), fldid);
+
+            if (!sl.compute(occs, &start, &stop, &step, &slicelength))
+            {
+                throw py::error_already_set();
+            }
+
+            int istart = static_cast<int>(start);
+            int istop =  static_cast<int>(stop);
+            int istep =  static_cast<int>(step);
+
+            UBF_LOG(log_debug, "istart=%d, istop=%d, istep=%d",
+                istart, istop, istep);
+
+            /* TODO: Might want to optimize with Bnext, but if we do so,
+             * we need all the data for the Bnext_state_t() and seems that currently
+             * internal version of ndrx_Bfind() does not retun this...
+             */
+            for (BFLDOCC oc=istart; oc<istop; oc+=istep)
+            {
+                //oc = fix_occ(buf, fldid, oc);
+                UBF_LOG(log_debug, "Into UbfDictFld_get(fldid=%d, oc=%d)", fldid, oc);
+
+                char *d_ptr = Bfind (*(buf->fbfr()), fldid, oc, &len);
+
+                if (nullptr==d_ptr)
+                {
+                    if (BNOTPRES==Berror)
+                    {
+                        throw py::index_error(Bstrerror(Berror));
+                    }
+                    else
+                    {
+                        throw ubf_exception(Berror);
+                    }
+                }
+
+                ret.append(ndrxpy_to_py_ubf_fld(d_ptr, fldid, oc, len, Bsizeof(*(buf->fbfr()))));
+            }
+
+            return ret;
+        },
+        R"pbdoc(
+        Get list of fields by the given slice.
+
+        Parameters
+        ----------
+        ubf_dict_fld: UbfDictFld
+            UBF Buffer dictionary field object
+        sl: slice
+            Slice to return
+
+        Returns
+        -------
+        ret : list
+            List of fields extracted (sliced)
+
+        )pbdoc", py::arg("ubf_dict_fld"), py::arg("sl"));
 
         m.def(
         "UbfDictFld_del",
