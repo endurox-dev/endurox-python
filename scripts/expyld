@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 ##
 ## @brief Enduro/X Limited Python binary Linker
 ##  This linker does not support some of the pkgutil operations, such as
@@ -998,7 +998,7 @@ if cc is None:
 	cc="cc"
 
 # optional
-c_flags = os.getenv("c_flags")
+c_flags = os.getenv("CFLAGS")
 
 if c_flags is None:
 	c_flags = ""
@@ -1076,7 +1076,8 @@ try:
 	# prepare the config
 	include = sysconfig.get_path('include')
 	libdir = sysconfig.get_config_vars('LIBDIR')
-	shlibs = sysconfig.get_config_vars('INSTSONAME')
+	#shlibs = sysconfig.get_config_vars('INSTSONAME')
+	shlibs = sysconfig.get_config_vars('LIBRARY')
 	sosuff = sysconfig.get_config_var('SHLIB_SUFFIX')
 
 	# Compile the main...
@@ -1092,9 +1093,13 @@ try:
 		shlib = shlib[3:]
 		# Chek the location of .so/.dy
 		soext = shlib.rfind(sosuff)
-		if soext == -1:
-			raise Exception("Missing shared library extension [%s] in [%s]" % (sosuff, shlib))
-		shlib=shlib[:soext]
+		ext2 = shlib.rfind(".a")
+		if soext == -1 and ext2 == -1:
+			raise Exception("Missing library extension [%s] or [.a] in [%s]" % (sosuff, shlib))
+		if ext2 > soext:
+			shlib=shlib[:ext2]
+		else:
+			shlib=shlib[:soext]
 		cmd = cmd+" -l"+shlib
 
 	e.tplog_debug("Compiling with [%s]" % cmd)
