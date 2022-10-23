@@ -33,7 +33,6 @@
 ## -----------------------------------------------------------------------------
 
 import argparse
-from ast import Pass
 from importlib.resources import path
 import endurox as e
 import os
@@ -42,7 +41,7 @@ import importlib
 import py_compile as c
 import sys
 import tempfile
-import subprocess
+import sysconfig
 
 #
 # Single package entry
@@ -98,7 +97,7 @@ M_optimize = -1
 #
 M_lnk_counter = 0;
 
-def get_cc_id(cc, cflags):
+def get_cc_id(cc, c_flags):
 	"""Get C compiler id
 
 	Parameters
@@ -112,19 +111,15 @@ def get_cc_id(cc, cflags):
 	-------
 	compid:str
 		Compiler ID, gcc,clang,sunpro,xlC,unk (unknown)
-
 	"""
 
 	test_file_name = None
 	out_file_name = None
 
-	test_file_handle = None
-
 	try:
-		test_file_name = tempfile.NamedTemporaryFile(delete=False, suffix='.c')
-		test_file_handle = open(test_file_name.name, 'w')
-
-		test_file_handle.write(
+		test_file_name = tempfile.NamedTemporaryFile(delete=False, suffix='.c',
+			mode = "w")
+		test_file_name.write(
 r"""
 #include <stdio.h>
 
@@ -149,26 +144,34 @@ int main(int argc, char **argv)
 
 	return ret;
 }
-
 """)
-		test_file_handle.close()
-		test_file_handle = None
+		test_file_name.file.close()
+		
+		# OK, these are already open files...
+		out_file_name = tempfile.NamedTemporaryFile(delete=False,
+			mode = "w")
+		# No need to be open...
+		out_file_name.file.close()
 
-		out_file_name = tempfile.NamedTemporaryFile(delete=False)
+		if c_flags is None:
+			c_flags = ""
 
-		if cflags is None:
-			cflags = ""
-
-		command = f"{cc} {cflags} -o {out_file_name.name} {test_file_name.name}"
+		command = f"{cc} {c_flags} -o {out_file_name.name} {test_file_name.name}"
 
 		e.tplog_info("Comp check [%s]" % command)
 		if 0!=os.system(command):
 			raise("Failed to invoke compiler")
 
-		# ?
-		output =  os.popen(out_file_name.name)
-		comp = output.read()
-
+		# exit status?
+		process =  os.popen(out_file_name.name)
+		comp = process.read()
+		ret=process.close()
+		
+		if ret is not None:
+			e.tplog_error("[%s] failed with %d" % (command, ret))
+			raise("[%s] failed with %d" % (command, ret))
+		
+		comp = comp.rstrip()
 		# check error ? 
 		e.tplog_debug("Compiler id: "+comp)
 
@@ -182,13 +185,20 @@ int main(int argc, char **argv)
 		# close the handles
 
 		if test_file_name is not None:
+
+			# Close the file
+			if not test_file_name.file.closed:
+				test_file_name.file.close()
+
 			os.unlink(test_file_name.name)
 			
 		if out_file_name is not None:
-			os.unlink(out_file_name.name)
 
-		if test_file_handle is not None:
-			test_file_handle.close()
+			# Close the file
+			if not out_file_name.file.closed:
+				out_file_name.file.close()
+
+			os.unlink(out_file_name.name)
 
 def gen_index_search(c_file):
 	"""Gen resoruce search func 
@@ -252,7 +262,6 @@ static int ndrxpy_get_mod(ndrxpy_module_indext_t *index, int index_len,
 		/* not found */
         goto out;
     }
-
 
 	*data = index[middle].data;
 	*dlen = index[middle].len;
@@ -375,7 +384,7 @@ int load_main(void)
     mainmodule = PyImport_AddModule("__main__");
     maindict = PyModule_GetDict(mainmodule);
 
-	data = get_code_bytes(ndrxpy_G_main_test_py_0, ndrxpy_G_main_test_py_0_len, &size);
+	data = get_code_bytes(ndrxpy_G_main_entry_0, ndrxpy_G_main_entry_0_len, &size);
     pycode = (PyCodeObject *) PyMarshal_ReadObjectFromString(data, size);
 
     if (pycode == NULL || !PyCode_Check(pycode))
@@ -594,9 +603,7 @@ sys.meta_path.append(Importer())\n\
 	}
 
 }
-
 """)
-
 
 def gen_index(c_file, index_name:str, flat_mods:dict):
 	""" Generate binary search index table.
@@ -780,7 +787,7 @@ def read_module(resource):
 		code = in_file.read()
 		in_file.close()
 
-	e.tplogdump(5, "OK", code)
+	e.tplogdump(6, "Dumping objectcode of [%s]" % resource, code)
 
 	return code
 
@@ -926,7 +933,6 @@ def load_module(resource, recursive):
 			# is missing we shall register it anyway, so that loader
 			# can resolve them.
 			###############################################################
-
 			pkgs = cur_pkg.name.split(".")
 			pkg_start = "";
 			for p in pkgs:
@@ -968,11 +974,14 @@ e.ndrx_sys_banner()
 
 parser = argparse.ArgumentParser(description='Enduro/X Python Linker')
 
-parser.add_argument('-m', metavar='main_module', type=str, nargs='+',
-		     		help='Main module to load as startup code')
+parser.add_argument('-m', metavar='main_module', type=str,
+					help='Main module to load as startup code', required=True)
 
 parser.add_argument('-i', metavar='include', type=str, nargs='*',
                     help='Include package', action='append')
+
+parser.add_argument('-o', metavar='output', type=str,
+					help='Output binary', default="a.out")
 
 args = parser.parse_args()
 
@@ -985,20 +994,32 @@ if cc is None:
 	cc="cc"
 
 # optional
-clfags = os.getenv("CFLAGS")
+c_flags = os.getenv("c_flags")
+
+if c_flags is None:
+	c_flags = ""
 
 # Get compiler id...
 # to configure it later.
-c_compiler = get_cc_id(cc, clfags)
+c_compiler = get_cc_id(cc, c_flags)
+
+if c_compiler=="gcc" or c_compiler=="clang":
+	c_flags=f"-O2 -std=c99 {c_flags}"
+elif c_compiler=="xlc": 
+	c_flags=f"-O2 -qtls -q64 -b64 -D_THREAD_SAFE {c_flags}"
+elif c_compiler=="sunpro":
+	c_flags=f"-O2 -m64 -D_REENTRANT {c_flags}"
+else:
+	e.tplog_error("Unsupported compiler ["+c_compiler+"]")
+	raise Exception("Unsupported compiler ["+c_compiler+"]")
 
 # Load main -> module name + bytecodes
 # args.infile compile...
-
 e.tplog_info(str(args.i))
 
 try:
-	for source in args.m:
-		load_main(source)
+	#for source in args.m:
+	load_main(args.m)
 
 	if args.i is not None:
 		for mod in args.i:
@@ -1008,53 +1029,78 @@ except SyntaxError:
 	sys.exit(-1)
 
 ################################################################################
-# Open the temporary file...
+# Generate & Compile
 ################################################################################
 
-tmp = tempfile.NamedTemporaryFile(delete=False, suffix='.c')
-c_file = open(tmp.name, 'w')
+c_file = tempfile.NamedTemporaryFile(delete=False, suffix='.c', mode = "w")
+e.tplog_debug("Temporary file open: %s" % c_file.name)
 
-e.tplog_debug("Temporary file open: %s" % tmp.name)
+try:
+	#c_file.write("#define _POSIX_C_SOURCE 1\n")
+	c_file.write("#include <Python.h>\n")
+	c_file.write("#include <limits.h>\n")
+	c_file.write("#include <stdlib.h>\n")
+	c_file.write("#include <string.h>\n")
+	c_file.write("#include <stdio.h>\n")
+	c_file.write("#include <ndrstandard.h>\n")
+	c_file.write("#include <marshal.h>\n")
+	c_file.write("#include <object.h>\n")
+	c_file.write("#include <compile.h>\n")
+	c_file.write("#include <eval.h>\n")
+	c_file.write("#include <wchar.h>\n\n")
 
-c_file.write("#include <stdlib.h>\n")
-c_file.write("#include <string.h>\n")
-c_file.write("#include <limits.h>\n")
-c_file.write("#include <stdio.h>\n")
-c_file.write("#include <ndrstandard.h>\n")
-c_file.write("#include <Python.h>\n")
-c_file.write("#include <marshal.h>\n")
-c_file.write("#include <object.h>\n")
-c_file.write("#include <compile.h>\n")
-c_file.write("#include <eval.h>\n")
-c_file.write("#include <wchar.h>\n\n")
+	gen_first(c_file)
+	e.tplog_info("Generate main")
+	gen_module_code(c_file, "main", "entry", M_main_code)
 
-gen_first(c_file)
-e.tplog_info("Generate main")
-gen_module_code(c_file, "main", args.m[0], M_main_code)
+	e.tplog_info("Generate main mods")
+	for m, mv in M_main_mods.items():
+		# index the modules
+		M_main_mods_flat[m] = gen_module_code(c_file, "mmod", m, mv)
 
-e.tplog_info("Generate main mods")
-for m, mv in M_main_mods.items():
-	# index the modules
-	M_main_mods_flat[m] = gen_module_code(c_file, "mmod", m, mv)
+	e.tplog_info("Generate packages")
+	for p, pv in M_packages.items():
+		for m, mv in pv.modules.items():
+		#	# index the modules
+			M_packages_flat[p+"."+m] = gen_module_code(c_file, "pkg_"+p, m, mv)
+		
+	# generate sorted index...
+	gen_index(c_file, "mainmods", M_main_mods_flat)
+	gen_index(c_file, "pkg", M_packages_flat)
+	gen_index_search(c_file)
 
-e.tplog_info("Generate packages")
-for p, pv in M_packages.items():
-	for m, mv in pv.modules.items():
-	#	# index the modules
-		M_packages_flat[p+"."+m] = gen_module_code(c_file, "pkg_"+p, m, mv)
-	
-# generate sorted index...
-gen_index(c_file, "mainmods", M_main_mods_flat)
-gen_index(c_file, "pkg", M_packages_flat)
-gen_index_search(c_file)
-# generate loader / main...
-# compile...
-process = subprocess.Popen(['echo', 'More output'],
-                     stdout=subprocess.PIPE, 
-                     stderr=subprocess.PIPE)
-stdout, stderr = process.communicate()
-stdout, stderr
+	# prepare the config
+	include = sysconfig.get_path('include')
+	libdir = sysconfig.get_config_vars('LIBDIR')
+	shlibs = sysconfig.get_config_vars('INSTSONAME')
+	sosuff = sysconfig.get_config_var('SHLIB_SUFFIX')
 
-#finally:
-#    tmp.close()
-#    os.unlink(tmp.name)
+	# Compile the main...
+	cmd = f"{c_compiler} -o {args.o} {c_file.name} {c_flags} -I{include}"
+
+	# Append with library directories...
+	for ld in libdir:
+		cmd = cmd+" -L"+ld
+
+	for shlib in shlibs:
+		if shlib.find("lib") == -1:
+			raise Exception("Invalid shared library name [%s] (not starting with lib)" % shlib)
+		shlib = shlib[3:]
+		# Chek the location of .so/.dy
+		soext = shlib.rfind(sosuff)
+		if soext == -1:
+			raise Exception("Missing shared library extension [%s] in [%s]" (sosuff, shlib))
+		shlib=shlib[:soext]
+		cmd = cmd+" -l"+shlib
+
+	e.tplog_debug("Compiling with [%s]" % cmd)
+	ret = os.system(cmd)
+
+	if 0!=ret:
+		e.tplog_error("Build command [%s] failed with %d" % 
+			(cmd, ret))
+		raise Exception("Build command [%s] failed with %d" % 
+			(cmd, ret))
+finally:
+    c_file.file.close()
+    os.unlink(c_file.name)

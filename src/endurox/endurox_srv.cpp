@@ -754,7 +754,7 @@ expublic void ndrxpy_register_srv(py::module &m)
         R"pbdoc(
         Restart after return or terminate immediately (if running from other 
         thread than main). In case if called from ATMI server main thread
-        server exists after the service routine returns (i.e. after the 
+        server exits after the service routine returns (i.e. after the 
         tpreturn() or tpforward() called). 
 
         This function applies to ATMI servers only.
