@@ -42,6 +42,7 @@ import py_compile as c
 import sys
 import tempfile
 import sysconfig
+import re
 
 #
 # Single package entry
@@ -907,9 +908,8 @@ def load_module(resource, recursive):
 
 				sub_dirs = root[(len_path_real+1):]
 
-				# this is not pyton package
-				if "." in sub_dirs:
-					continue
+				if not re.match("^(/{0,1}[_a-z-A]+[_a-zA-Z0-9]*/{0,1})+$", sub_dirs):
+					raise Exception("Module not embeddable: Directory contains invalid symbols [%s]" % sub_dirs)
 
 				sub_pkg = sub_dirs.replace("/", ".")
 				fin_pkg = resource+"."+sub_pkg
@@ -950,11 +950,17 @@ def load_module(resource, recursive):
 			for f in files:
 				res_notext, extension = os.path.splitext(f)
 				e.tplog_info("Processing pkg [%s] mod [%s]" % (fin_pkg, res_notext))
-				if (extension==".py" or extension==".pyc") and not res_notext in cur_pkg.modules:
-					# Get the code object...
-					e.tplog_debug("root[%s] vs [%s] f=[%s]" % (root, path_real, f))
-					# Load the bytes
-					cur_pkg.modules[res_notext] = read_module(str(Path(root, f)))
+				if extension==".py" or extension==".pyc":
+					if not res_notext in cur_pkg.modules:
+						# Get the code object...
+						e.tplog_debug("root[%s] vs [%s] f=[%s]" % (root, path_real, f))
+						# Load the bytes
+						cur_pkg.modules[res_notext] = read_module(str(Path(root, f)))
+				else:
+					e.tplog_error("ERROR: Module not embeddable: [%s%s] from [%s]" %
+						(res_notext, extension, resource))
+					raise Exception("Module not embeddable: [%s%s] from [%s]" %
+                                                (res_notext, extension, resource))
 
 			# scan the directories...
 			if not recursive:
@@ -974,18 +980,18 @@ e.ndrx_sys_banner()
 
 parser = argparse.ArgumentParser(description='Enduro/X Python Linker')
 
-parser.add_argument('rest', metavar='main_module', type=str, nargs=argparse.REMAINDER,
-					help='Main module to load as startup code (single file)')
+parser.add_argument('-m', metavar='main_module', type=str, nargs="+",
+					help='Main module to load as startup code (single file)',
+					required=True)
 
-parser.add_argument('-i', metavar='include', type=str, nargs='*',
-                    help='Include package', action='append')
+parser.add_argument('-i', metavar='include', type=str, help='Include package', action='append', nargs="+")
 
 parser.add_argument('-o', metavar='output', type=str,
 					help='Output binary', default="a.out")
 
 args = parser.parse_args()
 
-if len(args.rest) != 1:
+if len(args.m) != 1:
 	parser.print_help()
 	sys.exit(-1)
 
@@ -1023,7 +1029,7 @@ e.tplog_info(str(args.i))
 
 try:
 	#for source in args.m:
-	load_main(args.rest[0])
+	load_main(args.m[0])
 
 	if args.i is not None:
 		for mod in args.i:
