@@ -33,7 +33,7 @@
 ## -----------------------------------------------------------------------------
 
 import argparse
-from importlib.resources import path
+#from importlib.resources import path
 import endurox as e
 import os
 from pathlib import Path
@@ -48,21 +48,21 @@ import re
 # Single package entry
 #
 class PackageEntry(object):
-	# Package name
-	#name=""
+    # Package name
+    #name=""
 
-	# List of ModuleEntry in given package.
-	# key is string (file/mod name w/o extension)
-	# value is bytecode
-	#modules = {}
+    # List of ModuleEntry in given package.
+    # key is string (file/mod name w/o extension)
+    # value is bytecode
+    #modules = {}
 
-	# is this package?
-	#package = False
+    # is this package?
+    #package = False
 
-	def __init__(self):
-		self.modules={}
-		self.name=""
-		self.package=False
+    def __init__(self):
+        self.modules={}
+        self.name=""
+        self.package=False
 
 # list of main modules
 M_main_code = None
@@ -99,123 +99,123 @@ M_optimize = -1
 M_lnk_counter = 0;
 
 def get_cc_id(cc, c_flags):
-	"""Get C compiler id
+    """Get C compiler id
 
-	Parameters
-	----------
-	cc:str
-		Compiler binary name
-	clfags:str
-		Compiler flags
+    Parameters
+    ----------
+    cc:str
+        Compiler binary name
+    clfags:str
+        Compiler flags
 
-	Returns
-	-------
-	compid:str
-		Compiler ID, gcc,clang,sunpro,xlC,unk (unknown)
-	"""
+    Returns
+    -------
+    compid:str
+        Compiler ID, gcc,clang,sunpro,xlC,unk (unknown)
+    """
 
-	test_file_name = None
-	out_file_name = None
+    test_file_name = None
+    out_file_name = None
 
-	try:
-		test_file_name = tempfile.NamedTemporaryFile(delete=False, suffix='.c',
-			mode = "w")
-		test_file_name.write(
+    try:
+        test_file_name = tempfile.NamedTemporaryFile(delete=False, suffix='.c',
+            mode = "w")
+        test_file_name.write(
 r"""
 #include <stdio.h>
 
 /* see https://sourceforge.net/p/predef/wiki/Compilers/ */
 int main(int argc, char **argv)
 {
-	int ret = 0;
+    int ret = 0;
 #if defined(__open_xl__)
-	printf("openxl\n");
+    printf("openxl\n");
 #elif defined(__xlC__) || defined(__ibmxl__)
-	printf("xlc\n");
+    printf("xlc\n");
 #elif defined(__GNUC__)
-	printf("gcc\n");
+    printf("gcc\n");
 #elif defined(__clang__)
-	printf("clang\n");
+    printf("clang\n");
 #elif defined(__SUNPRO_C)
-	printf("sunpro\n");
+    printf("sunpro\n");
 #else
-	printf("unk\n");
-	ret=-1;
+    printf("unk\n");
+    ret=-1;
 #endif
 
-	return ret;
+    return ret;
 }
 """)
-		test_file_name.file.close()
-		
-		# OK, these are already open files...
-		out_file_name = tempfile.NamedTemporaryFile(delete=False,
-			mode = "w")
-		# No need to be open...
-		out_file_name.file.close()
+        test_file_name.file.close()
+        
+        # OK, these are already open files...
+        out_file_name = tempfile.NamedTemporaryFile(delete=False,
+            mode = "w")
+        # No need to be open...
+        out_file_name.file.close()
 
-		if c_flags is None:
-			c_flags = ""
+        if c_flags is None:
+            c_flags = ""
 
-		command = f"{cc} {c_flags} -o {out_file_name.name} {test_file_name.name}"
+        command = f"{cc} {c_flags} -o {out_file_name.name} {test_file_name.name}"
 
-		e.tplog_info("Comp check [%s]" % command)
-		if 0!=os.system(command):
-			raise("Failed to invoke compiler")
+        e.tplog_info("Comp check [%s]" % command)
+        if 0!=os.system(command):
+            raise("Failed to invoke compiler")
 
-		# exit status?
-		process =  os.popen(out_file_name.name)
-		comp = process.read()
-		ret=process.close()
-		
-		if ret is not None:
-			e.tplog_error("[%s] failed with %d" % (command, ret))
-			raise("[%s] failed with %d" % (command, ret))
-		
-		comp = comp.rstrip()
-		# check error ? 
-		e.tplog_debug("Compiler id: "+comp)
+        # exit status?
+        process =  os.popen(out_file_name.name)
+        comp = process.read()
+        ret=process.close()
+        
+        if ret is not None:
+            e.tplog_error("[%s] failed with %d" % (command, ret))
+            raise("[%s] failed with %d" % (command, ret))
+        
+        comp = comp.rstrip()
+        # check error ? 
+        e.tplog_debug("Compiler id: "+comp)
 
-		return comp
+        return comp
 
-	except Exception as ex:
-		e.tplog_error("Failed to check compiler version: %s" % ex)
-		raise
+    except Exception as ex:
+        e.tplog_error("Failed to check compiler version: %s" % ex)
+        raise
 
-	finally:
-		# close the handles
+    finally:
+        # close the handles
 
-		if test_file_name is not None:
+        if test_file_name is not None:
 
-			# Close the file
-			if not test_file_name.file.closed:
-				test_file_name.file.close()
+            # Close the file
+            if not test_file_name.file.closed:
+                test_file_name.file.close()
 
-			os.unlink(test_file_name.name)
-			
-		if out_file_name is not None:
+            os.unlink(test_file_name.name)
+            
+        if out_file_name is not None:
 
-			# Close the file
-			if not out_file_name.file.closed:
-				out_file_name.file.close()
+            # Close the file
+            if not out_file_name.file.closed:
+                out_file_name.file.close()
 
-			os.unlink(out_file_name.name)
+            os.unlink(out_file_name.name)
 
 def gen_index_search(c_file):
-	"""Gen resoruce search func 
-	
-	Parameters
-	----------
-	c_file: file
-		C temp output file
-	
-	"""
+    """Gen resoruce search func 
+    
+    Parameters
+    ----------
+    c_file: file
+        C temp output file
+    
+    """
 
-	# This shall generate some caches too. Save & return last result for given
-	# table. As this might be used find_module() / load_module() in the sequence of calls.
-	# also slots shall be used for mainmods & pkg index tables.
+    # This shall generate some caches too. Save & return last result for given
+    # table. As this might be used find_module() / load_module() in the sequence of calls.
+    # also slots shall be used for mainmods & pkg index tables.
 
-	c_file.write(
+    c_file.write(
 r"""
 /**
  * Search the module
@@ -227,10 +227,10 @@ r"""
  * @return See NDRXPY_RES_
  */
 static int ndrxpy_get_mod(ndrxpy_module_indext_t *index, int index_len, 
-	char *module, const char **data, ssize_t *dlen)
+    char *module, const char **data, ssize_t *dlen)
 {
     /* perform binary search for class data */
-	int ret = NDRXPY_RES_NOMOD;
+    int ret = NDRXPY_RES_NOMOD;
     int first = 0;
     int last = index_len - 1;
     int middle = (first+last)/2;
@@ -260,13 +260,13 @@ static int ndrxpy_get_mod(ndrxpy_module_indext_t *index, int index_len,
 
     if (first > last)
     {
-		/* not found */
+        /* not found */
         goto out;
     }
 
-	*data = index[middle].data;
-	*dlen = index[middle].len;
-	ret=NDRXPY_RES_MOD_FOUND;
+    *data = index[middle].data;
+    *dlen = index[middle].len;
+    ret=NDRXPY_RES_MOD_FOUND;
 
 out:	
     return ret;
@@ -281,70 +281,70 @@ out:
  */
 static int ndrxpy_resolve(char *module, const char **data, ssize_t *dlen)
 {
-	int ret = NDRXPY_RES_NOMOD;
-	char tmpmod[PATH_MAX*2]="";
-	/* Maybe needs this to be dynamic? */
-	static __thread char cache_module[PATH_MAX*2]="";
-	static __thread const char *cache_data=NULL;
-	static __thread ssize_t cache_dlen=0;
-	static __thread int cache_ret=NDRXPY_RES_NOMOD;
+    int ret = NDRXPY_RES_NOMOD;
+    char tmpmod[PATH_MAX*2]="";
+    /* Maybe needs this to be dynamic? */
+    static __thread char cache_module[PATH_MAX*2]="";
+    static __thread const char *cache_data=NULL;
+    static __thread ssize_t cache_dlen=0;
+    static __thread int cache_ret=NDRXPY_RES_NOMOD;
 
 #define DO_CACHE(MOD)	NDRX_STRCPY_SAFE(cache_module, MOD); cache_data=*data; cache_dlen=*dlen; cache_ret=ret;
-	/*
-	 * Steps:
-	 * - Search for module direct in both table, if found, ok return bytes.
-	 * - If stuff is not found, try to add __init__ and search, only in second table.
-	 * Provide result as: then return NDRXPY_MOD_FOUND(1), NDRXPY_PKG_FOUND(2), NDRXPY_NOMOD 0
-	 */
-	if (0==strcmp(module, cache_module))
-	{
-		*data=cache_data;
-		*dlen = cache_dlen;
-		ret=cache_ret;
-		goto out;
-	}
+    /*
+     * Steps:
+     * - Search for module direct in both table, if found, ok return bytes.
+     * - If stuff is not found, try to add __init__ and search, only in second table.
+     * Provide result as: then return NDRXPY_MOD_FOUND(1), NDRXPY_PKG_FOUND(2), NDRXPY_NOMOD 0
+     */
+    if (0==strcmp(module, cache_module))
+    {
+        *data=cache_data;
+        *dlen = cache_dlen;
+        ret=cache_ret;
+        goto out;
+    }
 
-	/* Search main-module first */
-	ret=ndrxpy_get_mod(G_ndrxpy_mainmods_index, 
-		(sizeof(G_ndrxpy_mainmods_index)/sizeof(*(G_ndrxpy_mainmods_index))), 
-		module, data, dlen);
+    /* Search main-module first */
+    ret=ndrxpy_get_mod(G_ndrxpy_mainmods_index, 
+        (sizeof(G_ndrxpy_mainmods_index)/sizeof(*(G_ndrxpy_mainmods_index))), 
+        module, data, dlen);
 
-	if (ret>NDRXPY_RES_NOMOD)
-	{
-		/* module found... */
-		DO_CACHE(module);
-		goto out;
-	}
+    if (ret>NDRXPY_RES_NOMOD)
+    {
+        /* module found... */
+        DO_CACHE(module);
+        goto out;
+    }
 
-	/* Search pkg */
-	ret=ndrxpy_get_mod(G_ndrxpy_pkg_index, 
-		(sizeof(G_ndrxpy_pkg_index)/sizeof(*(G_ndrxpy_pkg_index))), 
-		module, data, dlen);
+    /* Search pkg */
+    ret=ndrxpy_get_mod(G_ndrxpy_pkg_index, 
+        (sizeof(G_ndrxpy_pkg_index)/sizeof(*(G_ndrxpy_pkg_index))), 
+        module, data, dlen);
 
-	if (ret>NDRXPY_RES_NOMOD)
-	{
-		/* module found... */
-		DO_CACHE(module);
-		goto out;
-	}
+    if (ret>NDRXPY_RES_NOMOD)
+    {
+        /* module found... */
+        DO_CACHE(module);
+        goto out;
+    }
 
-	/* If still not found, try __init__ and mark result as pkg */
-	snprintf(tmpmod, sizeof(tmpmod), "%s.__init__", module);
+    /* If still not found, try __init__ and mark result as pkg */
+    snprintf(tmpmod, sizeof(tmpmod), "%s.__init__", module);
 
-	ret=ndrxpy_get_mod(G_ndrxpy_pkg_index, 
-		(sizeof(G_ndrxpy_pkg_index)/sizeof(*(G_ndrxpy_pkg_index))), 
-		tmpmod, data, dlen);
+    ret=ndrxpy_get_mod(G_ndrxpy_pkg_index, 
+        (sizeof(G_ndrxpy_pkg_index)/sizeof(*(G_ndrxpy_pkg_index))), 
+        tmpmod, data, dlen);
 
-	if (ret>NDRXPY_RES_NOMOD)
-	{
-		/* mark as package found */
-		ret=NDRXPY_RES_PKG_FOUND;
-		DO_CACHE(tmpmod);
-		goto out;
-	}
+    if (ret>NDRXPY_RES_NOMOD)
+    {
+        /* mark as package found */
+        ret=NDRXPY_RES_PKG_FOUND;
+        DO_CACHE(tmpmod);
+        goto out;
+    }
 
 out:
-	return ret;
+    return ret;
 }
 
 /**
@@ -357,45 +357,45 @@ out:
  */
 static const char *get_code_bytes(const char *data, ssize_t dlen, ssize_t *olen)
 {
-	const char *ret = NULL;
-	long magic = *(unsigned int *)data;
+    const char *ret = NULL;
+    long magic = *(unsigned int *)data;
 
-	if (magic != PyImport_GetMagicNumber())
-	{
-		fprintf(stderr, "Invalid magic, expected %lx got %lx",
-			magic, PyImport_GetMagicNumber());\
-		goto out;
-	}
+    if (magic != PyImport_GetMagicNumber())
+    {
+        fprintf(stderr, "Invalid magic, expected %lx got %lx",
+            magic, PyImport_GetMagicNumber());\
+        goto out;
+    }
 
-	ret = (data + sizeof(int)*4);
-	*olen = dlen - sizeof(int)*4;
+    ret = (data + sizeof(int)*3);
+    *olen = dlen - sizeof(int)*3;
 
 out:
 
-	return ret;
+    return ret;
 }
 
 int load_main(void)
 {
     ssize_t size;
-	const char *data;
+    const char *data;
 
     PyCodeObject *mainobj, *pycode;
     PyObject *result, *mainmodule, *maindict;
     mainmodule = PyImport_AddModule("__main__");
     maindict = PyModule_GetDict(mainmodule);
 
-	data = get_code_bytes(ndrxpy_G_main_entry_0, ndrxpy_G_main_entry_0_len, &size);
+    data = get_code_bytes(ndrxpy_G_main_entry_0, ndrxpy_G_main_entry_0_len, &size);
     pycode = (PyCodeObject *) PyMarshal_ReadObjectFromString(data, size);
 
     if (pycode == NULL || !PyCode_Check(pycode))
-	{
-		Py_XDECREF(pycode);
-		PyErr_SetString(PyExc_RuntimeError,
-					"Bad code object in .pyc file");
-		fprintf(stderr, "Failed to load main\n");
-		return -1;
-	}
+    {
+        Py_XDECREF(pycode);
+        PyErr_SetString(PyExc_RuntimeError,
+                    "Bad code object in .pyc file");
+        fprintf(stderr, "Failed to load main\n");
+        return -1;
+    }
 
     PyEval_EvalCode((PyObject *)pycode, maindict, maindict);
     Py_Finalize();
@@ -404,27 +404,27 @@ int load_main(void)
 PyObject* find_module(PyObject* self, PyObject* args)
 {
     int ok;
-	char *module;
-	const char *mdata;
-	ssize_t dlen;
+    char *module;
+    const char *mdata;
+    ssize_t dlen;
 
     ok = PyArg_ParseTuple(args, "s", &module);
 
     if (!ok)
     {
         fprintf(stderr, "Failed to pars ss\n");
-		goto out;
+        goto out;
     }
 
     ok=0;
-	if (ndrxpy_resolve(module, &mdata, &dlen)==NDRXPY_RES_NOMOD)
-	{
-		/* fprintf(stderr, "Mod not found [%s]\n", module); */
-		goto out;
-	}
+    if (ndrxpy_resolve(module, &mdata, &dlen)==NDRXPY_RES_NOMOD)
+    {
+        /* fprintf(stderr, "Mod not found [%s]\n", module); */
+        goto out;
+    }
 
-	/* found! */
-	ok=1;
+    /* found! */
+    ok=1;
 
 out:
     return Py_BuildValue("B", ok);
@@ -435,48 +435,48 @@ PyObject* load_module(PyObject* self, PyObject* args) {
     char *module;
     int ok;
     ssize_t size;
-	const char *data;
-	const char *mdata;
-	PyCodeObject *pycode;
-	PyObject *m=NULL;
-	ssize_t dlen;
-	int mode;
+    const char *data;
+    const char *mdata;
+    PyCodeObject *pycode;
+    PyObject *m=NULL;
+    ssize_t dlen;
+    int mode;
     /* OK this is module */
     ok = PyArg_ParseTuple(args, "s", &module);
 
     if (!ok)
     {
         fprintf(stderr, "Failed to pars s\n");
-		goto out;
+        goto out;
     }
 
-	if ((mode=ndrxpy_resolve(module, &mdata, &dlen))==NDRXPY_RES_NOMOD)
-	{
-		fprintf(stderr, "Mod not found [%s]\n", module);
-		goto out;
-	}
+    if ((mode=ndrxpy_resolve(module, &mdata, &dlen))==NDRXPY_RES_NOMOD)
+    {
+        fprintf(stderr, "Mod not found [%s]\n", module);
+        goto out;
+    }
 
-	data = get_code_bytes(mdata, dlen, &size);
+    data = get_code_bytes(mdata, dlen, &size);
     pycode = (PyCodeObject *) PyMarshal_ReadObjectFromString(data, size);
 
     if (pycode == NULL || !PyCode_Check(pycode))
-	{
-		Py_XDECREF(pycode);
-		PyErr_SetString(PyExc_RuntimeError,
-					"Bad code object in .pyc file");
-		fprintf(stderr, "Failed to %s\n", module);
-		goto out;
-	}
+    {
+        Py_XDECREF(pycode);
+        PyErr_SetString(PyExc_RuntimeError,
+                    "Bad code object in .pyc file");
+        fprintf(stderr, "Failed to %s\n", module);
+        goto out;
+    }
 
-	m = PyImport_ExecCodeModuleEx(module, (PyObject *)pycode, module);
+    m = PyImport_ExecCodeModuleEx(module, (PyObject *)pycode, module);
 
-	Py_DECREF(pycode);
+    Py_DECREF(pycode);
 
-	/* mark stuff as package, if needed: */
-	if (NDRXPY_RES_PKG_FOUND==mode)
-	{
-		PyObject_SetAttrString(m, "__path__", PyUnicode_FromString(""));
-	}
+    /* mark stuff as package, if needed: */
+    if (NDRXPY_RES_PKG_FOUND==mode)
+    {
+        PyObject_SetAttrString(m, "__path__", PyUnicode_FromString(""));
+    }
 
 out:
     return m;
@@ -506,22 +506,22 @@ static PyObject* PyInit_embedded(void)
  */
 static wchar_t *cvt_charptr_wchar_ptr(char *in)
 {
-	size_t mbsbuf = strlen(in)+1;
-	wchar_t *ret = calloc(mbsbuf, sizeof(wchar_t));
+    size_t mbsbuf = strlen(in)+1;
+    wchar_t *ret = calloc(mbsbuf, sizeof(wchar_t));
 
-	if (ret == NULL)
-	{
-		perror("calloc");
-		exit(-1);
-	}
+    if (ret == NULL)
+    {
+        perror("calloc");
+        exit(-1);
+    }
 
-	if (mbstowcs(ret, in, mbsbuf) == (size_t) -1)
-	{
-		perror("mbstowcs");
-		exit(-1);
-	}
+    if (mbstowcs(ret, in, mbsbuf) == (size_t) -1)
+    {
+        perror("mbstowcs");
+        exit(-1);
+    }
 
-	return ret;
+    return ret;
 }
 
 /**
@@ -529,37 +529,37 @@ static wchar_t *cvt_charptr_wchar_ptr(char *in)
  */
 static wchar_t **cvt_argv_wchar_ptr(int argc, char **argv)
 {
-	wchar_t **ret = NULL;
-	int i;
+    wchar_t **ret = NULL;
+    int i;
 
-	ret = (wchar_t **)calloc(sizeof(wchar_t *), argc);
+    ret = (wchar_t **)calloc(sizeof(wchar_t *), argc);
 
-	if (NULL==ret)
-	{
-		perror("calloc");
-		exit(-1);
-	}
+    if (NULL==ret)
+    {
+        perror("calloc");
+        exit(-1);
+    }
 
-	/* convert all strings... */
+    /* convert all strings... */
 
-	for (i=0; i<argc; i++)
-	{
-		ret[i] = cvt_charptr_wchar_ptr(argv[i]);
-		/* shall not be null, will be handled by func + exit */
-	}
+    for (i=0; i<argc; i++)
+    {
+        ret[i] = cvt_charptr_wchar_ptr(argv[i]);
+        /* shall not be null, will be handled by func + exit */
+    }
 
-	return ret;
+    return ret;
 }
 
 static void free_argv_wchar(int argc, wchar_t **argv)
 {
-	int i;
+    int i;
 
-	for (i=0; i<argc; i++)
-	{
-		free(argv[i]);
-	}
-	free(argv);
+    for (i=0; i<argc; i++)
+    {
+        free(argv[i]);
+    }
+    free(argv);
 }
 
 /**
@@ -567,14 +567,14 @@ static void free_argv_wchar(int argc, wchar_t **argv)
  */
 int main(int argc, char **argv)
 {
-	wchar_t *prognm = cvt_charptr_wchar_ptr(argv[0]);
-	wchar_t **argvw = cvt_argv_wchar_ptr(argc, argv);
+    wchar_t *prognm = cvt_charptr_wchar_ptr(argv[0]);
+    wchar_t **argvw = cvt_argv_wchar_ptr(argc, argv);
 
     PyImport_AppendInittab("embedded", &PyInit_embedded);
 
-	Py_SetProgramName(prognm);
+    Py_SetProgramName(prognm);
     Py_Initialize();
-	PySys_SetArgv(argc, argvw);
+    PySys_SetArgv(argc, argvw);
 
     int ret = PyRun_SimpleString("\
 import embedded, sys\n\
@@ -586,64 +586,64 @@ class Importer:\n\
 sys.meta_path.append(Importer())\n\
 ");
 
-	if (0!=ret)
-	{
-		fprintf(stderr, "PyRun_SimpleString() failed\n");
-	}
+    if (0!=ret)
+    {
+        fprintf(stderr, "PyRun_SimpleString() failed\n");
+    }
 
-	ret = load_main();
+    ret = load_main();
 
-	if (NULL!=prognm)
-	{
-		free(prognm);
-	}
+    if (NULL!=prognm)
+    {
+        free(prognm);
+    }
 
-	if (NULL!=argvw)
-	{
-		free_argv_wchar(argc, argvw);
-	}
+    if (NULL!=argvw)
+    {
+        free_argv_wchar(argc, argvw);
+    }
 
 }
 """)
 
 def gen_index(c_file, index_name:str, flat_mods:dict):
-	""" Generate binary search index table.
-	Parameters
-	----------
-	c_file:
-		Output temporary file
-	index_name:str
-		Name of the table index to generate
-	flat_mods:dict
-		Loaded index table to generate	
-	"""
-	# sort & plot...
-	c_file.write(
+    """ Generate binary search index table.
+    Parameters
+    ----------
+    c_file:
+        Output temporary file
+    index_name:str
+        Name of the table index to generate
+    flat_mods:dict
+        Loaded index table to generate	
+    """
+    # sort & plot...
+    c_file.write(
 """
 static ndrxpy_module_indext_t G_ndrxpy_%s_index [] =
 {
 """ % (index_name))
 
-	first=True
-	for k, v in sorted(flat_mods.items()):
-		if not first:
-			c_file.write(", \n")
-		c_file.write('\t{"%s", %s, %s_len}' % (k,v.replace(".", "_"),v.replace(".", "_"))
-			)
-		first=False
+    first=True
+    for k, v in sorted(flat_mods.items()):
+        if not first:
+            c_file.write(", \n")
+        c_file.write('\t{"%s", %s, %s_len_def}' % (k,v.replace(".", "_"),v.replace(".", "_"))
+            )
+        first=False
 
-	c_file.write("\n};")
+    c_file.write("\n};")
 
 def gen_first(c_file):
-	"""Generate first things to the temp file"""
+    """Generate first things to the temp file"""
 
     # have some index struct.
-	c_file.write(
+    c_file.write(
 """struct ndrxpy_module_index
 {
-	const char *mod;	/**< Module name 					*/
-	const char *data;	/**< bytes compiled 				*/
-	size_t len;			/**< bytes compiled lenght  		*/
+    const char *mod;	/**< Module name 					*/
+    const char *data;	/**< bytes compiled 				*/
+    size_t len;			/**< bytes compiled lenght  		*/
 };
 
 typedef struct ndrxpy_module_index ndrxpy_module_indext_t;
@@ -656,80 +656,80 @@ typedef struct ndrxpy_module_index ndrxpy_module_indext_t;
 """)
 
 def gen_module_code(c_file, prefix, module, code: bytes):
-	""" Generate C byte array for embedding.
-	Format to generate:
+    """ Generate C byte array for embedding.
+    Format to generate:
 
-		const char ndrx_G_resource_opa[] = {
-			0x0a, 0x0a, 0x64, 0x65, 0x66, 0x20, 0x79, 0x6f, 0x70, 0x74,
-			0x28, 0x29, 0x3a, 0x0a, 0x09, 0x70, 0x72, 0x69, 0x6e, 0x74,
-			0x28, 0x22, 0x59, 0x4f, 0x22, 0x29, 0x0a, 0x0a, 0x00
-			};
-		const size_t ndrx_G_resource_opa_len = 28;
-		#define ndrx_G_resource_opa_len_def 28	
+        const char ndrx_G_resource_opa[] = {
+            0x0a, 0x0a, 0x64, 0x65, 0x66, 0x20, 0x79, 0x6f, 0x70, 0x74,
+            0x28, 0x29, 0x3a, 0x0a, 0x09, 0x70, 0x72, 0x69, 0x6e, 0x74,
+            0x28, 0x22, 0x59, 0x4f, 0x22, 0x29, 0x0a, 0x0a, 0x00
+            };
+        const size_t ndrx_G_resource_opa_len = 28;
+        #define ndrx_G_resource_opa_len_def 28	
 
-	Naming convention:
+    Naming convention:
 
-	ndrxpy_G_<prefix>_<module_dots_to_underscore> -> array
-	ndrxpy_G_<prefix>_<module_dots_to_underscore>_len -> size of the array
-	ndrxpy_G_<prefix>_<module_dots_to_underscore>_def -> size of the array
+    ndrxpy_G_<prefix>_<module_dots_to_underscore> -> array
+    ndrxpy_G_<prefix>_<module_dots_to_underscore>_len -> size of the array
+    ndrxpy_G_<prefix>_<module_dots_to_underscore>_def -> size of the array
 
-	prefix -> "main" for the main
-	prefix -> "pkg" for the packages
+    prefix -> "main" for the main
+    prefix -> "pkg" for the packages
 
-	Parameters
-	----------
-	c_file:file
-		File handle open for write
-	prefix:str
-		Prefix for the table to generate (to separate main and package)
-	module:str
-		Module name with dots
-	code:bytes
-		Byte of the code to embed.
+    Parameters
+    ----------
+    c_file:file
+        File handle open for write
+    prefix:str
+        Prefix for the table to generate (to separate main and package)
+    module:str
+        Module name with dots
+    code:bytes
+        Byte of the code to embed.
 
-	Returns
-	-------
-	name:str
-		Name of the table generated (that would be added to the the module index)
+    Returns
+    -------
+    name:str
+        Name of the table generated (that would be added to the the module index)
 
-	"""
+    """
 
-	global M_lnk_counter
-	#c_mod = module.replace(".", "_")
-	c_name = ("ndrxpy_G_%s_%s_%d" % (prefix, module, M_lnk_counter)).replace(".", "_")
+    global M_lnk_counter
+    #c_mod = module.replace(".", "_")
+    c_name = ("ndrxpy_G_%s_%s_%d" % (prefix, module, M_lnk_counter)).replace(".", "_")
 
-	# 
-	c_file.write("const char %s[] = {\n" % c_name)
+    # 
+    c_file.write("const char %s[] = {\n" % c_name)
 
-	counter=0
-	first=True
-	for b in code:
+    counter=0
+    first=True
+    for b in code:
 
-		if not first:
-			c_file.write(", ")
+        if not first:
+            c_file.write(", ")
 
-			if counter % 10 == 0:
-				c_file.write("\n")
+            if counter % 10 == 0:
+                c_file.write("\n")
 
-		else:
-			first=False
+        else:
+            first=False
 
-		c_file.write(f"0x{b:02x}")
+        c_file.write(f"0x{b:02x}")
 
-		counter+=1
+        counter+=1
 
-	# close the def
-	c_file.write("\n};\n")
+    # close the def
+    c_file.write("\n};\n")
 
-	b_len = len(code)
-	# print the len handles
-	c_file.write("const size_t %s_len = %d;\n" % (c_name, b_len))
-	c_file.write("#define %s_len_def %d\n\n" % (c_name, b_len))
+    b_len = len(code)
+    # print the len handles
+    c_file.write("const size_t %s_len = %d;\n" % (c_name, b_len))
+    c_file.write("#define %s_len_def %d\n\n" % (c_name, b_len))
 
-	e.tplog_debug("Generated table [%s]" % c_name)
-	M_lnk_counter+=1
+    e.tplog_debug("Generated table [%s]" % c_name)
+    M_lnk_counter+=1
 
-	return c_name
+    return c_name
 
 #
 # Generic module read
@@ -737,83 +737,84 @@ def gen_module_code(c_file, prefix, module, code: bytes):
 # This might a not be cross platform version.
 #
 def read_module(resource):
-	"""Read module code to bytes()
-	
-	Parameters
-	----------
-	resource:str
-		Name of the module/pkg to read
+    """Read module code to bytes()
+    
+    Parameters
+    ----------
+    resource:str
+        Name of the module/pkg to read
 
-	"""
+    """
 
-	res_notext, extension = os.path.splitext(resource)
-	filename=os.path.basename(res_notext)
-	path = os.path.realpath(os.path.dirname(resource))
-	
-	src = str(Path(path, filename))+".py"
-	pyc = str(Path(path, filename))+".pyc"
+    res_notext, extension = os.path.splitext(resource)
+    filename=os.path.basename(res_notext)
+    path = os.path.realpath(os.path.dirname(resource))
+    
+    src = str(Path(path, filename))+".py"
+    pyc = str(Path(path, filename))+".pyc"
 
-	e.tplog_info("Loading mod filename: [%s] ext: [%s] path: [%s]"
-		% (filename, extension, path))
+    e.tplog_info("Loading mod filename: [%s] ext: [%s] path: [%s]"
+        % (filename, extension, path))
 
-	code=None
-	if os.path.exists(src):
-		# compile from source
-		e.tplog_info("Compiling from source...")
-		# based on /usr/lib/python3.10/py_compile.py
-		loader = importlib.machinery.SourceFileLoader('<py_compile>', src)
-		source_bytes = loader.get_data(src)
+    code=None
+    if os.path.exists(src):
+        # compile from source
+        e.tplog_info("Compiling from source...")
+        # based on /usr/lib/python3.10/py_compile.py
+        loader = importlib.machinery.SourceFileLoader('<py_compile>', src)
+        source_bytes = loader.get_data(src)
 
-		try:
-			code = loader.source_to_code(source_bytes, resource,
-										_optimize=M_optimize)
-		except Exception as err:
-			py_exc = c.PyCompileError(err.__class__, err, resource)
-			sys.stderr.write(py_exc.msg + '\n')
-			raise err
+        try:
+            code = loader.source_to_code(source_bytes, resource,
+                                        _optimize=M_optimize)
+        except Exception as err:
+            py_exc = c.PyCompileError(err.__class__, err, resource)
+            sys.stderr.write(py_exc.msg + '\n')
+            raise err
 
-		code = importlib._bootstrap_external._code_to_timestamp_pyc(code)
-		code = bytes(code) 
+        #code = importlib._bootstrap_external._code_to_timestamp_pyc(code)
+        code = importlib._bootstrap_external._code_to_bytecode(code)
+        code = bytes(code) 
 
-	elif os.path.exists(pyc):
-		in_file = open(pyc, "rb")
-		code = in_file.read()
-		in_file.close()
-	else:
-		file = importlib._bootstrap_external._get_cached(src)
-		# load bytes
-		e.tplog_info("Loading from cache [%s]" % file)
+    elif os.path.exists(pyc):
+        in_file = open(pyc, "rb")
+        code = in_file.read()
+        in_file.close()
+    else:
+        file = importlib._bootstrap_external._get_cached(src)
+        # load bytes
+        e.tplog_info("Loading from cache [%s]" % file)
 
-		in_file = open(file, "rb")
-		code = in_file.read()
-		in_file.close()
+        in_file = open(file, "rb")
+        code = in_file.read()
+        in_file.close()
 
-	e.tplogdump(6, "Dumping objectcode of [%s]" % resource, code)
+    e.tplogdump(6, "Dumping objectcode of [%s]" % resource, code)
 
-	return code
+    return code
 
 
 def load_main_dir(resource):
-	"""Load main directory contents to separate index
-	This is required due to fact if loading any module, then program's directory
-	is scanned first for the module names and only then normal packages are loaded"""
+    """Load main directory contents to separate index
+    This is required due to fact if loading any module, then program's directory
+    is scanned first for the module names and only then normal packages are loaded"""
 
-	global M_main_mods
-	path = os.path.realpath(os.path.dirname(resource))
-	e.tplog_info("Loading program directroy [%s]" % resource)
+    global M_main_mods
+    path = os.path.realpath(os.path.dirname(resource))
+    e.tplog_info("Loading program directroy [%s]" % resource)
 
-	for f in os.listdir(path):
+    for f in os.listdir(path):
 
-		if not os.path.isfile(f):
-			continue
+        if not os.path.isfile(f):
+            continue
 
-		res_notext, extension = os.path.splitext(f)
-		e.tplog_info("Processing main directory, mod [%s]" % (res_notext))
-		if (extension==".py" or extension==".pyc"):
-			# Get the code object...
-			e.tplog_debug("Reading module root[%s] f=[%s]" % (path, f))
-			# Load the bytes
-			M_main_mods[res_notext] = read_module(str(Path(path, f)))
+        res_notext, extension = os.path.splitext(f)
+        e.tplog_info("Processing main directory, mod [%s]" % (res_notext))
+        if (extension==".py" or extension==".pyc"):
+            # Get the code object...
+            e.tplog_debug("Reading module root[%s] f=[%s]" % (path, f))
+            # Load the bytes
+            M_main_mods[res_notext] = read_module(str(Path(path, f)))
 
 
 ################################################################################
@@ -826,9 +827,9 @@ def load_main_dir(resource):
 #  and if that does not work, then load the sources & try to compile them.
 ################################################################################
 def load_main(resource):
-	global M_main_code
-	M_main_code = read_module(resource)
-	load_main_dir(resource)
+    global M_main_code
+    M_main_code = read_module(resource)
+    load_main_dir(resource)
 
 ################################################################################
 # This accepts following module names to build
@@ -851,123 +852,123 @@ def load_main(resource):
 #  continue with sub-directory checking.
 ################################################################################
 def load_module(resource, recursive):
-	""" Load the package/module. If have *.py compile it, or if 
+    """ Load the package/module. If have *.py compile it, or if 
 
-	Parameters
-	----------
-		resource: str
-			module / package name to load
-		recursive: bool
-			If set to True, search for sub-folders for the package (had __init__.py)
-			for sub-modules we do not require __init__.py, just main thing is that they contain
-			py/pyc files.
-	"""
+    Parameters
+    ----------
+        resource: str
+            module / package name to load
+        recursive: bool
+            If set to True, search for sub-folders for the package (had __init__.py)
+            for sub-modules we do not require __init__.py, just main thing is that they contain
+            py/pyc files.
+    """
 
-	global M_packages
+    global M_packages
 
-	e.tplog_info("Linking [%s] module" % (resource))
+    e.tplog_info("Linking [%s] module" % (resource))
 
-	spec = importlib.util.find_spec(resource)
+    spec = importlib.util.find_spec(resource)
 
-	if spec is None:
-		raise ModuleNotFoundError(ImportError(resource))
+    if spec is None:
+        raise ModuleNotFoundError(ImportError(resource))
 
-	filename = spec.origin
-	path_real = os.path.dirname(filename)
-	len_path_real = len(path_real)
+    filename = spec.origin
+    path_real = os.path.dirname(filename)
+    len_path_real = len(path_real)
 
-	e.tplog_info("Linking [%s] module, path [%s]" % 
-		(resource, path_real))
+    e.tplog_info("Linking [%s] module, path [%s]" % 
+        (resource, path_real))
 
-	prev_pkg = ""
+    prev_pkg = ""
 
-	if os.path.basename(filename) == "__init__.py":
+    if os.path.basename(filename) == "__init__.py":
 
-		#e.tplog_info(path_real)
-		# This is package, lets scan it...
-		
-		for root, dir, files in os.walk(path_real):
+        #e.tplog_info(path_real)
+        # This is package, lets scan it...
+        
+        for root, dir, files in os.walk(path_real):
 
-			e.tplog_info("%s %s %s" % (str(root), str(dir), str(files)))
+            e.tplog_info("%s %s %s" % (str(root), str(dir), str(files)))
 
-			# no cache check
-			if "/__pycache__/" in root+"/":
-				continue
+            # no cache check
+            if "/__pycache__/" in root+"/":
+                continue
 
-			# Also after the root, we do not want to directories with "." inside...
+            # Also after the root, we do not want to directories with "." inside...
 
-			sub_pkg=""
-			fin_pkg = ""
-			tmp_root = root + "/"
-			len_root = len(root)
+            sub_pkg=""
+            fin_pkg = ""
+            tmp_root = root + "/"
+            len_root = len(root)
 
-			e.tplog_info(path_real+"/")
+            e.tplog_info(path_real+"/")
 
-			# Resolve packages & sub-packages
-			if tmp_root.startswith(path_real+"/") and len(root)>len_path_real:
+            # Resolve packages & sub-packages
+            if tmp_root.startswith(path_real+"/") and len(root)>len_path_real:
 
-				sub_dirs = root[(len_path_real+1):]
+                sub_dirs = root[(len_path_real+1):]
 
-				if not re.match("^(/{0,1}[_a-z-A]+[_a-zA-Z0-9]*/{0,1})+$", sub_dirs):
-					raise Exception("Module not embeddable: Directory contains invalid symbols [%s]" % sub_dirs)
+                if not re.match("^(/{0,1}[_a-z-A]+[_a-zA-Z0-9]*/{0,1})+$", sub_dirs):
+                    raise Exception("Module not embeddable: Directory contains invalid symbols [%s]" % sub_dirs)
 
-				sub_pkg = sub_dirs.replace("/", ".")
-				fin_pkg = resource+"."+sub_pkg
-			else:
-				fin_pkg = resource
+                sub_pkg = sub_dirs.replace("/", ".")
+                fin_pkg = resource+"."+sub_pkg
+            else:
+                fin_pkg = resource
 
-			if fin_pkg not in M_packages:
-				M_packages[fin_pkg]=PackageEntry()
+            if fin_pkg not in M_packages:
+                M_packages[fin_pkg]=PackageEntry()
 
-			cur_pkg = M_packages[fin_pkg]
+            cur_pkg = M_packages[fin_pkg]
 
-			# How about naming _ ?
-			cur_pkg.name = fin_pkg
-			
-			###############################################################
-			# some.pkg.abc.ccc we need to get following keys:
-			# some
-			# some.pkg
-			# some.pkg.abc
-			# and marke these as packages. In case if such package
-			# is missing we shall register it anyway, so that loader
-			# can resolve them.
-			###############################################################
-			pkgs = cur_pkg.name.split(".")
-			pkg_start = "";
-			for p in pkgs:
-				if len(pkg_start)>0:
-					#
-					# Mark previous pkg...
-					#
-					M_packages[pkg_start].package = True
-					pkg_start=pkg_start+"."+p
-				else:
-					pkg_start=p
-			# 
-			# load module names *.py or *.pyc
-			# 
-			for f in files:
-				res_notext, extension = os.path.splitext(f)
-				e.tplog_info("Processing pkg [%s] mod [%s]" % (fin_pkg, res_notext))
-				if extension==".py" or extension==".pyc":
-					if not res_notext in cur_pkg.modules:
-						# Get the code object...
-						e.tplog_debug("root[%s] vs [%s] f=[%s]" % (root, path_real, f))
-						# Load the bytes
-						cur_pkg.modules[res_notext] = read_module(str(Path(root, f)))
-				else:
-					e.tplog_error("ERROR: Module not embeddable: [%s%s] from [%s]" %
-						(res_notext, extension, resource))
-					raise Exception("Module not embeddable: [%s%s] from [%s]" %
+            # How about naming _ ?
+            cur_pkg.name = fin_pkg
+            
+            ###############################################################
+            # some.pkg.abc.ccc we need to get following keys:
+            # some
+            # some.pkg
+            # some.pkg.abc
+            # and marke these as packages. In case if such package
+            # is missing we shall register it anyway, so that loader
+            # can resolve them.
+            ###############################################################
+            pkgs = cur_pkg.name.split(".")
+            pkg_start = "";
+            for p in pkgs:
+                if len(pkg_start)>0:
+                    #
+                    # Mark previous pkg...
+                    #
+                    M_packages[pkg_start].package = True
+                    pkg_start=pkg_start+"."+p
+                else:
+                    pkg_start=p
+            # 
+            # load module names *.py or *.pyc
+            # 
+            for f in files:
+                res_notext, extension = os.path.splitext(f)
+                e.tplog_info("Processing pkg [%s] mod [%s]" % (fin_pkg, res_notext))
+                if extension==".py" or extension==".pyc":
+                    if not res_notext in cur_pkg.modules:
+                        # Get the code object...
+                        e.tplog_debug("root[%s] vs [%s] f=[%s]" % (root, path_real, f))
+                        # Load the bytes
+                        cur_pkg.modules[res_notext] = read_module(str(Path(root, f)))
+                else:
+                    e.tplog_error("ERROR: Module not embeddable: [%s%s] from [%s]" %
+                        (res_notext, extension, resource))
+                    raise Exception("Module not embeddable: [%s%s] from [%s]" %
                                                 (res_notext, extension, resource))
 
-			# scan the directories...
-			if not recursive:
-				break
-	else:
-		# This is single module
-		pass
+            # scan the directories...
+            if not recursive:
+                break
+    else:
+        # This is single module
+        pass
 
 ################################################################################
 # Standard product banner
@@ -981,19 +982,19 @@ e.ndrx_sys_banner()
 parser = argparse.ArgumentParser(description='Enduro/X Python Linker')
 
 parser.add_argument('-m', metavar='main_module', type=str, nargs="+",
-					help='Main module to load as startup code (single file)',
-					required=True)
+                    help='Main module to load as startup code (single file)',
+                    required=True)
 
 parser.add_argument('-i', metavar='include', type=str, help='Include package', action='append', nargs="+")
 
 parser.add_argument('-o', metavar='output', type=str,
-					help='Output binary', default="a.out")
+                    help='Output binary', default="a.out")
 
 args = parser.parse_args()
 
 if len(args.m) != 1:
-	parser.print_help()
-	sys.exit(-1)
+    parser.print_help()
+    sys.exit(-1)
 
 ################################################################################
 # Prep the env.
@@ -1001,42 +1002,42 @@ if len(args.m) != 1:
 
 cc = os.getenv("CC")
 if cc is None:
-	cc="cc"
+    cc="cc"
 
 # optional
 c_flags = os.getenv("CFLAGS")
 
 if c_flags is None:
-	c_flags = ""
+    c_flags = ""
 
 # Get compiler id...
 # to configure it later.
 c_compiler = get_cc_id(cc, c_flags)
 
 if c_compiler=="gcc" or c_compiler=="clang":
-	c_flags=f"-O2 -std=c99 {c_flags}"
+    c_flags=f"-O2 -std=c99 {c_flags}"
 elif c_compiler=="xlc": 
-	c_flags=f"-O2 -qtls -q64 -b64 -D_THREAD_SAFE {c_flags}"
+    c_flags=f"-O2 -qtls -q64 -b64 -D_THREAD_SAFE {c_flags}"
 elif c_compiler=="sunpro":
-	c_flags=f"-O2 -m64 -D_REENTRANT {c_flags}"
+    c_flags=f"-O2 -m64 -D_REENTRANT {c_flags}"
 else:
-	e.tplog_error("Unsupported compiler ["+c_compiler+"]")
-	raise Exception("Unsupported compiler ["+c_compiler+"]")
+    e.tplog_error("Unsupported compiler ["+c_compiler+"]")
+    raise Exception("Unsupported compiler ["+c_compiler+"]")
 
 # Load main -> module name + bytecodes
 # args.infile compile...
 e.tplog_info(str(args.i))
 
 try:
-	#for source in args.m:
-	load_main(args.m[0])
+    #for source in args.m:
+    load_main(args.m[0])
 
-	if args.i is not None:
-		for mod in args.i:
-			for entry in mod:
-				load_module(entry, True)
+    if args.i is not None:
+        for mod in args.i:
+            for entry in mod:
+                load_module(entry, True)
 except SyntaxError:
-	sys.exit(-1)
+    sys.exit(-1)
 
 ################################################################################
 # Generate & Compile
@@ -1046,76 +1047,76 @@ c_file = tempfile.NamedTemporaryFile(delete=False, suffix='.c', mode = "w")
 e.tplog_debug("Temporary file open: %s" % c_file.name)
 
 try:
-	#c_file.write("#define _POSIX_C_SOURCE 1\n")
-	c_file.write("#include <Python.h>\n")
-	c_file.write("#include <limits.h>\n")
-	c_file.write("#include <stdlib.h>\n")
-	c_file.write("#include <string.h>\n")
-	c_file.write("#include <stdio.h>\n")
-	c_file.write("#include <ndrstandard.h>\n")
-	c_file.write("#include <marshal.h>\n")
-	c_file.write("#include <object.h>\n")
-	c_file.write("#include <compile.h>\n")
-	c_file.write("#include <eval.h>\n")
-	c_file.write("#include <wchar.h>\n\n")
+    #c_file.write("#define _POSIX_C_SOURCE 1\n")
+    c_file.write("#include <Python.h>\n")
+    c_file.write("#include <limits.h>\n")
+    c_file.write("#include <stdlib.h>\n")
+    c_file.write("#include <string.h>\n")
+    c_file.write("#include <stdio.h>\n")
+    c_file.write("#include <ndrstandard.h>\n")
+    c_file.write("#include <marshal.h>\n")
+    c_file.write("#include <object.h>\n")
+    c_file.write("#include <compile.h>\n")
+    c_file.write("#include <eval.h>\n")
+    c_file.write("#include <wchar.h>\n\n")
 
-	gen_first(c_file)
-	e.tplog_info("Generate main")
-	gen_module_code(c_file, "main", "entry", M_main_code)
+    gen_first(c_file)
+    e.tplog_info("Generate main")
+    gen_module_code(c_file, "main", "entry", M_main_code)
 
-	e.tplog_info("Generate main mods")
-	for m, mv in M_main_mods.items():
-		# index the modules
-		M_main_mods_flat[m] = gen_module_code(c_file, "mmod", m, mv)
+    e.tplog_info("Generate main mods")
+    for m, mv in M_main_mods.items():
+        # index the modules
+        M_main_mods_flat[m] = gen_module_code(c_file, "mmod", m, mv)
 
-	e.tplog_info("Generate packages")
-	for p, pv in M_packages.items():
-		for m, mv in pv.modules.items():
-		#	# index the modules
-			M_packages_flat[p+"."+m] = gen_module_code(c_file, "pkg_"+p, m, mv)
-		
-	# generate sorted index...
-	gen_index(c_file, "mainmods", M_main_mods_flat)
-	gen_index(c_file, "pkg", M_packages_flat)
-	gen_index_search(c_file)
+    e.tplog_info("Generate packages")
+    for p, pv in M_packages.items():
+        for m, mv in pv.modules.items():
+        #	# index the modules
+            M_packages_flat[p+"."+m] = gen_module_code(c_file, "pkg_"+p, m, mv)
+        
+    # generate sorted index...
+    gen_index(c_file, "mainmods", M_main_mods_flat)
+    gen_index(c_file, "pkg", M_packages_flat)
+    gen_index_search(c_file)
 
-	# prepare the config
-	include = sysconfig.get_path('include')
-	libdir = sysconfig.get_config_vars('LIBDIR')
-	#shlibs = sysconfig.get_config_vars('INSTSONAME')
-	shlibs = sysconfig.get_config_vars('LIBRARY')
-	sosuff = sysconfig.get_config_var('SHLIB_SUFFIX')
+    # prepare the config
+    include = sysconfig.get_path('include')
+    libdir = sysconfig.get_config_vars('LIBDIR')
+    #shlibs = sysconfig.get_config_vars('INSTSONAME')
+    shlibs = sysconfig.get_config_vars('LIBRARY')
+    sosuff = sysconfig.get_config_var('SHLIB_SUFFIX')
 
-	# Compile the main...
-	cmd = f"{c_compiler} -o {args.o} {c_file.name} {c_flags} -I{include}"
+    # Compile the main...
+    cmd = f"{c_compiler} -o {args.o} {c_file.name} {c_flags} -I{include}"
 
-	# Append with library directories...
-	for ld in libdir:
-		cmd = cmd+" -L"+ld
+    # Append with library directories...
+    for ld in libdir:
+        cmd = cmd+" -L"+ld
 
-	for shlib in shlibs:
-		if shlib.find("lib") == -1:
-			raise Exception("Invalid shared library name [%s] (not starting with lib)" % shlib)
-		shlib = shlib[3:]
-		# Chek the location of .so/.dy
-		soext = shlib.rfind(sosuff)
-		ext2 = shlib.rfind(".a")
-		if soext == -1 and ext2 == -1:
-			raise Exception("Missing library extension [%s] or [.a] in [%s]" % (sosuff, shlib))
-		if ext2 > soext:
-			shlib=shlib[:ext2]
-		else:
-			shlib=shlib[:soext]
-		cmd = cmd+" -l"+shlib
+    for shlib in shlibs:
+        if shlib.find("lib") == -1:
+            raise Exception("Invalid shared library name [%s] (not starting with lib)" % shlib)
+        shlib = shlib[3:]
+        # Chek the location of .so/.dy
+        soext = shlib.rfind(sosuff)
+        ext2 = shlib.rfind(".a")
+        if soext == -1 and ext2 == -1:
+            raise Exception("Missing library extension [%s] or [.a] in [%s]" % (sosuff, shlib))
+        if ext2 > soext:
+            shlib=shlib[:ext2]
+        else:
+            shlib=shlib[:soext]
+        cmd = cmd+" -l"+shlib
 
-	e.tplog_debug("Compiling with [%s]" % cmd)
-	ret = os.system(cmd)
+    e.tplog_debug("Compiling with [%s]" % cmd)
+    ret = os.system(cmd)
 
-	if 0!=ret:
-		e.tplog_error("Build command [%s] failed with %d" % 
-			(cmd, ret))
-		raise Exception("Build command [%s] failed with %d" % 
-			(cmd, ret))
+    if 0!=ret:
+        e.tplog_error("Build command [%s] failed with %d" % 
+            (cmd, ret))
+        raise Exception("Build command [%s] failed with %d" % 
+            (cmd, ret))
 finally:
     c_file.file.close()
     os.unlink(c_file.name)
