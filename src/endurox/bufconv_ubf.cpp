@@ -2053,30 +2053,40 @@ expublic void ndrxpy_register_ubf(py::module &m)
             UBF_LOG(log_debug, "istart=%d, istop=%d, istep=%d",
                 istart, istop, istep);
 
+#define LOAD_FLD\
+                oc = fix_occ(buf, fldid, oc);\
+                UBF_LOG(log_debug, "Into UbfDictFld_get(fldid=%d, oc=%d)", fldid, oc);\
+                char *d_ptr = Bfind (*(buf->fbfr()), fldid, oc, &len);\
+                if (nullptr==d_ptr)\
+                {\
+                    if (BNOTPRES==Berror)\
+                    {\
+                        throw py::index_error(Bstrerror(Berror));\
+                    }\
+                    else\
+                    {\
+                        throw ubf_exception(Berror);\
+                    }\
+                }\
+                ret.append(ndrxpy_to_py_ubf_fld(d_ptr, fldid, oc, len, Bsizeof(*(buf->fbfr()))));
+
             /* TODO: Might want to optimize with Bnext, but if we do so,
              * we need all the data for the Bnext_state_t() and seems that currently
              * internal version of ndrx_Bfind() does not retun this...
              */
-            for (BFLDOCC oc=istart; oc<istop; oc+=istep)
+            if (istart<istop && step > 0)
             {
-                //oc = fix_occ(buf, fldid, oc);
-                UBF_LOG(log_debug, "Into UbfDictFld_get(fldid=%d, oc=%d)", fldid, oc);
-
-                char *d_ptr = Bfind (*(buf->fbfr()), fldid, oc, &len);
-
-                if (nullptr==d_ptr)
+                for (BFLDOCC oc=istart; oc<istop; oc+=istep)
                 {
-                    if (BNOTPRES==Berror)
-                    {
-                        throw py::index_error(Bstrerror(Berror));
-                    }
-                    else
-                    {
-                        throw ubf_exception(Berror);
-                    }
+                    LOAD_FLD;
                 }
-
-                ret.append(ndrxpy_to_py_ubf_fld(d_ptr, fldid, oc, len, Bsizeof(*(buf->fbfr()))));
+            }
+            else if (istart>=istop && step < 0)
+            {
+                for (BFLDOCC oc=istart; oc>istop; oc+=istep)
+                {
+                    LOAD_FLD;
+                }
             }
 
             return ret;
