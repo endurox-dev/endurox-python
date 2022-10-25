@@ -1309,6 +1309,7 @@ expublic void ndrxpy_register_ubf(py::module &m)
 
             //Delete the field fully...
             //As new value will follow.
+            //Use this only as specific api param:
             if (Boccur(*buf->fbfr(), fldid) > 0 && EXSUCCEED!=Bdelall(*buf->fbfr(), fldid))
             {
                 throw ubf_exception(Berror);
@@ -1320,7 +1321,8 @@ expublic void ndrxpy_register_ubf(py::module &m)
 
 			    for (auto e : data.cast<py::list>())
 			    {
-				    from_py1_ubf(*buf, fldid, oc++, e, f, &loc, false);
+                    //Set always
+				    from_py1_ubf(*buf, fldid, oc++, e, f, &loc, true);
 			    }
 		    }
 		    else
