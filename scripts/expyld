@@ -403,7 +403,7 @@ static int load_main(void)
         Py_XDECREF(pycode);
         PyErr_SetString(PyExc_RuntimeError,
                     "Bad code object in .pyc file");
-        fprintf(stderr, "Failed to load main\n");
+        fprintf(stderr, "Failed to load main %p\n", pycode);
         return -1;
     }
 
@@ -783,9 +783,7 @@ def read_module(resource):
             sys.stderr.write(py_exc.msg + '\n')
             raise err
 
-        code = None
-
-        if hasattr(importlib._bootstrap_external, '_code_to_timestamp_pyc'):
+        if hasattr(importlib._bootstrap_external, "_code_to_timestamp_pyc"):
             code = importlib._bootstrap_external._code_to_timestamp_pyc(code)
         else:
             code = importlib._bootstrap_external._code_to_bytecode(code)
