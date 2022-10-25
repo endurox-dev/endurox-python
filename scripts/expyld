@@ -359,6 +359,7 @@ static const char *get_code_bytes(const char *data, ssize_t dlen, ssize_t *olen)
 {
     const char *ret = NULL;
     long magic = *(unsigned int *)data;
+    int hdr_size = 3;
 
     if (magic != PyImport_GetMagicNumber())
     {
@@ -367,15 +368,24 @@ static const char *get_code_bytes(const char *data, ssize_t dlen, ssize_t *olen)
         goto out;
     }
 
-    ret = (data + sizeof(int)*3);
-    *olen = dlen - sizeof(int)*3;
+#if PY_MAJOR_VERSION == 3 && PY_MINOR_VERSION >= 7
+    /* See https://stackoverflow.com/questions/32562163/how-can-i-understand-a-pyc-file-content */
+    hdr_size=4;
+#endif
+
+    ret = (data + sizeof(int)*hdr_size);
+    *olen = dlen - sizeof(int)*hdr_size;
 
 out:
 
     return ret;
 }
 
-int load_main(void)
+/**
+ * Load the main object
+ * @return 0 (Succeed), -1(FAIL)
+ */
+static int load_main(void)
 {
     ssize_t size;
     const char *data;
@@ -397,6 +407,7 @@ int load_main(void)
         return -1;
     }
 
+    /* TODO: Exit code! */
     PyEval_EvalCode((PyObject *)pycode, maindict, maindict);
     Py_Finalize();
 }
