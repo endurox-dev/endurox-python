@@ -772,8 +772,13 @@ def read_module(resource):
             sys.stderr.write(py_exc.msg + '\n')
             raise err
 
-        #code = importlib._bootstrap_external._code_to_timestamp_pyc(code)
-        code = importlib._bootstrap_external._code_to_bytecode(code)
+        code = None
+
+        if hasattr(importlib._bootstrap_external, '_code_to_timestamp_pyc'):
+            code = importlib._bootstrap_external._code_to_timestamp_pyc(code)
+        else:
+            code = importlib._bootstrap_external._code_to_bytecode(code)
+
         code = bytes(code) 
 
     elif os.path.exists(pyc):
