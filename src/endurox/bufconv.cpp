@@ -57,7 +57,18 @@
 /*---------------------------Typedefs-----------------------------------*/
 /*---------------------------Globals------------------------------------*/
 /*---------------------------Statics------------------------------------*/
-expublic thread_local bool ndrxpy_G_use_ubfdict = true; /**< Use UbfDict() by default */
+
+/** Use UbfDict() by default */
+expublic thread_local bool ndrxpy_G_use_ubfdict = true;
+
+/** Ensure that field is empty when setting UbfDict() field occ
+ * i.e. if setting single field or field from the list
+ * ensure that whole field is not present in buffer, before setting.
+ * Default is false, meaning that non changed occurrances will be preserved
+ * in the buffer.
+ */
+expublic thread_local bool ndrxpy_G_ubfdict_delonset = false;
+
 /*---------------------------Prototypes---------------------------------*/
 namespace py = pybind11;
 
