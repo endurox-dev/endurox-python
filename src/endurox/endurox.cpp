@@ -588,7 +588,8 @@ Python3 bindings for writing Enduro/X clients and servers
         tpext_addpollerfd
         tpext_delpollerfd
         ndrx_epoll_mode
-        ndrxpy_use_ubfdict
+        ndrxpy_ubfdict_enable
+        ndrxpy_ubfdict_delonset
 
 How to read this documentation
 ==============================
@@ -676,7 +677,7 @@ ATMI Client
         # Do some work here
         # may use buf = {"data":{}} for dictionary based UBF buffer
         # however, when tpcall returns, that would be converted to UbfDict, unless
-        # e.ndrxpy_use_ubfdict(False) is configured.
+        # e.ndrxpy_ubfdict_enable(False) is configured.
         #
         buf = {"data":e.UbfDict()}
         buf["data"]["T_STRING_FLD"] = "Hello world!"
@@ -763,14 +764,14 @@ then only those few fields are read and constructed in the Python space, thus re
 much higher transactions throughput.
 
 Mode 2) is available and made default approach from the module version 8.0.4. Mode 1)
-can be enabled by calling module function :func:`.ndrxpy_use_ubfdict` with **False** flag
-or provide **NDRXPY_UBFDICT_DISABLE** environment variable. Note that :func:`.ndrxpy_use_ubfdict`
+can be enabled by calling module function :func:`.ndrxpy_ubfdict_enable` with **False** flag
+or provide **NDRXPY_UBFDICT_DISABLE** environment variable. Note that :func:`.ndrxpy_ubfdict_enable`
 is per thread configuration flag.
 
-When :func:`.ndrxpy_use_ubfdict` set to **False**, incoming service requests are provided
+When :func:`.ndrxpy_ubfdict_enable` set to **False**, incoming service requests are provided
 as standard Python dict types. Also when module returns buffers from Enduro/X (e.g. :func:`.tpcall`),
 then buffers are provided as dict types. When passing data to Enduro/X XATMI/UBF sub-system,
-both formats are accepted, regardless of the :func:`.ndrxpy_use_ubfdict` setting.
+both formats are accepted, regardless of the :func:`.ndrxpy_ubfdict_enable` setting.
 
 For both buffer modes:
 

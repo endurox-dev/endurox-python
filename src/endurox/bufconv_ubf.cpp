@@ -75,7 +75,7 @@ expublic bool ndrxpy_is_UbfDict(py::handle data)
 
     ret = type1.is(UbfDict);
 
-    NDRX_LOG(log_debug, "testing UbfDict = %d", ret);
+    UBF_LOG(log_debug, "testing UbfDict = %d", ret);
 
     return ret;
 }
@@ -94,7 +94,7 @@ expublic bool ndrxpy_is_UbfDictFld(py::handle data)
 
     ret = type1.is(UbfDictFld);
 
-    NDRX_LOG(log_debug, "testing UbfDictFld = %d", ret);
+    UBF_LOG(log_debug, "testing UbfDictFld = %d", ret);
 
     return ret;
 }
@@ -197,7 +197,7 @@ exprivate py::object ndrxpy_to_py_ubf_fld(char *d_ptr, BFLDID fldid,
             break;
         case BFLD_STRING:
 
-            NDRX_LOG(log_dump, "Processing FLD_STRING... [%s]", d_ptr);
+            UBF_LOG(log_dump, "Processing FLD_STRING... [%s]", d_ptr);
         
 #if PY_MAJOR_VERSION >= 3
             ret=py::str(d_ptr);
@@ -213,7 +213,7 @@ exprivate py::object ndrxpy_to_py_ubf_fld(char *d_ptr, BFLDID fldid,
             break;
         case BFLD_UBF:
         
-            if (ndrxpy_G_use_ubfdict)
+            if (ndrxpy_G_ubfdict_enable)
             {
                 //Avoid buffer changing... if we are sub-buffers...
                 ret=ndrxpy_alloc_UbfDict(d_ptr, NDRXPY_SUBBUF_UBF, buflen);
@@ -278,7 +278,7 @@ expublic py::object ndrxpy_to_py_ubf(UBFH *fbfr, BFLDLEN buflen = 0)
     py::dict result;
     py::list val;
 
-    NDRX_LOG(log_debug, "Into ndrxpy_to_py_ubf()");
+    UBF_LOG(log_debug, "Into ndrxpy_to_py_ubf()");
 
     if (buflen == 0)
     {
@@ -493,7 +493,7 @@ static void from_py1_ubf(atmibuf &buf, BFLDID fldid, BFLDOCC oc,
         }
         else
         {
-            NDRX_LOG(log_warn, "Passed UbfDict() to non BFLD_UBF field");
+            UBF_LOG(log_warn, "Passed UbfDict() to non BFLD_UBF field");
             throw std::invalid_argument("Passed UbfDict() to non BFLD_UBF field");
         }
     }
@@ -522,7 +522,7 @@ static void from_py1_ubf(atmibuf &buf, BFLDID fldid, BFLDOCC oc,
         }
         else
         {
-            NDRX_LOG(log_warn, "Passed Buffer with data set to UbfDict() to non BFLD_PTR field used");
+            UBF_LOG(log_warn, "Passed Buffer with data set to UbfDict() to non BFLD_PTR field used");
             throw std::invalid_argument("Passed Buffer with data set to UbfDict() to non BFLD_PTR field used");
         }
     }
@@ -642,7 +642,7 @@ exprivate BFLDID ndrxpy_fldid_resolve(py::handle fld)
 
 		if (fldid<=BBADFLDID)
 		{
-			NDRX_LOG(log_error, "Invalid field id %d", fldid);
+			UBF_LOG(log_error, "Invalid field id %d", fldid);
             char msgbuf[128];
             snprintf(msgbuf, sizeof(msgbuf), "Invalid field id %d", fldid);
 			//throw ubf_exception(BBADFLD);
@@ -661,7 +661,7 @@ exprivate BFLDID ndrxpy_fldid_resolve(py::handle fld)
 
             snprintf(msgbuf, sizeof(msgbuf), 
                 "Failed to resolve field [%s]: %s", fldstr, Bstrerror(Berror));
-			NDRX_LOG(log_warn, "%s", msgbuf);
+			UBF_LOG(log_warn, "%s", msgbuf);
 			//throw ubf_exception(Berror);
             throw py::key_error(msgbuf);
 		}
@@ -771,7 +771,7 @@ exprivate BFLDOCC fix_occ(atmibuf *buf, BFLDID fldid, BFLDOCC oc)
 
         if (EXFAIL==ocs)
         {
-            NDRX_LOG(log_error, "Failed to get occurrences for fldid=%d: %s", 
+            UBF_LOG(log_error, "Failed to get occurrences for fldid=%d: %s", 
                 fldid, Bstrerror(Berror));
             throw ubf_exception(Berror);
         }
@@ -808,12 +808,12 @@ expublic void ndrxpy_register_ubf(py::module &m)
     #endif
 
     //Pull in any Enduor/X Core inits
-    NDRX_LOG(log_debug, "Enduro/X Python module init...");
+    UBF_LOG(log_debug, "Enduro/X Python module init...");
 
     if (nullptr!=tuxgetenv(const_cast<char *>("NDRXPY_UBFDICT_DISABLE")))
     {
-        NDRX_LOG(log_debug, "UbfDict mode disabled");
-        ndrxpy_G_use_ubfdict=false;
+        UBF_LOG(log_debug, "UbfDict mode disabled");
+        ndrxpy_G_ubfdict_enable=false;
     }
 
     m.def(
@@ -1310,14 +1310,16 @@ expublic void ndrxpy_register_ubf(py::module &m)
             //Delete the field fully...
             //As new value will follow.
             //Use this only as specific api param:
-            if (Boccur(*buf->fbfr(), fldid) > 0 && EXSUCCEED!=Bdelall(*buf->fbfr(), fldid))
+            if (ndrxpy_G_ubfdict_delonset 
+                && Boccur(*buf->fbfr(), fldid) > 0
+                && EXSUCCEED!=Bdelall(*buf->fbfr(), fldid))
             {
                 throw ubf_exception(Berror);
             }
 
-		    if (py::isinstance<py::list>(data) || ndrxpy_is_UbfDictFld(data))
-		    {
-			    BFLDOCC oc = 0;
+            if (py::isinstance<py::list>(data) || ndrxpy_is_UbfDictFld(data))
+            {
+                BFLDOCC oc = 0;
 
 			    for (auto e : data.cast<py::list>())
 			    {
@@ -1451,7 +1453,7 @@ expublic void ndrxpy_register_ubf(py::module &m)
             char btype[16];
             char stype[16];
 
-            NDRX_LOG(log_debug, "UbfDict_copy src_buf (atmi): %p", *src_buf->pp);
+            UBF_LOG(log_debug, "UbfDict_copy src_buf (atmi): %p", *src_buf->pp);
 
             long len = tptypes(*src_buf->pp, btype, stype);
 
@@ -1469,7 +1471,7 @@ expublic void ndrxpy_register_ubf(py::module &m)
 
             if (EXFAIL==used)
             {
-                NDRX_LOG(log_error, "Failed to get buffer [%p] used size: %s", 
+                UBF_LOG(log_error, "Failed to get buffer [%p] used size: %s", 
                     *src_buf->pp, Bstrerror(Berror));
                 throw ubf_exception(Berror);
             }
@@ -1492,7 +1494,7 @@ expublic void ndrxpy_register_ubf(py::module &m)
             }
             catch(const std::exception& e)
             {
-                NDRX_LOG(log_error, "got exception [%s] buffer cleanup...", e.what());
+                UBF_LOG(log_error, "got exception [%s] buffer cleanup...", e.what());
                 //Free up ATMI buffer, avoid leak...
                 tpfree(ret_buf);
                 throw e;
@@ -1983,7 +1985,7 @@ expublic void ndrxpy_register_ubf(py::module &m)
             atmibuf *buf = reinterpret_cast<atmibuf *>(ptr);
 
             oc = fix_occ(buf, fldid, oc);
-            NDRX_LOG(log_debug, "Into UbfDictFld_get(fldid=%d, oc=%d)", fldid, oc);
+            UBF_LOG(log_debug, "Into UbfDictFld_get(fldid=%d, oc=%d)", fldid, oc);
 
             char *d_ptr = Bfind (*(buf->fbfr()), fldid, oc, &len);
 
@@ -2121,7 +2123,7 @@ expublic void ndrxpy_register_ubf(py::module &m)
             atmibuf *buf = reinterpret_cast<atmibuf *>(ptr);
 
             oc = fix_occ(buf, fldid, oc);
-            NDRX_LOG(log_debug, "Into UbfDictFld_del(fldid=%d, oc=%d)", fldid, oc);
+            UBF_LOG(log_debug, "Into UbfDictFld_del(fldid=%d, oc=%d)", fldid, oc);
 
             if (EXSUCCEED!=Bdel (*(buf->fbfr()), fldid, oc))
             {
@@ -2192,7 +2194,7 @@ expublic void ndrxpy_register_ubf(py::module &m)
             char stype[16];
             BFLDID flist[] = {fldid, BBADFLDID};
 
-            NDRX_LOG(log_debug, "UbfDict_copy src_buf (atmi): %p", *src_buf->pp);
+            UBF_LOG(log_debug, "UbfDict_copy src_buf (atmi): %p", *src_buf->pp);
 
             long len = tptypes(*src_buf->pp, btype, stype);
 
@@ -2210,7 +2212,7 @@ expublic void ndrxpy_register_ubf(py::module &m)
 
             if (EXFAIL==used)
             {
-                NDRX_LOG(log_error, "Failed to get buffer [%p] used size: %s", 
+                UBF_LOG(log_error, "Failed to get buffer [%p] used size: %s", 
                     *src_buf->pp, Bstrerror(Berror));
                 throw ubf_exception(Berror);
             }
@@ -2259,23 +2261,22 @@ expublic void ndrxpy_register_ubf(py::module &m)
 
         )pbdoc", py::arg("ubf_dict_fld"));
 
-
         // Represent dictionary key
         m.def(
-        "ndrxpy_use_ubfdict",
+        "ndrxpy_ubfdict_enable",
         [](bool do_use)
         {
-            auto prev = ndrxpy_G_use_ubfdict;
+            auto prev = ndrxpy_G_ubfdict_enable;
 
             if (do_use)
             {
-                NDRX_LOG(log_debug, "UbfDict disable, fallback to dict");
+                UBF_LOG(log_debug, "UbfDict disable, fallback to dict");
             }
             else
             {
-                NDRX_LOG(log_debug, "UbfDict enabled");
+                UBF_LOG(log_debug, "UbfDict enabled");
             }
-            ndrxpy_G_use_ubfdict=do_use;
+            ndrxpy_G_ubfdict_enable=do_use;
 
             return prev;
         },
@@ -2285,7 +2286,7 @@ expublic void ndrxpy_register_ubf(py::module &m)
         for all interactions with XATMI bufer is marshalled from XATMI UBF to dict
         and vice versa. UbfDict mode however uses no marshaling for XATMI access,
         thus service calls and other function calls does not require any
-        data buffer transaformation.
+        data buffer transformation.
 
         Parameters
         ----------
@@ -2299,6 +2300,55 @@ expublic void ndrxpy_register_ubf(py::module &m)
             Previous setting
 
         )pbdoc", py::arg("do_use"));
+
+        // Represent dictionary key
+        m.def(
+        "ndrxpy_ubfdict_delonset",
+        [](bool delonset)
+        {
+            auto prev = ndrxpy_G_ubfdict_delonset;
+
+            if (delonset)
+            {
+                UBF_LOG(log_debug, "UbfDict delonset enabled (prev=%d)", prev);
+            }
+            else
+            {
+                UBF_LOG(log_debug, "UbfDict delonset disabled (prev=%d)", prev);
+            }
+            ndrxpy_G_ubfdict_delonset=delonset;
+
+            return prev;
+        },
+        R"pbdoc(
+        Configure UbfDict API to zap existing field value,
+        when setting unspecified field occurrence. Default value is **False**,
+        meaning that if setting the unspecified field with single value or list of
+        values, existing occurrences are changed, however if there is some greater
+        occurrence for the field in the buffer, those values for performance reasons
+        are left intact. If setting is set as **True**, then API will check and delete
+        all field occurrences, prior setting the value/s.
+
+        Setting stored in thread-local-storage, meaning that different threads might
+        use different settings.
+
+        This flag configures only the UbfDict based field access. This does not
+        affect field access done at UbfDictFld object level,
+
+        Parameters
+        ----------
+        do_use: bool
+            If set to **True**, UbfDict field setting routine will ensure that all
+            occurrences of the value is removed prior setting new value.  If set to
+            **False** (which is default), new fields overwrites matching occurrences,
+            but existing occurrences are left intact.
+            
+        Returns
+        -------
+        prev : bool
+            Previous setting
+
+        )pbdoc", py::arg("delonset"));
 
 }
 

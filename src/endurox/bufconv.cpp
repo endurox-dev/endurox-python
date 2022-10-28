@@ -59,7 +59,7 @@
 /*---------------------------Statics------------------------------------*/
 
 /** Use UbfDict() by default */
-expublic thread_local bool ndrxpy_G_use_ubfdict = true;
+expublic thread_local bool ndrxpy_G_ubfdict_enable = true;
 
 /** Ensure that field is empty when setting UbfDict() field occ
  * i.e. if setting single field or field from the list
@@ -118,7 +118,7 @@ expublic py::object ndrx_to_py(atmibuf &buf, int is_sub_buffer)
     }
     else if (strcmp(type, "UBF") == 0)
     {
-        if (ndrxpy_G_use_ubfdict)
+        if (ndrxpy_G_ubfdict_enable)
         {
             NDRX_LOG(log_debug, "Using UbfDict() len =%ld", size);
 
