@@ -135,16 +135,16 @@ class TestUbfDict(unittest.TestCase):
         while w.get_delta_sec() < u.test_duratation():
             
             # default is false
-            self.assertEqual(e.ndrxpy_use_ubfdict(True), True)
+            self.assertEqual(e.ndrxpy_ubfdict_enable(True), True)
 
             # Change to dict() mode.
-            self.assertEqual(e.ndrxpy_use_ubfdict(False), True)
+            self.assertEqual(e.ndrxpy_ubfdict_enable(False), True)
             tperrno, tpurcode, retbuf = e.tpcall("ECHO", { "data":{"T_STRING_FLD":"HELLO", "T_UBF_FLD":{}}})
             self.assertEqual(type(retbuf["data"]), type({}))
             self.assertEqual(type(retbuf["data"]["T_UBF_FLD"][0]), type({}))
 
             # reset back to UbfDict()
-            self.assertEqual(e.ndrxpy_use_ubfdict(True), False)
+            self.assertEqual(e.ndrxpy_ubfdict_enable(True), False)
             tperrno, tpurcode, retbuf = e.tpcall("ECHO", { "data":{"T_STRING_FLD":"HELLO", "T_UBF_FLD":{}}})
             self.assertEqual(type(retbuf["data"]), type(UbfDict()))
             self.assertEqual(type(retbuf["data"]["T_UBF_FLD"][0]), type(UbfDict()))

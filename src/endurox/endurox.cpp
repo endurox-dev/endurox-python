@@ -765,8 +765,8 @@ much higher transactions throughput.
 
 Mode 2) is available and made default approach from the module version 8.0.4. Mode 1)
 can be enabled by calling module function :func:`.ndrxpy_ubfdict_enable` with **False** flag
-or provide **NDRXPY_UBFDICT_DISABLE** environment variable. Note that :func:`.ndrxpy_ubfdict_enable`
-is per thread configuration flag.
+or provide **NDRXPY_UBFDICT_ENABLE** environment variable set to **0**.
+Note that :func:`.ndrxpy_ubfdict_enable` is per thread configuration flag.
 
 When :func:`.ndrxpy_ubfdict_enable` set to **False**, incoming service requests are provided
 as standard Python dict types. Also when module returns buffers from Enduro/X (e.g. :func:`.tpcall`),

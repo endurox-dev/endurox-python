@@ -789,28 +789,18 @@ exprivate BFLDOCC fix_occ(atmibuf *buf, BFLDID fldid, BFLDOCC oc)
  */
 expublic void ndrxpy_register_ubf(py::module &m)
 {
+    char *p;
     //Load Enduro/X module used for Python object instatiation
     M_endurox = py::module::import("endurox");
     //If we get unclean shutdown, do not destruct the object
     //otherwise runtime is dead and destructor fails with core dump.
     M_endurox.inc_ref();
     
-    #if 0
-    auto cleanup_callback = []()
-    {
-        //At clean shutdown, most likely we will not get signal here...?
-        M_endurox.dec_ref();
-        M_endurox.dec_ref();
-        M_endurox.release();
-    };
-
-    m.add_object("_cleanup", py::capsule(cleanup_callback));
-    #endif
-
-    //Pull in any Enduor/X Core inits
+    //Pull in any Enduro/X Core inits
     UBF_LOG(log_debug, "Enduro/X Python module init...");
 
-    if (nullptr!=tuxgetenv(const_cast<char *>("NDRXPY_UBFDICT_DISABLE")))
+    if (nullptr!=(p=tuxgetenv(const_cast<char *>("NDRXPY_UBFDICT_ENABLE")))
+        && 0==strcmp("0", p))
     {
         UBF_LOG(log_debug, "UbfDict mode disabled");
         ndrxpy_G_ubfdict_enable=false;

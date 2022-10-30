@@ -98,6 +98,16 @@ M_optimize = -1
 #
 M_lnk_counter = 0;
 
+#
+# Ignore unsupported resources, instead of fail
+#
+M_ignore = False
+
+#
+# Keep the C file
+#
+M_keep = False
+
 def get_cc_id(cc, c_flags):
     """Get C compiler id
 
@@ -389,7 +399,7 @@ static int load_main(void)
 {
     ssize_t size;
     const char *data;
-    PyObject *retval;
+    PyObject *retval=NULL;
     int ret = 0;
 
     PyCodeObject *mainobj, *pycode;
@@ -406,11 +416,11 @@ static int load_main(void)
         PyErr_SetString(PyExc_RuntimeError,
                     "Bad code object in .pyc file");
         fprintf(stderr, "Failed to load main %p\n", pycode);
-        return -1;
+        ret=-1;
         goto out;
     }
 
-    PyEval_EvalCode((PyObject *)pycode, maindict, maindict);
+    retval = PyEval_EvalCode((PyObject *)pycode, maindict, maindict);
     if (!retval)
     {
         PyErr_Print();
@@ -826,21 +836,23 @@ def load_main_dir(resource):
 
     global M_main_mods
     path = os.path.realpath(os.path.dirname(resource))
-    e.tplog_info("Loading program directroy [%s]" % resource)
+    e.tplog_info("Loading program directroy [%s]" % path)
 
     for f in os.listdir(path):
 
+        f_name_only = f
+        f = path+os.sep+f
         if not os.path.isfile(f):
+            e.tplog_debug("Not a file [%s]" % f)
             continue
 
-        res_notext, extension = os.path.splitext(f)
+        res_notext, extension = os.path.splitext(f_name_only)
         e.tplog_info("Processing main directory, mod [%s]" % (res_notext))
         if (extension==".py" or extension==".pyc"):
             # Get the code object...
-            e.tplog_debug("Reading module root[%s] f=[%s]" % (path, f))
+            e.tplog_debug("Reading module f=[%s]" % (f))
             # Load the bytes
             M_main_mods[res_notext] = read_module(str(Path(path, f)))
-
 
 ################################################################################
 # Load main, sytnax supported:
@@ -935,7 +947,11 @@ def load_module(resource, recursive):
                 sub_dirs = root[(len_path_real+1):]
 
                 if not re.match("^(/{0,1}[_a-z-A]+[_a-zA-Z0-9]*/{0,1})+$", sub_dirs):
-                    raise Exception("Module not embeddable: Directory contains invalid symbols [%s]" % sub_dirs)
+                    e.tplog_warn("Module not embeddable: Directory contains invalid symbols [%s]" % sub_dirs)
+                    if M_ignore:
+                        continue
+                    else:
+                        raise Exception("Module not embeddable: Directory contains invalid symbols [%s]" % sub_dirs)
 
                 sub_pkg = sub_dirs.replace("/", ".")
                 fin_pkg = resource+"."+sub_pkg
@@ -983,11 +999,11 @@ def load_module(resource, recursive):
                         # Load the bytes
                         cur_pkg.modules[res_notext] = read_module(str(Path(root, f)))
                 else:
-                    e.tplog_error("ERROR: Module not embeddable: [%s%s] from [%s]" %
+                    e.tplog_error("Module not embeddable: [%s%s] from [%s]" %
                         (res_notext, extension, resource))
-                    raise Exception("Module not embeddable: [%s%s] from [%s]" %
+                    if not M_ignore:
+                        raise Exception("Module not embeddable: [%s%s] from [%s]" %
                                                 (res_notext, extension, resource))
-
             # scan the directories...
             if not recursive:
                 break
@@ -1015,12 +1031,20 @@ parser.add_argument('-i', metavar='include', type=str, help='Include package', a
 parser.add_argument('-o', metavar='output', type=str,
                     help='Output binary', default="a.out")
 
+parser.add_argument('-k', help='Keep the intermediate C file', 
+                    action='store_true', default=False)
+
+parser.add_argument('-n', help='Ignore unsupported resources, instead of fail', 
+                    action='store_true', default=False)
+
 args = parser.parse_args()
 
 if len(args.m) != 1:
     parser.print_help()
     sys.exit(-1)
 
+M_keep = args.k
+M_ignore = args.n
 ################################################################################
 # Prep the env.
 ################################################################################
@@ -1034,6 +1058,15 @@ c_flags = os.getenv("CFLAGS")
 
 if c_flags is None:
     c_flags = ""
+
+# NDRX_HOME
+ndrx_home = os.getenv("NDRX_HOME")
+if ndrx_home is None:
+    ndrx_home = ""
+elif c_flags=="":
+    c_flags = f"-I {ndrx_home}"
+else:
+    c_flags = f"{c_flags} -I {ndrx_home}"
 
 # Get compiler id...
 # to configure it later.
@@ -1144,4 +1177,6 @@ try:
             (cmd, ret))
 finally:
     c_file.file.close()
-    os.unlink(c_file.name)
+
+    if not M_keep:
+        os.unlink(c_file.name)
