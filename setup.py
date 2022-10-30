@@ -159,4 +159,5 @@ setup(
     data_files=[
         ('licenses', glob('doc/guides/third_party_licences.adoc')),
     ],
+    scripts=['scripts/expyld'],
 )
