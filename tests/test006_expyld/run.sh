@@ -5,7 +5,7 @@
 #
 
 export TEST_OUT=`pwd`/test.out
-export PATH=$PATH:`pwd`/../../scripts
+export PATH=`pwd`/../../scripts:$PATH
 (
 #
 # Load system settings...
@@ -204,10 +204,10 @@ pushd .
 
 cd tmp
 
-PYTHONPATH=../src/test006_modinc/libs  expyld -m ../src/test006_modinc/main.py -o test006 -i some_mod
+PYTHONPATH=../src/test006_modinc/libs  expyld -m ../src/test006_modinc/main.py -o test006 -i some_mod -i some_mod
 RET=$?
 if [ $RET != 0 ]; then
-    echo "test5_nonzero failed to compile $RET"
+    echo "test006 failed to compile $RET"
     go_out -1
 fi
 
@@ -223,7 +223,42 @@ fi
 expected='func1 ok'
 
 if [ "$OUT" != "$expected" ]; then
-    echo "test2 failed: expected [$expected] got [$OUT]"
+    echo "test006 failed: expected [$expected] got [$OUT]"
+    go_out 1
+fi
+
+popd
+
+
+################################################################################
+echo ">>> Compiler test007_submod"
+################################################################################
+cleanup
+pushd .
+
+cd tmp
+
+PYTHONPATH=../src/test007_submod/libs  expyld -m ../src/test007_submod/main.py -o test007_1 -i test_mod.other_mod -i test_mod.some_mod -k
+RET=$?
+if [ $RET != 0 ]; then
+    echo "test007_1 failed to compile $RET"
+    go_out -1
+fi
+
+OUT=`./test007_1`
+
+RET=$?
+
+if [ $RET != 0 ]; then
+    echo "test007_1 failed to exec $RET"
+    go_out -1
+fi
+
+expected='other
+func1 ok'
+
+if [ "$OUT" != "$expected" ]; then
+    echo "test007_1 failed: expected [$expected] got [$OUT]"
     go_out 1
 fi
 

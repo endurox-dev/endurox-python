@@ -212,7 +212,7 @@ int main(int argc, char **argv)
             os.unlink(out_file_name.name)
 
 def gen_index_search(c_file):
-    """Gen resoruce search func 
+    """Gen resource search func 
     
     Parameters
     ----------
@@ -919,6 +919,14 @@ def load_module(resource, recursive):
 
     prev_pkg = ""
 
+    #
+    # We might have a situation:
+    # In the same location there is module and package with the same name
+    # In the Python package takes over. Thus if we register module firstly and then package
+    # the package shall remove module.
+    # If we register module, but there is already package registered at the location
+    # we ignore that module.
+    #
     if os.path.basename(filename) == "__init__.py":
 
         #e.tplog_info(path_real)
@@ -965,6 +973,7 @@ def load_module(resource, recursive):
 
             # How about naming _ ?
             cur_pkg.name = fin_pkg
+            cur_pkg.package = True
             
             ###############################################################
             # some.pkg.abc.ccc we need to get following keys:
@@ -982,7 +991,14 @@ def load_module(resource, recursive):
                     #
                     # Mark previous pkg...
                     #
+                    if pkg_start not in M_packages:
+                        ent = PackageEntry()
+                        ent.name = pkg_start 
+                        M_packages[pkg_start] = ent
+                        # TODO: we shall load the main... __init__.py
+
                     M_packages[pkg_start].package = True
+
                     pkg_start=pkg_start+"."+p
                 else:
                     pkg_start=p
@@ -1008,8 +1024,53 @@ def load_module(resource, recursive):
             if not recursive:
                 break
     else:
-        # This is single module
-        pass
+        # Check that such package does not exists
+        if resource in M_packages and M_packages[resource].package:
+            # go out nothing todo...
+            e.tplog_debug("Package [%s] already present, igoring module" % resource)
+            return
+        else:
+            ent = PackageEntry()
+            ent.name = resource
+            M_packages[resource]=ent
+            
+        cur_pkg = M_packages[resource]
+
+        pkgs = cur_pkg.name.split(".")
+        pkg_start = "";
+        for p in pkgs:
+            if len(pkg_start)>0:
+                #
+                # Mark previous pkg...
+                #
+                if pkg_start not in M_packages:
+                    ent = PackageEntry()
+                    ent.name = pkg_start 
+                    M_packages[pkg_start] = ent
+                    # TODO: we shall load the main... __init__.py
+
+                M_packages[pkg_start].package = True
+                
+                pkg_start=pkg_start+"."+p
+            else:
+                pkg_start=p
+                
+        f = os.path.basename(filename)
+        # Load the module
+        res_notext, extension = os.path.splitext(f)
+        e.tplog_info("Processing pkg [%s] mod [%s]" % (resource, res_notext))
+        if extension==".py" or extension==".pyc":
+            if not res_notext in cur_pkg.modules:
+                # Get the code object...
+                e.tplog_debug("module=[%s]" % (filename))
+                # Load the bytes
+                cur_pkg.modules[res_notext] = read_module(filename)
+        else:
+            e.tplog_error("Module not embeddable: [%s%s] from [%s]" %
+                (res_notext, extension, resource))
+            if not M_ignore:
+                raise Exception("Module not embeddable: [%s%s] from [%s]" %
+                                        (res_notext, extension, resource))
 
 ################################################################################
 # Standard product banner
@@ -1022,7 +1083,7 @@ e.ndrx_sys_banner()
 
 parser = argparse.ArgumentParser(description='Enduro/X Python Linker')
 
-parser.add_argument('-m', metavar='main_module', type=str, nargs="+",
+parser.add_argument('-m', metavar='main_module', type=str,
                     help='Main module to load as startup code (single file)',
                     required=True)
 
@@ -1039,9 +1100,9 @@ parser.add_argument('-n', help='Ignore unsupported resources, instead of fail',
 
 args = parser.parse_args()
 
-if len(args.m) != 1:
-    parser.print_help()
-    sys.exit(-1)
+#if len(args.m) != 1:
+#    parser.print_help()
+#    sys.exit(-1)
 
 M_keep = args.k
 M_ignore = args.n
@@ -1088,7 +1149,7 @@ e.tplog_info(str(args.i))
 
 try:
     #for source in args.m:
-    load_main(args.m[0])
+    load_main(args.m)
 
     if args.i is not None:
         for mod in args.i:
@@ -1130,9 +1191,16 @@ try:
     e.tplog_info("Generate packages")
     for p, pv in M_packages.items():
         for m, mv in pv.modules.items():
-        #	# index the modules
-            M_packages_flat[p+"."+m] = gen_module_code(c_file, "pkg_"+p, m, mv)
-        
+            # if the one is module, the there is only single entry in items.
+            if pv.package:
+                M_packages_flat[p+"."+m] = gen_module_code(c_file, "pkg_"+p, m, mv)
+            else:
+                M_packages_flat[p] = gen_module_code(c_file, "pkg_"+p, m, mv)
+
+    # TODO: Validate that all packages have __init__.py available
+    # Python picks up existing __init__.py and loads that
+    # thus when we are injecting the packages, we shall do the same
+
     # generate sorted index...
     gen_index(c_file, "mainmods", M_main_mods_flat)
     gen_index(c_file, "pkg", M_packages_flat)
