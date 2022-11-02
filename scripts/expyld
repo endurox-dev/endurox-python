@@ -499,15 +499,20 @@ PyObject* load_module(PyObject* self, PyObject* args) {
         goto out;
     }
 
+    /* declare package, otherwise some operations at __init__.py might fail
+     * as there is no such package..
+     */
+    if (NDRXPY_RES_PKG_FOUND==mode)
+    {
+        m=PyImport_AddModule(module);
+        PyObject_SetAttrString(m, "__path__", PyUnicode_FromString(""));
+        PyObject_SetAttrString(m, "__package__", PyUnicode_FromString(module));
+        PyObject_SetAttrString(m, "__name__", PyUnicode_FromString(module));
+    }
+
     m = PyImport_ExecCodeModuleEx(module, (PyObject *)pycode, module);
 
     Py_DECREF(pycode);
-
-    /* mark stuff as package, if needed: */
-    if (NDRXPY_RES_PKG_FOUND==mode)
-    {
-        PyObject_SetAttrString(m, "__path__", PyUnicode_FromString(""));
-    }
 
 out:
     return m;
@@ -728,7 +733,7 @@ def gen_module_code(c_file, prefix, module, code: bytes):
 
     global M_lnk_counter
     #c_mod = module.replace(".", "_")
-    c_name = ("ndrxpy_G_%s_%s_%d" % (prefix, module, M_lnk_counter)).replace(".", "_")
+    c_name = ("ndrxpy_G_%s_%s_%d" % (prefix, module, M_lnk_counter)).replace(".", "_").replace("+", "_").replace("-", "_")
 
     # 
     c_file.write("const char %s[] = {\n" % c_name)
@@ -868,6 +873,30 @@ def load_main(resource):
     M_main_code = read_module(resource)
     load_main_dir(resource)
 
+
+# Create empty package + read the init
+def pkg_establish_init(pkg_start):
+
+    spec = importlib.util.find_spec(pkg_start)
+    if spec is None:
+        raise ModuleNotFoundError(ImportError(resource))
+    filename = spec.origin
+
+    f = os.path.basename(filename)
+    res_notext, extension = os.path.splitext(f)
+
+    if f != "__init__.py":
+        e.tplog_error("Expected __init__.py but got [%s]" % filename)
+        raise ModuleNotFoundError(ImportError(resource))
+
+    res_notext, extension = os.path.splitext(f)
+
+    ent = PackageEntry()
+    ent.name = pkg_start
+    ent.modules[res_notext] = read_module(filename)
+    ent.package = True
+    M_packages[pkg_start] = ent
+
 ################################################################################
 # This accepts following module names to build
 # function shall automatically discover:
@@ -992,12 +1021,7 @@ def load_module(resource, recursive):
                     # Mark previous pkg...
                     #
                     if pkg_start not in M_packages:
-                        ent = PackageEntry()
-                        ent.name = pkg_start 
-                        M_packages[pkg_start] = ent
-                        # TODO: we shall load the main... __init__.py
-
-                    M_packages[pkg_start].package = True
+                        pkg_establish_init(pkg_start)
 
                     pkg_start=pkg_start+"."+p
                 else:
@@ -1044,12 +1068,7 @@ def load_module(resource, recursive):
                 # Mark previous pkg...
                 #
                 if pkg_start not in M_packages:
-                    ent = PackageEntry()
-                    ent.name = pkg_start 
-                    M_packages[pkg_start] = ent
-                    # TODO: we shall load the main... __init__.py
-
-                M_packages[pkg_start].package = True
+                    pkg_establish_init(pkg_start)
                 
                 pkg_start=pkg_start+"."+p
             else:
@@ -1134,7 +1153,7 @@ else:
 c_compiler = get_cc_id(cc, c_flags)
 
 if c_compiler=="gcc" or c_compiler=="clang":
-    c_flags=f"-O2 -std=c99 {c_flags}"
+    c_flags=f"-O2 -std=c99 -g {c_flags}"
 elif c_compiler=="xlc": 
     c_flags=f"-O2 -qtls -q64 -b64 -D_THREAD_SAFE {c_flags}"
 elif c_compiler=="sunpro":

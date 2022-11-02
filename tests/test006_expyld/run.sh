@@ -238,7 +238,7 @@ pushd .
 
 cd tmp
 
-PYTHONPATH=../src/test007_submod/libs  expyld -m ../src/test007_submod/main.py -o test007_1 -i test_mod.other_mod -i test_mod.some_mod -k
+PYTHONPATH=../src/test007_submod/libs  expyld -m ../src/test007_submod/main.py -o test007_1 -i test_mod.other_mod -i test_mod.some_mod -i test_mod.x
 RET=$?
 if [ $RET != 0 ]; then
     echo "test007_1 failed to compile $RET"
@@ -254,8 +254,10 @@ if [ $RET != 0 ]; then
     go_out -1
 fi
 
-expected='other
-func1 ok'
+expected='test_mod.other_mod
+other
+func1 ok
+x_func'
 
 if [ "$OUT" != "$expected" ]; then
     echo "test007_1 failed: expected [$expected] got [$OUT]"
