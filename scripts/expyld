@@ -1015,13 +1015,19 @@ def load_module(resource, recursive):
             ###############################################################
             pkgs = cur_pkg.name.split(".")
             pkg_start = "";
+            pre_last = ".".join(pkgs[:-1])
             for p in pkgs:
                 if len(pkg_start)>0:
                     #
                     # Mark previous pkg...
+                    # should remove any modules from prev package if current sub-package
+                    # name mathes module name...
                     #
                     if pkg_start not in M_packages:
                         pkg_establish_init(pkg_start)
+                    elif pre_last == pkg_start and len(pkgs)>1 and pkgs[-1] in M_packages[pkg_start].modules:
+                        # package has greater precedence over the module
+                        del M_packages[pkg_start].modules[pkgs[-1]]
 
                     pkg_start=pkg_start+"."+p
                 else:

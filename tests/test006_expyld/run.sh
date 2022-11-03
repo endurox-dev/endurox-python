@@ -266,6 +266,44 @@ fi
 
 popd
 
+
+################################################################################
+echo ">>> Compiler test007_submod, recursive, pkg precendence"
+################################################################################
+cleanup
+pushd .
+
+cd tmp
+
+PYTHONPATH=../src/test007_submod/libs  expyld -m ../src/test007_submod/main.py -o test007_2 -i test_mod
+RET=$?
+if [ $RET != 0 ]; then
+    echo "test007_2 failed to compile $RET"
+    go_out -1
+fi
+
+OUT=`./test007_2`
+
+RET=$?
+
+if [ $RET != 0 ]; then
+    echo "test007_2 failed to exec $RET"
+    go_out -1
+fi
+
+expected='test_mod.other_mod
+other
+func1 ok
+x_func'
+
+if [ "$OUT" != "$expected" ]; then
+    echo "test007_2 failed: expected [$expected] got [$OUT]"
+    go_out 1
+fi
+
+popd
+
+
 ###############################################################################
 echo ">>> Done"
 ###############################################################################
