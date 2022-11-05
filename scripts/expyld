@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 ##
-## @brief Enduro/X Limited Python binary Linker
+## @brief Enduro/X Limited Python binary Linker to stand-alone executable
 ##  This linker does not support some of the pkgutil operations, such as
 ##  module listing in the package.
 ##
@@ -33,7 +33,6 @@
 ## -----------------------------------------------------------------------------
 
 import argparse
-#from importlib.resources import path
 import endurox as e
 import os
 from pathlib import Path
@@ -63,6 +62,7 @@ class PackageEntry(object):
         self.modules={}
         self.name=""
         self.package=False
+        self.fullpath=""
 
 # list of main modules
 M_main_code = None
@@ -70,6 +70,11 @@ M_main_code = None
 # PackageEntry of the main modules
 # key here is module name
 M_main_mods = {}
+
+#
+# Main program directory
+#
+M_main_dir = ""
 
 #
 # Key is full module name
@@ -841,6 +846,11 @@ def load_main_dir(resource):
 
     global M_main_mods
     path = os.path.realpath(os.path.dirname(resource))
+
+    # used for precedence setting
+    global M_main_dir
+    M_main_dir=path
+
     e.tplog_info("Loading program directroy [%s]" % path)
 
     for f in os.listdir(path):
@@ -895,6 +905,7 @@ def pkg_establish_init(pkg_start):
     ent.name = pkg_start
     ent.modules[res_notext] = read_module(filename)
     ent.package = True
+    ent.fullpath = os.path.dirname(spec.origin)
     M_packages[pkg_start] = ent
 
 ################################################################################
@@ -1003,6 +1014,7 @@ def load_module(resource, recursive):
             # How about naming _ ?
             cur_pkg.name = fin_pkg
             cur_pkg.package = True
+            cur_pkg.fullpath = path_real
             
             ###############################################################
             # some.pkg.abc.ccc we need to get following keys:
@@ -1065,6 +1077,7 @@ def load_module(resource, recursive):
             M_packages[resource]=ent
             
         cur_pkg = M_packages[resource]
+        cur_pkg.fullpath = path_real
 
         pkgs = cur_pkg.name.split(".")
         pkg_start = "";
@@ -1180,6 +1193,21 @@ try:
         for mod in args.i:
             for entry in mod:
                 load_module(entry, True)
+
+    # TODO: check every module in the mm
+    # if there is such pkg in mm, then remove it from main
+    # as verified by test case 008
+    # this happens to be a case if given module and pgk is in the main dir
+    # if main has mod, pkg is elsewhere, the mod takes over.
+
+    # if pkg under main, then pkg takes over
+    # if pkg not under main, main takes over
+    for k,v in M_packages.items():
+        e.tplog_error("YOPT %s vs %s" % (v.fullpath, M_main_dir))
+        if k in M_main_mods and v.fullpath==M_main_dir+os.sep+k:
+            # remove the main module
+            del M_main_mods[k]
+
 except SyntaxError:
     sys.exit(-1)
 

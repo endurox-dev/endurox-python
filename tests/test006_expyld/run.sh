@@ -304,6 +304,42 @@ fi
 popd
 
 
+################################################################################
+echo ">>> Compiler test008_pkgprec, package precendence over the main dir"
+################################################################################
+cleanup
+pushd .
+
+cd tmp
+
+PYTHONPATH=../src/test008_pkgprec  expyld -m ../src/test008_pkgprec/main.py -o test008 -i some_mod
+RET=$?
+if [ $RET != 0 ]; then
+    echo "test008 failed to compile $RET"
+    go_out -1
+fi
+
+OUT=`./test008`
+
+RET=$?
+
+if [ $RET != 0 ]; then
+    echo "test008 failed to exec: $RET"
+    go_out -1
+fi
+
+popd
+
+expected='PKG-HELLO
+MOD-OTHER-HELLO'
+
+if [ "$OUT" != "$expected" ]; then
+    echo "test007_2 failed: expected [$expected] got [$OUT]"
+    go_out 1
+fi
+
+popd
+
 ###############################################################################
 echo ">>> Done"
 ###############################################################################
