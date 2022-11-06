@@ -15,7 +15,11 @@ export PYTHONPATH=`pwd`/../libs
 
 function go_out {
     echo "Test exiting with: $1"
-    popd 2>/dev/null
+
+    if [ $1 != 0 ]; then
+        popd 2>/dev/null
+    fi
+
     exit $1
 }
 
@@ -328,13 +332,115 @@ if [ $RET != 0 ]; then
     go_out -1
 fi
 
-popd
-
 expected='PKG-HELLO
 MOD-OTHER-HELLO'
 
 if [ "$OUT" != "$expected" ]; then
     echo "test007_2 failed: expected [$expected] got [$OUT]"
+    go_out 1
+fi
+
+popd
+
+################################################################################
+echo ">>> Compiler test009_linkorder, link order"
+################################################################################
+cleanup
+pushd .
+
+cd tmp
+rm ../src/test009_linkorder/* 2>/dev/null
+rm -rf ../src/test009_linkorder/__pycache__ 2>/dev/null
+
+
+pushd .
+cd ../src/test009_linkorder
+
+# attempt to link from pyc in the pkg dir
+echo "print('hello_pyc')" > main.py
+/usr/bin/env python3 -m compileall .
+mv ./__pycache__/* main.pyc
+
+# attempt to use cache
+echo "print('hello_pyc_cache')" > main.py
+/usr/bin/env python3 -m compileall .
+
+# build from sources.
+echo "print('hello_py')" > main.py
+
+popd
+
+# first comes from sources
+PYTHONPATH=../src/test009_linkorder  expyld -m ../src/test009_linkorder/main -o test009_1
+RET=$?
+if [ $RET != 0 ]; then
+    echo "test009_1 failed to compile $RET"
+    go_out -1
+fi
+
+OUT=`./test009_1`
+
+RET=$?
+
+if [ $RET != 0 ]; then
+    echo "test009_1 failed to exec: $RET"
+    go_out -1
+fi
+
+expected='hello_py'
+
+if [ "$OUT" != "$expected" ]; then
+    echo "hello_py failed: expected [$expected] got [$OUT]"
+    go_out 1
+fi
+
+# remove sources version
+rm ../src/test009_linkorder/main.py
+PYTHONPATH=../src/test009_linkorder  expyld -m ../src/test009_linkorder/main -o test009_2
+RET=$?
+if [ $RET != 0 ]; then
+    echo "test009_2 failed to compile $RET"
+    go_out -1
+fi
+
+OUT=`./test009_2`
+
+RET=$?
+
+if [ $RET != 0 ]; then
+    echo "test009_2 failed to exec: $RET"
+    go_out -1
+fi
+
+expected='hello_pyc'
+
+if [ "$OUT" != "$expected" ]; then
+    echo "test009_2 failed: expected [$expected] got [$OUT]"
+    go_out 1
+fi
+
+# remove pyc version, shall come from cache
+rm ../src/test009_linkorder/main.pyc
+PYTHONPATH=../src/test009_linkorder  expyld -m ../src/test009_linkorder/main -o test009_3
+RET=$?
+if [ $RET != 0 ]; then
+    echo "test009_3 failed to compile $RET"
+    go_out -1
+fi
+
+OUT=`./test009_3`
+
+RET=$?
+
+if [ $RET != 0 ]; then
+    echo "test009_3 failed to exec: $RET"
+    go_out -1
+fi
+
+expected='hello_pyc_cache'
+
+if [ "$OUT" != "$expected" ]; then
+    echo "test009_3 failed: expected [$expected] got [$OUT]"
     go_out 1
 fi
 
