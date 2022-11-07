@@ -1,0 +1,121 @@
+EXPYLD(8)
+=========
+:doctype: manpage
+
+
+NAME
+----
+expyld - Enduro/X Python code to executable linker
+
+
+SYNOPSIS
+--------
+*expyld* ['OPTIONS']
+
+
+DESCRIPTION
+-----------
+*expyld* is Enduro/X Python linker tool. The tool is used to compile given Python
+script source files and packages into single executable binary. Python version
+supported in 3.6 or later. *expyld* produces single binary executables and for
+executable production, C compiler. *expyld* generates C code with embedded
+compiled python bytecode and generates startup code which hooks package loader
+so that any imports are firstly tested against linked python modules and only
+after that fallback to system packages is done.
+
+Linker support embedding of the main module. With the main module, full main
+module directory is embedded. Additionally packages to embed are added by the
+*-i* (include) flag. Linker does not scan any binaries for any specific includes
+to have. All the packages to include must be specified by the hand to the linker
+command line.
+
+If package to include has resource files (i.e. extension other than *.py or *.pyc),
+error is thrown and linking is stopped, due to fact that inclusion of resource
+files for the package are not supported. However ignore flag *-n* can be passed
+to the compiler to suppress the exception and continue just with the warning.
+However if package loads resource files during the runtime, there might be an
+error, as if binary is shipped without installed dependencies on the disk
+(which is main purpose of this tool - not to ship/download the
+dependencies separately), the resources would not be available.
+
+Package/module resolve principles:
+
+1) Modules from the main directory have higher precedence over the packages.
+
+2) However, if in the script main directory there is module with the same name
+as the package in the main directory, then package is loaded, but module not.
+
+3) When including package, which has the module with the same name as the sub-package,
+the sub-package is included, but module not.
+
+When loading individual modules, they are linked in following way/order:
+
+1) If source code is available (*.py), it is compiled to the byte code and included
+in the binary.
+
+2) If in the package directory there is compiled version of the module (*.pyc),
+it is read and included in the binary.
+
+3) If none of above works, cached version (typically from __pycache__) is attempted
+to link.
+
+ENVIRONMENT
+-----------
+*CC*::
+Optional environment variable indicating which C compiler to use. If parameter is
+not set, the *cc* command is used.
+
+*CFLAGS*::
+Optional C flags to be passed to C compiler during the *buildserver* execution.
+
+*NDRX_HOME*::
+Optional Enduro/X home directory, where to search for the *include* sub-folder
+and library folder.
+
+OPTIONS
+-------
+
+*-m* 'MAIN_MODULE'::
+This is filename of the main module.
+
+[*-o* 'OUTPUT_BINARY']::
+This is name of output binary.If not specified then *a.out* is used.
+
+[*-i* 'INCLUDE_PKGS']::
+List of packages or modules to include in the binary. The include my point to
+sub-package. However linker will discover and include __init__.py from any
+parent packages automatically. Parameter any be present several times.
+
+[*-n*]::
+Ignore resource errors if found.
+
+[*-k*]::
+Keep temporary C file on the disk.
+
+[*-h*]::
+Print usage.
+
+EXIT STATUS
+-----------
+*0*::
+Success
+
+*1*::
+Failure
+
+EXAMPLE
+-------
+See *tests/test006_expyld/run.sh* for sample usage.
+
+BUGS
+----
+Report bugs to support@mavimax.com
+
+SEE ALSO
+--------
+*module_developer_guide(guides)*
+
+COPYING
+-------
+(C) Mavimax, Ltd
+
