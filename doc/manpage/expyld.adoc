@@ -29,7 +29,7 @@ module directory is embedded. Additionally packages to embed are added by the
 to have. All the packages to include must be specified by the hand to the linker
 command line.
 
-If package to include has resource files (i.e. extension other than *.py or *.pyc),
+If package to include has resource files (i.e. extension other than {empty}*.py or {empty}*.pyc),
 error is thrown and linking is stopped, due to fact that inclusion of resource
 files for the package are not supported. However ignore flag *-n* can be passed
 to the compiler to suppress the exception and continue just with the warning.
@@ -50,10 +50,10 @@ the sub-package is included, but module not.
 
 When loading individual modules, they are linked in following way/order:
 
-1) If source code is available (*.py), it is compiled to the byte code and included
+1) If source code is available ({empty}*.py), it is compiled to the byte code and included
 in the binary.
 
-2) If in the package directory there is compiled version of the module (*.pyc),
+2) If in the package directory there is compiled version of the module ({empty}*.pyc),
 it is read and included in the binary.
 
 3) If none of above works, cached version (typically from __pycache__) is attempted
