@@ -409,11 +409,15 @@ $ make html
 --------------------------------------------------------------------------------
 
 HTML pages are unloaded in "_build/html" directory. Optionally user guides
-can be built (in case if asciidoc is installed).
+and mapages can be built (in case if asciidoc is installed).
 
 --------------------------------------------------------------------------------
 
 $ cd endurox-python/doc/guides
+
+$ make
+
+$ cd ../manpage
 
 $ make
 
