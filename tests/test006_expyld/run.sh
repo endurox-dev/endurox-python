@@ -5,13 +5,13 @@
 #
 
 export TEST_OUT=`pwd`/test.out
-export PATH=`pwd`/../../scripts:$PATH
 (
 #
 # Load system settings...
 #
 source ~/ndrx_home
 export PYTHONPATH=`pwd`/../libs
+export PATH=`pwd`/../../scripts:$PATH
 
 function go_out {
     echo "Test exiting with: $1"

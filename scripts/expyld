@@ -65,7 +65,7 @@ class PackageEntry(object):
         self.fullpath=""
 
 # list of main modules
-M_main_code = None
+m_main_code = None
 
 # PackageEntry of the main modules
 # key here is module name
@@ -1173,7 +1173,7 @@ c_compiler = get_cc_id(cc, c_flags)
 add_last = ""
 
 if c_compiler=="gcc" or c_compiler=="clang":
-    c_flags=f"-O2 -std=c99 -g {c_flags} -lpthread -lm"
+    c_flags=f"-O2 -std=c99 -g {c_flags}"
     add_last=" -lutil -lpthread -lm -ldl"
 elif c_compiler=="xlc": 
     c_flags=f"-O2 -qtls -q64 -b64 -D_THREAD_SAFE {c_flags}"
@@ -1261,6 +1261,8 @@ try:
     gen_index(c_file, "pkg", M_packages_flat)
     gen_index_search(c_file)
 
+    c_file.close()
+
     # prepare the config
     include = sysconfig.get_path('include')
     libdir = sysconfig.get_config_vars('LIBDIR')
@@ -1269,7 +1271,7 @@ try:
     sosuff = sysconfig.get_config_var('SHLIB_SUFFIX')
 
     # Compile the main...
-    cmd = f"{c_compiler} -o {args.o} {c_file.name} {c_flags} -I{include}"
+    cmd = f"{cc} -o {args.o} {c_file.name} {c_flags} -I{include}"
 
     # Append with library directories...
     for ld in libdir:
@@ -1300,7 +1302,8 @@ try:
         raise Exception("Build command [%s] failed with %d" % 
             (cmd, ret))
 finally:
-    c_file.file.close()
+    if not c_file.file.closed:
+        c_file.file.close()
 
     if not M_keep:
         os.unlink(c_file.name)
