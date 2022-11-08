@@ -1170,9 +1170,11 @@ else:
 # Get compiler id...
 # to configure it later.
 c_compiler = get_cc_id(cc, c_flags)
+add_last = ""
 
 if c_compiler=="gcc" or c_compiler=="clang":
-    c_flags=f"-O2 -std=c99 -g {c_flags}"
+    c_flags=f"-O2 -std=c99 -g {c_flags} -lpthread -lm"
+    add_last=" -lutil -lpthread -lm -ldl"
 elif c_compiler=="xlc": 
     c_flags=f"-O2 -qtls -q64 -b64 -D_THREAD_SAFE {c_flags}"
 elif c_compiler=="sunpro":
@@ -1288,6 +1290,7 @@ try:
             shlib=shlib[:soext]
         cmd = cmd+" -l"+shlib
 
+    cmd = cmd + add_last
     e.tplog_debug("Compiling with [%s]" % cmd)
     ret = os.system(cmd)
 
