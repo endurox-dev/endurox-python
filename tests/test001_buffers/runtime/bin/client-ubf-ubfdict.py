@@ -288,6 +288,7 @@ class TestUbfDict(unittest.TestCase):
             self.assertEqual(b1, b3)
             # delete ptr field from b3, as GC will remove the same PTR from b1 & b3 causing invalid buffers
             del b3["data"].T_PTR_FLD
+            del b2["data"].T_PTR_FLD
 
     # check dict field assign
     def test_ubfdict_fldassign(self):
