@@ -320,15 +320,24 @@ static int ndrxpy_resolve(char *module, const char **data, ssize_t *dlen)
         goto out;
     }
 
-    /* Search main-module first */
-    ret=ndrxpy_get_mod(G_ndrxpy_mainmods_index, 
-        (sizeof(G_ndrxpy_mainmods_index)/sizeof(*(G_ndrxpy_mainmods_index))), 
-        module, data, dlen);
-
-    if (ret>NDRXPY_RES_NOMOD)
+    if (NULL!=G_ndrxpy_mainmods_index[0].mod)
     {
-        /* module found... */
-        DO_CACHE(module);
+        /* Search main-module first */
+        ret=ndrxpy_get_mod(G_ndrxpy_mainmods_index,
+            (sizeof(G_ndrxpy_mainmods_index)/sizeof(*(G_ndrxpy_mainmods_index))),
+            module, data, dlen);
+
+        if (ret>NDRXPY_RES_NOMOD)
+        {
+            /* module found... */
+            DO_CACHE(module);
+            goto out;
+        }
+    }
+
+    /* module index is empty. */
+    if (NULL==G_ndrxpy_pkg_index[0].mod)
+    {
         goto out;
     }
 
@@ -674,6 +683,10 @@ static ndrxpy_module_indext_t G_ndrxpy_%s_index [] =
         c_file.write('\t{"%s", %s, %s_len_def}' % (k,v.replace(".", "_"),v.replace(".", "_"))
             )
         first=False
+
+    # just put empty record, to comply with c compiler
+    if first:
+        c_file.write('\t{0}')
 
     c_file.write("\n};")
 
