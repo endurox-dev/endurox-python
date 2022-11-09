@@ -42,6 +42,7 @@ import sys
 import tempfile
 import sysconfig
 import re
+import platform
 
 #
 # Single package entry
@@ -1171,14 +1172,21 @@ else:
 # to configure it later.
 c_compiler = get_cc_id(cc, c_flags)
 add_last = ""
+system = platform.system()
 
 if c_compiler=="gcc" or c_compiler=="clang":
     c_flags=f"-O2 -std=c99 -g {c_flags}"
-    add_last=" -lutil -lpthread -lm -ldl"
+    
+    if system == "SunOS":
+        add_last=" -lpthread -ldl -lm"
+    else:
+        add_last=" -lutil -lpthread -lm -ldl"
+
 elif c_compiler=="xlc": 
     c_flags=f"-O2 -qtls -q64 -b64 -D_THREAD_SAFE {c_flags}"
 elif c_compiler=="sunpro":
-    c_flags=f"-O2 -m64 -D_REENTRANT {c_flags}"
+    c_flags=f"-xc99 -O2 -m64 -D_REENTRANT -erroff=E_INIT_DOES_NOT_FIT -erroff=E_EMPTY_DECLARATION {c_flags}"
+    add_last=" -lpthread -ldl -lm"
 else:
     e.tplog_error("Unsupported compiler ["+c_compiler+"]")
     raise Exception("Unsupported compiler ["+c_compiler+"]")
@@ -1196,7 +1204,7 @@ try:
             for entry in mod:
                 load_module(entry, True)
 
-    # TODO: check every module in the mm
+    # check every module in the mm
     # if there is such pkg in mm, then remove it from main
     # as verified by test case 008
     # this happens to be a case if given module and pgk is in the main dir
@@ -1205,7 +1213,6 @@ try:
     # if pkg under main, then pkg takes over
     # if pkg not under main, main takes over
     for k,v in M_packages.items():
-        e.tplog_error("YOPT %s vs %s" % (v.fullpath, M_main_dir))
         if k in M_main_mods and v.fullpath==M_main_dir+os.sep+k:
             # remove the main module
             del M_main_mods[k]
@@ -1251,10 +1258,6 @@ try:
                 M_packages_flat[p+"."+m] = gen_module_code(c_file, "pkg_"+p, m, mv)
             else:
                 M_packages_flat[p] = gen_module_code(c_file, "pkg_"+p, m, mv)
-
-    # TODO: Validate that all packages have __init__.py available
-    # Python picks up existing __init__.py and loads that
-    # thus when we are injecting the packages, we shall do the same
 
     # generate sorted index...
     gen_index(c_file, "mainmods", M_main_mods_flat)
