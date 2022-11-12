@@ -7,8 +7,9 @@ language. Module includes such features as:
 
 - A multi-threaded server
 - Synchronous, asynchronous, conversational, event based and notification IPC APIs
-- Support nested UBF buffer with pointer and view support
-- Support for NULL, STRING, CARRAY, VIEW and JSON buffers
+- Support for UBF (emulation of Tuxedo FML32, i.e. binary coded key/value buffer), NULL, STRING, CARRAY, VIEW (C structures) and JSON buffers
+- Support for nested UBF buffers with PTR (pointer to other XATMI buffers) and VIEW support
+- Dictionary like interface for UBF, having zero marshaling when client/server sends/receives UBF buffers, meaning ultra fast processing times, even for large data.
 - Receive response even when the service returns TPFAIL (instead of exception)
 - Enduro/X ATMI server extensions, such as periodic callbacks and resource polling
 - Logging API
