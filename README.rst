@@ -116,6 +116,34 @@ All buffers are encapsulated in Python dictionary. For example ``UBF`` (equivale
         }
     }
 
+Or with UBF Dictionary interface class:
+
+.. code:: python
+
+    {
+        'buftype': 'UBF'
+        , 'data': e.UbfDict(
+        {
+            'T_SHORT_FLD': [3200]
+            , 'T_LONG_FLD': [99999111]
+            , 'T_CHAR_FLD': ['X', 'Y', b'\x00']
+            , 'T_FLOAT_FLD': [1000.989990234375]
+            , 'T_DOUBLE_FLD': [1000111.99]
+            , 'T_STRING_FLD': ['HELLO INPUT']
+            , 'T_PTR_FLD': [{'buftype': 'STRING', 'data': 'HELLO WORLD'}]
+            , 'T_UBF_FLD': [{'T_SHORT_FLD': [99], 'T_UBF_FLD': [{'T_LONG_2_FLD': [1000091]}]}]
+            , 'T_VIEW_FLD': [{}, {'vname': 'UBTESTVIEW2', 'data': {
+                'tshort1': [5]
+                , 'tlong1': [100000]
+                , 'tchar1': ['J']
+                , 'tfloat1': [9999.900390625]
+                , 'tdouble1': [11119999.9]
+                , 'tstring1': ['HELLO VIEW']
+                , 'tcarray1': [b'\x00\x00', b'\x01\x01']
+            }}]
+        })
+    }
+
 ``buftype`` is optional for ``CARRAY``, ``STRING``, ``UBF`` and ``NULL`` buffers. It is mandatory for ``JSON`` 
 and ``VIEW`` buffers. For ``VIEW`` buffers ``subtype`` specifies view name. 
 Buffer data is present in ``data`` root dictionary key.
@@ -441,12 +469,8 @@ The individual identifiers can be looked by directly by:
 
     help (e.tpcall)
 
-
-
-
 Releases
 --------
 
 - Version 8.0.2 released on 18/08/2022 - First stable release
 - Version 8.0.4 marked on 25/09/2022 - Feature #790
-
