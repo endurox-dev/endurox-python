@@ -9,7 +9,7 @@ language. Module includes such features as:
 - Synchronous, asynchronous, conversational, event based and notification IPC APIs
 - Support for UBF (emulation of Tuxedo FML32, i.e. binary coded key/value buffer), NULL, STRING, CARRAY, VIEW (C structures) and JSON buffers
 - Support for nested UBF buffers with PTR (pointer to other XATMI buffers) and VIEW support
-- Dictionary like interface for UBF, having zero marshaling when client/server sends/receives UBF buffers, meaning ultra fast processing times, even for large data. When bufers are exchanged between processes, only few memcpy() operation are performed between processes and OS kernel, as for UBF there is no serialization and when using UbfDict() interface, only requested field data from memory is exchanged with the Python VM uppon get/set access.
+- Dictionary like interface for UBF, having zero marshaling when client/server sends/receives UBF buffers, meaning ultra fast processing times, even for large data. When bufers are exchanged between processes, only few memcpy() operation are performed between processes and OS kernel, as for UBF there is no serialization and when using UbfDict() interface, only requested fields from memory are exchanged with the Python VM uppon get/set access.
 - Receive response even when the service returns TPFAIL (instead of exception)
 - Enduro/X ATMI server extensions, such as periodic callbacks and resource polling
 - Logging API
