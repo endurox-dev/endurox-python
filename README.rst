@@ -7,8 +7,9 @@ language. Module includes such features as:
 
 - A multi-threaded server
 - Synchronous, asynchronous, conversational, event based and notification IPC APIs
-- Support nested UBF buffer with pointer and view support
-- Support for NULL, STRING, CARRAY, VIEW and JSON buffers
+- Support for UBF (emulation of Tuxedo FML32, i.e. binary coded key/value buffer), NULL, STRING, CARRAY, VIEW (C structures) and JSON buffers
+- Support for nested UBF buffers with PTR (pointer to other XATMI buffers) and VIEW support
+- Dictionary like interface for UBF, having zero marshaling when client/server sends/receives UBF buffers, meaning ultra fast processing times, even for large data. When bufers are exchanged between processes, only few memcpy() operation are performed between processes and OS kernel, as for UBF there is no serialization and when using UbfDict() interface, only requested fields from memory are exchanged with the Python VM uppon get/set access.
 - Receive response even when the service returns TPFAIL (instead of exception)
 - Enduro/X ATMI server extensions, such as periodic callbacks and resource polling
 - Logging API
@@ -113,6 +114,34 @@ All buffers are encapsulated in Python dictionary. For example ``UBF`` (equivale
                 , 'tcarray1': [b'\x00\x00', b'\x01\x01']
             }}]
         }
+    }
+
+Or with UBF Dictionary interface class:
+
+.. code:: python
+
+    {
+        'buftype': 'UBF'
+        , 'data': e.UbfDict(
+        {
+            'T_SHORT_FLD': [3200]
+            , 'T_LONG_FLD': [99999111]
+            , 'T_CHAR_FLD': ['X', 'Y', b'\x00']
+            , 'T_FLOAT_FLD': [1000.989990234375]
+            , 'T_DOUBLE_FLD': [1000111.99]
+            , 'T_STRING_FLD': ['HELLO INPUT']
+            , 'T_PTR_FLD': [{'buftype': 'STRING', 'data': 'HELLO WORLD'}]
+            , 'T_UBF_FLD': [{'T_SHORT_FLD': [99], 'T_UBF_FLD': [{'T_LONG_2_FLD': [1000091]}]}]
+            , 'T_VIEW_FLD': [{}, {'vname': 'UBTESTVIEW2', 'data': {
+                'tshort1': [5]
+                , 'tlong1': [100000]
+                , 'tchar1': ['J']
+                , 'tfloat1': [9999.900390625]
+                , 'tdouble1': [11119999.9]
+                , 'tstring1': ['HELLO VIEW']
+                , 'tcarray1': [b'\x00\x00', b'\x01\x01']
+            }}]
+        })
     }
 
 ``buftype`` is optional for ``CARRAY``, ``STRING``, ``UBF`` and ``NULL`` buffers. It is mandatory for ``JSON`` 
@@ -440,12 +469,8 @@ The individual identifiers can be looked by directly by:
 
     help (e.tpcall)
 
-
-
-
 Releases
 --------
 
 - Version 8.0.2 released on 18/08/2022 - First stable release
 - Version 8.0.4 marked on 25/09/2022 - Feature #790
-
