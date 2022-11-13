@@ -21,7 +21,9 @@ supported in 3.6 or later. *expyld* produces single binary executables and for
 executable production, C compiler. *expyld* generates C code with embedded
 compiled python bytecode and generates startup code which hooks package loader
 so that any imports are firstly tested against linked python modules and only
-after that fallback to system packages is done.
+after that fallback to system packages is done. No temporary files are used
+for package loading during the startup. Binary depends only on Python 3 shared
+libraries and any other packages which are not linked with the binary.
 
 Linker support embedding of the main module. With the main module, full main
 module directory is embedded. Additionally packages to embed are added by the
