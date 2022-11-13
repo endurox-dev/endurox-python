@@ -177,7 +177,7 @@ int main(int argc, char **argv)
 
         e.tplog_info("Comp check [%s]" % command)
         if 0!=os.system(command):
-            raise("Failed to invoke compiler")
+            raise Exception("Failed to invoke compiler")
 
         # exit status?
         process =  os.popen(out_file_name.name)
@@ -186,7 +186,7 @@ int main(int argc, char **argv)
         
         if ret is not None:
             e.tplog_error("[%s] failed with %d" % (command, ret))
-            raise("[%s] failed with %d" % (command, ret))
+            raise Exception("[%s] failed with %d" % (command, ret))
         
         comp = comp.rstrip()
         # check error ? 
@@ -196,7 +196,7 @@ int main(int argc, char **argv)
 
     except Exception as ex:
         e.tplog_error("Failed to check compiler version: %s" % ex)
-        raise
+        raise ex
 
     finally:
         # close the handles
