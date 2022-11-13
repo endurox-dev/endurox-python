@@ -177,7 +177,7 @@ int main(int argc, char **argv)
 
         e.tplog_info("Comp check [%s]" % command)
         if 0!=os.system(command):
-            raise Exception("Failed to invoke compiler")
+            raise RuntimeError("Failed to invoke compiler")
 
         # exit status?
         process =  os.popen(out_file_name.name)
@@ -186,7 +186,7 @@ int main(int argc, char **argv)
         
         if ret is not None:
             e.tplog_error("[%s] failed with %d" % (command, ret))
-            raise Exception("[%s] failed with %d" % (command, ret))
+            raise RuntimeError("[%s] failed with %d" % (command, ret))
         
         comp = comp.rstrip()
         # check error ? 
@@ -1013,7 +1013,7 @@ def load_module(resource, recursive):
                     if M_ignore:
                         continue
                     else:
-                        raise Exception("Module not embeddable: Directory contains invalid symbols [%s]" % sub_dirs)
+                        raise RuntimeError("Module not embeddable: Directory contains invalid symbols [%s]" % sub_dirs)
 
                 sub_pkg = sub_dirs.replace("/", ".")
                 fin_pkg = resource+"."+sub_pkg
@@ -1074,7 +1074,7 @@ def load_module(resource, recursive):
                     e.tplog_error("Module not embeddable: [%s%s] from [%s]" %
                         (res_notext, extension, resource))
                     if not M_ignore:
-                        raise Exception("Module not embeddable: [%s%s] from [%s]" %
+                        raise RuntimeError("Module not embeddable: [%s%s] from [%s]" %
                                                 (res_notext, extension, resource))
             # scan the directories...
             if not recursive:
@@ -1121,7 +1121,7 @@ def load_module(resource, recursive):
             e.tplog_error("Module not embeddable: [%s%s] from [%s]" %
                 (res_notext, extension, resource))
             if not M_ignore:
-                raise Exception("Module not embeddable: [%s%s] from [%s]" %
+                raise RuntimeError("Module not embeddable: [%s%s] from [%s]" %
                                         (res_notext, extension, resource))
 
 ################################################################################
@@ -1202,7 +1202,7 @@ elif c_compiler=="sunpro":
     add_last=" -lpthread -ldl -lm"
 else:
     e.tplog_error("Unsupported compiler ["+c_compiler+"]")
-    raise Exception("Unsupported compiler ["+c_compiler+"]")
+    raise RuntimeError("Unsupported compiler ["+c_compiler+"]")
 
 # Load main -> module name + bytecodes
 # args.infile compile...
@@ -1295,13 +1295,13 @@ try:
 
     for shlib in shlibs:
         if shlib.find("lib") == -1:
-            raise Exception("Invalid shared library name [%s] (not starting with lib)" % shlib)
+            raise RuntimeError("Invalid shared library name [%s] (not starting with lib)" % shlib)
         shlib = shlib[3:]
         # Chek the location of .so/.dy
         soext = shlib.rfind(sosuff)
         ext2 = shlib.rfind(".a")
         if soext == -1 and ext2 == -1:
-            raise Exception("Missing library extension [%s] or [.a] in [%s]" % (sosuff, shlib))
+            raise RuntimeError("Missing library extension [%s] or [.a] in [%s]" % (sosuff, shlib))
         if ext2 > soext:
             shlib=shlib[:ext2]
         else:
@@ -1315,7 +1315,7 @@ try:
     if 0!=ret:
         e.tplog_error("Build command [%s] failed with %d" % 
             (cmd, ret))
-        raise Exception("Build command [%s] failed with %d" % 
+        raise RuntimeError("Build command [%s] failed with %d" % 
             (cmd, ret))
 finally:
     if not c_file.file.closed:
