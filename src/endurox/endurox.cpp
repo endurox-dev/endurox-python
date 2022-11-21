@@ -503,6 +503,7 @@ Python3 bindings for writing Enduro/X clients and servers
         tplog_warn
         tplog_error
         tplog_always
+        tplog_exception
         tplogconfig
         tplogqinfo
         tplogsetreqfile
