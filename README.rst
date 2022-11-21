@@ -12,8 +12,8 @@ language. Module includes such features as:
 - Dictionary like interface for UBF, having zero marshaling when client/server sends/receives UBF buffers, meaning ultra fast processing times, even for large data. When bufers are exchanged between processes, only few memcpy() operation are performed between processes and OS kernel, as for UBF there is no serialization and when using UbfDict() interface, only requested fields from memory are exchanged with the Python VM uppon get/set access.
 - Receive response even when the service returns TPFAIL (instead of exception)
 - Enduro/X ATMI server extensions, such as periodic callbacks and resource polling
-- Logging API
-- Simple, but yet powerful Python to Executable linker (named `expyld`), which pre-compiles and embeds pure Python packages/modules into binary memory. During the runtime these packages/modules are resolved directly from the process memory, i.e. no temp files are used.
+- Logging API.
+- Simple, but yet powerful Python to Executable linker tool (named `expyld`), which pre-compiles and embeds pure Python packages/modules into binary memory. During the runtime these packages/modules are resolved directly from the process memory, i.e. no temp files are used.
 - See `documentation <https://www.endurox.org/dokuwiki>`_ for full API description.
 
 Python module for Enduro/X is written in C++11 and `pybind11 <https://github.com/pybind/pybind11>`_.
