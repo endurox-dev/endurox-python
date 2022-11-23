@@ -43,6 +43,6 @@ def tplog_exception(msg):
     sio.close()
     if s[-1:] == "\n":
         s = s[:-1]
-    tplog_error(msg + "\n" + s)
+    tplog_error(msg + ":\n" + s)
 
 # vim: set ts=4 sw=4 et smartindent:
