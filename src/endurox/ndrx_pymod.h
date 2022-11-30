@@ -433,6 +433,7 @@ extern void ndrxpy_fdmap_clear(void);
 extern void ndrxpy_register_atmi(py::module &m);
 extern void ndrxpy_register_ubf(py::module &m);
 extern void ndrxpy_register_srv(py::module &m);
+extern void ndrxpy_register_util(py::module &m);
 extern void ndrxpy_register_tpext(py::module &m);
 extern void ndrxpy_register_tplog(py::module &m);
 #endif /* NDRX_PYMOD.H */

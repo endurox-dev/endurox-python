@@ -182,6 +182,7 @@ SET(SOURCES
 	"${SOURCE_DIR}/endurox.cpp"
 	"${SOURCE_DIR}/endurox_srv.cpp"
 	"${SOURCE_DIR}/endurox_atmi.cpp"
+    "${SOURCE_DIR}/endurox_util.cpp"
 	"${SOURCE_DIR}/atmibuf.cpp"
 	"${SOURCE_DIR}/bufconv.cpp"
 	"${SOURCE_DIR}/bufconv_view.cpp"

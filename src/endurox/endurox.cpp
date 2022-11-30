@@ -202,6 +202,7 @@ PYBIND11_MODULE(endurox, m)
     ndrxpy_register_ubf(m);
     ndrxpy_register_atmi(m);
     ndrxpy_register_srv(m);
+    ndrxpy_register_util(m);
     ndrxpy_register_tpext(m);
     ndrxpy_register_tplog(m);
 
@@ -589,6 +590,7 @@ Python3 bindings for writing Enduro/X clients and servers
         tpext_addpollerfd
         tpext_delpollerfd
         ndrx_epoll_mode
+        ndrx_stdcfgstr_parse
         ndrxpy_ubfdict_enable
         ndrxpy_ubfdict_delonset
 
