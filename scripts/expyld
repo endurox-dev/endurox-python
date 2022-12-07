@@ -114,6 +114,11 @@ M_ignore = False
 #
 M_keep = False
 
+#
+# Print only files we depend on.
+#
+M_depsonly = False
+
 def get_cc_id(cc, c_flags):
     """Get C compiler id
 
@@ -821,6 +826,11 @@ def read_module(resource):
         source_bytes = loader.get_data(src)
 
         try:
+
+            if M_depsonly:
+                print(resource)
+                return
+
             code = loader.source_to_code(source_bytes, resource,
                                         _optimize=M_optimize)
         except Exception as err:
@@ -836,10 +846,20 @@ def read_module(resource):
         code = bytes(code) 
 
     elif os.path.exists(pyc):
+
+        if M_depsonly:
+            print(resource)
+            return
+
         in_file = open(pyc, "rb")
         code = in_file.read()
         in_file.close()
     else:
+
+        if M_depsonly:
+            print(resource)
+            return
+
         file = importlib._bootstrap_external._get_cached(src)
         # load bytes
         e.endurox._ndrxlog_info("Loading from cache [%s]" % file)
@@ -971,6 +991,11 @@ def load_module(resource, recursive):
     e.endurox._ndrxlog_info("Linking [%s] module, path [%s]" % 
         (resource, path_real))
 
+    # is it real path? Or Archive expected?
+    if not os.path.exists(path_real):
+        e.endurox._ndrxlog_error("Compressed egg (supposed) packages are not supported [%s]!" % path_real)
+        raise RuntimeError("Compressed egg (supposed) packages are not supported [%s]!" % path_real)
+
     prev_pkg = ""
 
     #
@@ -985,7 +1010,7 @@ def load_module(resource, recursive):
 
         #e.endurox._ndrxlog_info(path_real)
         # This is package, lets scan it...
-        
+        # this can be an egg (zip)!!!
         for root, dir, files in os.walk(path_real):
 
             e.endurox._ndrxlog_info("%s %s %s" % (str(root), str(dir), str(files)))
@@ -1009,10 +1034,11 @@ def load_module(resource, recursive):
                 sub_dirs = root[(len_path_real+1):]
 
                 if not re.match("^(/{0,1}[_a-z-A]+[_a-zA-Z0-9]*/{0,1})+$", sub_dirs):
-                    e.endurox._ndrxlog_warn("Module not embeddable: Directory contains invalid symbols [%s]" % sub_dirs)
                     if M_ignore:
+                        e.endurox._ndrxlog_info("Module not embeddable: Directory contains invalid symbols [%s]" % sub_dirs)
                         continue
                     else:
+                        e.endurox._ndrxlog_error("Module not embeddable: Directory contains invalid symbols [%s]" % sub_dirs)
                         raise RuntimeError("Module not embeddable: Directory contains invalid symbols [%s]" % sub_dirs)
 
                 sub_pkg = sub_dirs.replace("/", ".")
@@ -1071,11 +1097,14 @@ def load_module(resource, recursive):
                         # Load the bytes
                         cur_pkg.modules[res_notext] = read_module(str(Path(root, f)))
                 else:
-                    e.endurox._ndrxlog_error("Module not embeddable: [%s%s] from [%s]" %
-                        (res_notext, extension, resource))
                     if not M_ignore:
+                        e.endurox._ndrxlog_error("Module not embeddable: [%s%s] from [%s]" %
+                            (res_notext, extension, resource))
                         raise RuntimeError("Module not embeddable: [%s%s] from [%s]" %
                                                 (res_notext, extension, resource))
+                    else:
+                        e.endurox._ndrxlog_info("Module not embeddable: [%s%s] from [%s]" %
+                            (res_notext, extension, resource))
             # scan the directories...
             if not recursive:
                 break
@@ -1151,7 +1180,7 @@ parser.add_argument('-n', help='Ignore unsupported resources, instead of fail',
                     action='store_true', default=False)
 
 # Used for build purposes, to track the changed modules automatically.
-parser.add_argument('-M', help='Resolve build dependencies', 
+parser.add_argument('-M', help='Resolve build dependencies, no build', 
                     action='store_true', default=False)
 
 args = parser.parse_args()
@@ -1162,6 +1191,7 @@ args = parser.parse_args()
 
 M_keep = args.k
 M_ignore = args.n
+M_depsonly = args.M
 ################################################################################
 # Prep the env.
 ################################################################################
@@ -1187,7 +1217,13 @@ else:
 
 # Get compiler id...
 # to configure it later.
-c_compiler = get_cc_id(cc, c_flags)
+c_compiler = ""
+if M_depsonly:
+    # do not care...
+    c_compiler="gcc"
+else:
+    c_compiler = get_cc_id(cc, c_flags)
+
 add_last = ""
 system = platform.system()
 
@@ -1236,6 +1272,10 @@ try:
 
 except SyntaxError:
     sys.exit(-1)
+
+# nothing more in interest...
+if M_depsonly:
+    sys.exit(0)
 
 ################################################################################
 # Generate & Compile

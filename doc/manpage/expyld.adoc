@@ -96,6 +96,11 @@ Ignore resource errors if found.
 [*-k*]::
 Keep temporary C file on the disk.
 
+[*-M*]::
+Print list of the file dependencies which are required for the build. This does
+not perform the actual build. May be used for build systems to track the dependencies
+for automatic rebuilds while files are changed.
+
 [*-h*]::
 Print usage.
 
@@ -110,6 +115,14 @@ Failure
 EXAMPLE
 -------
 See *tests/test006_expyld/run.sh* for sample usage.
+
+LIMITATIONS
+-----------
+
+*egg* compressed file packages are not supported.
+
+EXIT STATUS
+-----------
 
 BUGS
 ----
