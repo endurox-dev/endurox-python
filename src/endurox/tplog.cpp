@@ -63,7 +63,76 @@ expublic void ndrxpy_register_tplog(py::module &m)
     py::class_<pyndrxdebugptr>(m, "NdrxDebugHandle")
         //this is buffer for pointer...
         .def_readonly("ptr", &pyndrxdebugptr::ptr);
+    //Internal topic:
+    m.def(
+        "_ndrxlog_debug",
+        [](const char *message)
+        {
+            py::gil_scoped_release release;
+            NDRX_LOG(log_debug, const_cast<char *>(message));
+        },
+        R"pbdoc(
+        Enduro/X NDRX internal logging.
+        )pbdoc", py::arg("message"));
 
+    m.def(
+        "_ndrxlog_info",
+        [](const char *message)
+        {
+            py::gil_scoped_release release;
+            NDRX_LOG(log_info, const_cast<char *>(message));
+        },
+        R"pbdoc(
+        Enduro/X NDRX internal logging.
+        )pbdoc", py::arg("message"));
+
+    m.def(
+        "_ndrxlog_warn",
+        [](const char *message)
+        {
+            py::gil_scoped_release release;
+            NDRX_LOG(log_warn, const_cast<char *>(message));
+        },
+        R"pbdoc(
+        Enduro/X NDRX internal logging.
+        )pbdoc", py::arg("message"));
+
+    m.def(
+        "_ndrxlog_error",
+        [](const char *message)
+        {
+            py::gil_scoped_release release;
+            NDRX_LOG(log_error, const_cast<char *>(message));
+        },
+        R"pbdoc(
+        Enduro/X NDRX internal logging.
+        )pbdoc", py::arg("message"));
+
+    m.def(
+        "_ndrxlog_always",
+        [](const char *message)
+        {
+            py::gil_scoped_release release;
+            NDRX_LOG(log_always, const_cast<char *>(message));
+        },
+        R"pbdoc(
+        Enduro/X NDRX internal logging.
+        )pbdoc", py::arg("message"));
+
+     m.def(
+        "_ndrxlogdump",
+        [](int lev, const char * comment, py::bytes data)
+        {
+            std::string val(PyBytes_AsString(data.ptr()), PyBytes_Size(data.ptr()));
+
+            py::gil_scoped_release release;
+            NDRX_DUMP(lev, const_cast<char *>(comment),
+                const_cast<char *>(val.data()), val.size());
+        },
+         R"pbdoc(
+        Enduro/X NDRX internal logging.
+        )pbdoc",
+        py::arg("lev"), py::arg("comment"), py::arg("data"));
     //Logging functions:
     m.def(
         "tplog_debug",
@@ -144,7 +213,7 @@ expublic void ndrxpy_register_tplog(py::module &m)
         [](const char *message)
         {
             py::gil_scoped_release release;
-            tplog(log_error, const_cast<char *>(message));
+            tplog(log_always, const_cast<char *>(message));
         },
         R"pbdoc(
         Print fatal message to log file. Fatal/always is logged as level **1**.

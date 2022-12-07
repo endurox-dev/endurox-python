@@ -61,6 +61,8 @@ it is read and included in the binary.
 3) If none of above works, cached version (typically from __pycache__) is attempted
 to link.
 
+Logging of the linker is done under *ndrx* topic.
+
 ENVIRONMENT
 -----------
 *CC*::

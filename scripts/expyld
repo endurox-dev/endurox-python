@@ -175,7 +175,7 @@ int main(int argc, char **argv)
 
         command = f"{cc} {c_flags} -o {out_file_name.name} {test_file_name.name}"
 
-        e.tplog_info("Comp check [%s]" % command)
+        e.endurox._ndrxlog_info("Comp check [%s]" % command)
         if 0!=os.system(command):
             raise RuntimeError("Failed to invoke compiler")
 
@@ -185,17 +185,17 @@ int main(int argc, char **argv)
         ret=process.close()
         
         if ret is not None:
-            e.tplog_error("[%s] failed with %d" % (command, ret))
+            e.endurox._ndrxlog_error("[%s] failed with %d" % (command, ret))
             raise RuntimeError("[%s] failed with %d" % (command, ret))
         
         comp = comp.rstrip()
         # check error ? 
-        e.tplog_debug("Compiler id: "+comp)
+        e.endurox._ndrxlog_debug("Compiler id: "+comp)
 
         return comp
 
     except Exception as ex:
-        e.tplog_error("Failed to check compiler version: %s" % ex)
+        e.endurox._ndrxlog_error("Failed to check compiler version: %s" % ex)
         raise ex
 
     finally:
@@ -782,7 +782,7 @@ def gen_module_code(c_file, prefix, module, code: bytes):
     c_file.write("const size_t %s_len = %d;\n" % (c_name, b_len))
     c_file.write("#define %s_len_def %d\n\n" % (c_name, b_len))
 
-    e.tplog_debug("Generated table [%s]" % c_name)
+    e.endurox._ndrxlog_debug("Generated table [%s]" % c_name)
     M_lnk_counter+=1
 
     return c_name
@@ -809,13 +809,13 @@ def read_module(resource):
     src = str(Path(path, filename))+".py"
     pyc = str(Path(path, filename))+".pyc"
 
-    e.tplog_info("Loading mod filename: [%s] ext: [%s] path: [%s]"
+    e.endurox._ndrxlog_info("Loading mod filename: [%s] ext: [%s] path: [%s]"
         % (filename, extension, path))
 
     code=None
     if os.path.exists(src):
         # compile from source
-        e.tplog_info("Compiling from source...")
+        e.endurox._ndrxlog_info("Compiling from source...")
         # based on /usr/lib/python3.10/py_compile.py
         loader = importlib.machinery.SourceFileLoader('<py_compile>', src)
         source_bytes = loader.get_data(src)
@@ -842,13 +842,13 @@ def read_module(resource):
     else:
         file = importlib._bootstrap_external._get_cached(src)
         # load bytes
-        e.tplog_info("Loading from cache [%s]" % file)
+        e.endurox._ndrxlog_info("Loading from cache [%s]" % file)
 
         in_file = open(file, "rb")
         code = in_file.read()
         in_file.close()
 
-    e.tplogdump(6, "Dumping objectcode of [%s]" % resource, code)
+    e.endurox._ndrxlogdump(6, "Dumping objectcode of [%s]" % resource, code)
 
     return code
 
@@ -865,21 +865,21 @@ def load_main_dir(resource):
     global M_main_dir
     M_main_dir=path
 
-    e.tplog_info("Loading program directroy [%s]" % path)
+    e.endurox._ndrxlog_info("Loading program directroy [%s]" % path)
 
     for f in os.listdir(path):
 
         f_name_only = f
         f = path+os.sep+f
         if not os.path.isfile(f):
-            e.tplog_debug("Not a file [%s]" % f)
+            e.endurox._ndrxlog_debug("Not a file [%s]" % f)
             continue
 
         res_notext, extension = os.path.splitext(f_name_only)
-        e.tplog_info("Processing main directory, mod [%s]" % (res_notext))
+        e.endurox._ndrxlog_info("Processing main directory, mod [%s]" % (res_notext))
         if (extension==".py" or extension==".pyc"):
             # Get the code object...
-            e.tplog_debug("Reading module f=[%s]" % (f))
+            e.endurox._ndrxlog_debug("Reading module f=[%s]" % (f))
             # Load the bytes
             M_main_mods[res_notext] = read_module(str(Path(path, f)))
 
@@ -910,7 +910,7 @@ def pkg_establish_init(pkg_start):
     res_notext, extension = os.path.splitext(f)
 
     if f != "__init__.py":
-        e.tplog_error("Expected __init__.py but got [%s]" % filename)
+        e.endurox._ndrxlog_error("Expected __init__.py but got [%s]" % filename)
         raise ModuleNotFoundError(ImportError(resource))
 
     res_notext, extension = os.path.splitext(f)
@@ -957,7 +957,7 @@ def load_module(resource, recursive):
 
     global M_packages
 
-    e.tplog_info("Linking [%s] module" % (resource))
+    e.endurox._ndrxlog_info("Linking [%s] module" % (resource))
 
     spec = importlib.util.find_spec(resource)
 
@@ -968,7 +968,7 @@ def load_module(resource, recursive):
     path_real = os.path.dirname(filename)
     len_path_real = len(path_real)
 
-    e.tplog_info("Linking [%s] module, path [%s]" % 
+    e.endurox._ndrxlog_info("Linking [%s] module, path [%s]" % 
         (resource, path_real))
 
     prev_pkg = ""
@@ -983,12 +983,12 @@ def load_module(resource, recursive):
     #
     if os.path.basename(filename) == "__init__.py":
 
-        #e.tplog_info(path_real)
+        #e.endurox._ndrxlog_info(path_real)
         # This is package, lets scan it...
         
         for root, dir, files in os.walk(path_real):
 
-            e.tplog_info("%s %s %s" % (str(root), str(dir), str(files)))
+            e.endurox._ndrxlog_info("%s %s %s" % (str(root), str(dir), str(files)))
 
             # no cache check
             if "/__pycache__/" in root+"/":
@@ -1001,7 +1001,7 @@ def load_module(resource, recursive):
             tmp_root = root + "/"
             len_root = len(root)
 
-            e.tplog_info(path_real+"/")
+            e.endurox._ndrxlog_info(path_real+"/")
 
             # Resolve packages & sub-packages
             if tmp_root.startswith(path_real+"/") and len(root)>len_path_real:
@@ -1009,7 +1009,7 @@ def load_module(resource, recursive):
                 sub_dirs = root[(len_path_real+1):]
 
                 if not re.match("^(/{0,1}[_a-z-A]+[_a-zA-Z0-9]*/{0,1})+$", sub_dirs):
-                    e.tplog_warn("Module not embeddable: Directory contains invalid symbols [%s]" % sub_dirs)
+                    e.endurox._ndrxlog_warn("Module not embeddable: Directory contains invalid symbols [%s]" % sub_dirs)
                     if M_ignore:
                         continue
                     else:
@@ -1063,15 +1063,15 @@ def load_module(resource, recursive):
             # 
             for f in files:
                 res_notext, extension = os.path.splitext(f)
-                e.tplog_info("Processing pkg [%s] mod [%s]" % (fin_pkg, res_notext))
+                e.endurox._ndrxlog_info("Processing pkg [%s] mod [%s]" % (fin_pkg, res_notext))
                 if extension==".py" or extension==".pyc":
                     if not res_notext in cur_pkg.modules:
                         # Get the code object...
-                        e.tplog_debug("root[%s] vs [%s] f=[%s]" % (root, path_real, f))
+                        e.endurox._ndrxlog_debug("root[%s] vs [%s] f=[%s]" % (root, path_real, f))
                         # Load the bytes
                         cur_pkg.modules[res_notext] = read_module(str(Path(root, f)))
                 else:
-                    e.tplog_error("Module not embeddable: [%s%s] from [%s]" %
+                    e.endurox._ndrxlog_error("Module not embeddable: [%s%s] from [%s]" %
                         (res_notext, extension, resource))
                     if not M_ignore:
                         raise RuntimeError("Module not embeddable: [%s%s] from [%s]" %
@@ -1083,7 +1083,7 @@ def load_module(resource, recursive):
         # Check that such package does not exists
         if resource in M_packages and M_packages[resource].package:
             # go out nothing todo...
-            e.tplog_debug("Package [%s] already present, igoring module" % resource)
+            e.endurox._ndrxlog_debug("Package [%s] already present, igoring module" % resource)
             return
         else:
             ent = PackageEntry()
@@ -1110,15 +1110,15 @@ def load_module(resource, recursive):
         f = os.path.basename(filename)
         # Load the module
         res_notext, extension = os.path.splitext(f)
-        e.tplog_info("Processing pkg [%s] mod [%s]" % (resource, res_notext))
+        e.endurox._ndrxlog_info("Processing pkg [%s] mod [%s]" % (resource, res_notext))
         if extension==".py" or extension==".pyc":
             if not res_notext in cur_pkg.modules:
                 # Get the code object...
-                e.tplog_debug("module=[%s]" % (filename))
+                e.endurox._ndrxlog_debug("module=[%s]" % (filename))
                 # Load the bytes
                 cur_pkg.modules[res_notext] = read_module(filename)
         else:
-            e.tplog_error("Module not embeddable: [%s%s] from [%s]" %
+            e.endurox._ndrxlog_error("Module not embeddable: [%s%s] from [%s]" %
                 (res_notext, extension, resource))
             if not M_ignore:
                 raise RuntimeError("Module not embeddable: [%s%s] from [%s]" %
@@ -1148,6 +1148,10 @@ parser.add_argument('-k', help='Keep the intermediate C file',
                     action='store_true', default=False)
 
 parser.add_argument('-n', help='Ignore unsupported resources, instead of fail', 
+                    action='store_true', default=False)
+
+# Used for build purposes, to track the changed modules automatically.
+parser.add_argument('-M', help='Resolve build dependencies', 
                     action='store_true', default=False)
 
 args = parser.parse_args()
@@ -1201,12 +1205,12 @@ elif c_compiler=="sunpro":
     c_flags=f"-xc99 -O2 -m64 -D_REENTRANT -erroff=E_INIT_DOES_NOT_FIT -erroff=E_EMPTY_DECLARATION {c_flags}"
     add_last=" -lpthread -ldl -lm"
 else:
-    e.tplog_error("Unsupported compiler ["+c_compiler+"]")
+    e.endurox._ndrxlog_error("Unsupported compiler ["+c_compiler+"]")
     raise RuntimeError("Unsupported compiler ["+c_compiler+"]")
 
 # Load main -> module name + bytecodes
 # args.infile compile...
-e.tplog_info(str(args.i))
+e.endurox._ndrxlog_info(str(args.i))
 
 try:
     #for source in args.m:
@@ -1238,7 +1242,7 @@ except SyntaxError:
 ################################################################################
 
 c_file = tempfile.NamedTemporaryFile(delete=False, suffix='.c', mode = "w")
-e.tplog_debug("Temporary file open: %s" % c_file.name)
+e.endurox._ndrxlog_debug("Temporary file open: %s" % c_file.name)
 
 try:
     #c_file.write("#define _POSIX_C_SOURCE 1\n")
@@ -1255,15 +1259,15 @@ try:
     c_file.write("#include <wchar.h>\n\n")
 
     gen_first(c_file)
-    e.tplog_info("Generate main")
+    e.endurox._ndrxlog_info("Generate main")
     gen_module_code(c_file, "main", "entry", M_main_code)
 
-    e.tplog_info("Generate main mods")
+    e.endurox._ndrxlog_info("Generate main mods")
     for m, mv in M_main_mods.items():
         # index the modules
         M_main_mods_flat[m] = gen_module_code(c_file, "mmod", m, mv)
 
-    e.tplog_info("Generate packages")
+    e.endurox._ndrxlog_info("Generate packages")
     for p, pv in M_packages.items():
         for m, mv in pv.modules.items():
             # if the one is module, the there is only single entry in items.
@@ -1309,11 +1313,11 @@ try:
         cmd = cmd+" -l"+shlib
 
     cmd = cmd + add_last
-    e.tplog_debug("Compiling with [%s]" % cmd)
+    e.endurox._ndrxlog_debug("Compiling with [%s]" % cmd)
     ret = os.system(cmd)
 
     if 0!=ret:
-        e.tplog_error("Build command [%s] failed with %d" % 
+        e.endurox._ndrxlog_error("Build command [%s] failed with %d" % 
             (cmd, ret))
         raise RuntimeError("Build command [%s] failed with %d" % 
             (cmd, ret))
