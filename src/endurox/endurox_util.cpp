@@ -86,14 +86,13 @@ expublic void ndrxpy_register_util(py::module &m)
                 //Load the results
                 for(el=parsed;el;el=el->next)
                 {
-                    std::vector<std::string> v;
-                    v.push_back(el->key);
+                    ret.emplace_back();
+                    ret.back().push_back(el->key);
+
                     if (NULL!=el->value)
                     {
-                        v.push_back(el->value);
+                        ret.back().push_back(el->value);
                     }
-                    //memcopy 2x?
-                    ret.push_back(v);
                 }
             }
             catch(const std::exception& e)
