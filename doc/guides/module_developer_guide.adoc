@@ -88,7 +88,7 @@ This section describes tasks to be performed on the given operating system&
 for getting required Python 3 version. Additional dependencies are being
 installed such as pip, wheel and sphinx.
 
-=== CentOS/RHEL/Oracle Linux 7.x, 8.x
+=== CentOS/RHEL/Oracle Linux 7.x
 
 To install the Python3 for RHEL system, use following command:
 
@@ -100,6 +100,18 @@ $ su - root
 
 --------------------------------------------------------------------------------
 
+=== CentOS/RHEL/Oracle Linux 8.x
+
+To install the Python3 for RHEL system, use following command:
+
+--------------------------------------------------------------------------------
+
+$ su - root
+
+# yum install python3 python3-devel python3-pip python3-distutils platform-python-devel
+
+--------------------------------------------------------------------------------
+
 === CentOS/RHEL/Oracle/Rocky Linux 9.x
 
 To install the Python3 for RHEL system, use following command:
@@ -108,7 +120,7 @@ To install the Python3 for RHEL system, use following command:
 
 $ su - root
 
-# yum install python3 python3-devel python3-pip
+# yum install python3 python3-devel python3-pip platform-python-devel
 
 --------------------------------------------------------------------------------
 
