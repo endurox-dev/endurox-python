@@ -1228,7 +1228,7 @@ add_last = ""
 system = platform.system()
 
 if c_compiler=="gcc" or c_compiler=="clang":
-    c_flags=f"-O2 -std=c99 -g {c_flags}"
+    c_flags=f"-O2 -std=c99 -g {c_flags} -Xlinker -export-dynamic"
     
     if system == "SunOS":
         add_last=" -lpthread -ldl -lm"
