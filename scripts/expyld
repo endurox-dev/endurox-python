@@ -1211,9 +1211,9 @@ ndrx_home = os.getenv("NDRX_HOME")
 if ndrx_home is None:
     ndrx_home = ""
 elif c_flags=="":
-    c_flags = f"-I {ndrx_home}"
+    c_flags = f"-I {ndrx_home}/include"
 else:
-    c_flags = f"{c_flags} -I {ndrx_home}"
+    c_flags = f"{c_flags} -I {ndrx_home}/include"
 
 # Get compiler id...
 # to configure it later.
