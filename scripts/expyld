@@ -388,13 +388,32 @@ out:
 static const char *get_code_bytes(const char *data, ssize_t dlen, ssize_t *olen)
 {
     const char *ret = NULL;
-    long magic = *(unsigned int *)data;
+    long magic;
     int hdr_size = 3;
+    int num = 1;
 
+
+    if (*(char *)&num == 1)
+    {
+        /* little endian */
+        magic = *(unsigned int *)data;
+    }
+    else
+    {
+        char *p = (char *)&magic;
+        int i;
+        magic=0;
+
+        for (i=0; i<4; i++)
+        {
+            p[sizeof(long)-4+i] = data[3-i];
+        }
+    }
+  
     if (magic != PyImport_GetMagicNumber())
     {
-        fprintf(stderr, "Invalid magic, expected %lx got %lx",
-            magic, PyImport_GetMagicNumber());\
+        fprintf(stderr, "Invalid magic, expected %lx got %lx\n",
+           magic, PyImport_GetMagicNumber());\
         goto out;
     }
 
@@ -428,6 +447,13 @@ static int load_main(void)
     maindict = PyModule_GetDict(mainmodule);
 
     data = get_code_bytes(ndrxpy_G_main_entry_0, ndrxpy_G_main_entry_0_len, &size);
+
+    if (NULL==data)
+    {
+        ret=-1;
+        goto out;
+    }
+
     pycode = (PyCodeObject *) PyMarshal_ReadObjectFromString(data, size);
 
     if (pycode == NULL || !PyCode_Check(pycode))
@@ -508,6 +534,12 @@ PyObject* load_module(PyObject* self, PyObject* args) {
     }
 
     data = get_code_bytes(mdata, dlen, &size);
+
+    if (NULL==data)
+    {
+        goto out;
+    }
+
     pycode = (PyCodeObject *) PyMarshal_ReadObjectFromString(data, size);
 
     if (pycode == NULL || !PyCode_Check(pycode))
