@@ -117,7 +117,10 @@ endif ()
 ex_osver()
 ex_cpuarch()
 
-SET(CMAKE_CXX_FLAGS "-ggdb ${CMAKE_CXX_FLAGS}")
+if (NOT "${CMAKE_C_COMPILER_ID}" STREQUAL "XL")
+    SET(CMAKE_CXX_FLAGS "-ggdb ${CMAKE_CXX_FLAGS}")
+endif()
+
 set (CMAKE_CXX_STANDARD 11)
 set (CMAKE_C_STANDARD 11)
 set (CMAKE_C_STANDARD_REQUIRED 99)
@@ -126,10 +129,10 @@ set (CMAKE_C_STANDARD_REQUIRED 99)
 if (DEFINED ENV{NDRXPY_SANITIZE})
 	SET(CMAKE_C_FLAGS "-fsanitize=address -fno-omit-frame-pointer -O0 -ggdb ${CMAKE_C_FLAGS}")
 	SET(CMAKE_CXX_FLAGS "-fsanitize=address -fno-omit-frame-pointer -O0 -ggdb ${CMAKE_CXX_FLAGS}")
-ELSE()
+else()
     # TODO: Solaris? AIX? Compilers?
-    SET ( CMAKE_CXX_FLAGS "-O3 ${CMAKE_CXX_FLAGS}")
-ENDIF()
+    set ( CMAKE_CXX_FLAGS "-O3 ${CMAKE_CXX_FLAGS}")
+endif()
 
 if(CMAKE_OS_NAME STREQUAL "AIX")
 

@@ -40,7 +40,6 @@
 #include <xa.h>
 #include <ubf.h>
 #include <tmenv.h>
-#include <sys_unix.h>
 #undef _
 
 #include "exceptions.h"
@@ -52,6 +51,11 @@
 
 #include <functional>
 #include <map>
+
+#ifdef EX_OS_AIX
+#undef __MULTILOCALE_API
+#endif
+#include <sys_unix.h>
 
 /*---------------------------Externs------------------------------------*/
 /*---------------------------Macros-------------------------------------*/

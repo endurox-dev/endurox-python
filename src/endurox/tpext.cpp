@@ -51,6 +51,10 @@
 #include <functional>
 #include <map>
 #include <mutex>
+
+#ifdef EX_OS_AIX
+#undef __MULTILOCALE_API
+#endif
 #include <sys_unix.h>
 
 /*---------------------------Externs------------------------------------*/
