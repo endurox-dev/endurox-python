@@ -5,6 +5,7 @@ SET(CMAKE_BUILD_TYPE Debug)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "/usr/share/endurox/cmake")
 
 include(ex_osver)
+include(ex_comp)
 
 ################################################################################
 # Process any required includes
@@ -117,61 +118,12 @@ endif ()
 ex_osver()
 ex_cpuarch()
 
-if (NOT "${CMAKE_C_COMPILER_ID}" STREQUAL "XL")
-    SET(CMAKE_CXX_FLAGS "-ggdb ${CMAKE_CXX_FLAGS}")
-endif()
+# configure compilers and Enduro/X standard way
+ex_comp_settings()
 
 set (CMAKE_CXX_STANDARD 11)
 set (CMAKE_C_STANDARD 11)
 set (CMAKE_C_STANDARD_REQUIRED 99)
-
-# run with export LD_PRELOAD=$(gcc -print-file-name=libasan.so)
-if (DEFINED ENV{NDRXPY_SANITIZE})
-	SET(CMAKE_C_FLAGS "-fsanitize=address -fno-omit-frame-pointer -O0 -ggdb ${CMAKE_C_FLAGS}")
-	SET(CMAKE_CXX_FLAGS "-fsanitize=address -fno-omit-frame-pointer -O0 -ggdb ${CMAKE_CXX_FLAGS}")
-else()
-    # TODO: Solaris? AIX? Compilers?
-    set ( CMAKE_CXX_FLAGS "-O3 ${CMAKE_CXX_FLAGS}")
-endif()
-
-if(CMAKE_OS_NAME STREQUAL "AIX")
-
-    # Required as shared libs on AIX needs dependencies to be set (i.e. python shared lib)
-    # and starting from 3.12 cmake, it has the Python package.
-    if(${CMAKE_VERSION} VERSION_LESS "3.12.0")
-        message( FATAL_ERROR "CMake version 3.12 or greater is required, to find the Python3" )
-    endif()
-
-    if(CMAKE_C_COMPILER_ID STREQUAL "GNU")
-        message("GNU compiler")
-        set ( CMAKE_C_FLAGS "-D_SEM_SEMUN_UNDEFINED -D_MSGQSUPPORT -D_THREAD_SAFE -pthread -maix64 -Wl,-brtl,-bexpall,-berok ${CMAKE_C_FLAGS}")
-        set ( CMAKE_CXX_FLAGS "-D_SEM_SEMUN_UNDEFINED -D_MSGQSUPPORT -D_THREAD_SAFE -pthread -maix64 -Wl,-brtl,-bexpall,-berok ${CMAKE_CXX_FLAGS}")
-    elseif ("${CMAKE_C_COMPILER_ID}" STREQUAL "Clang")
-        message("Clang Open XL compiler")
-        set ( CMAKE_C_FLAGS "-D_SEM_SEMUN_UNDEFINED -D_MSGQSUPPORT -ftls-model=global-dynamic -D_THREAD_SAFE -pthread -brtl -bexpall -berok -Wno-unused-command-line-argument ${CMAKE_C_FLAGS}")
-        set ( CMAKE_CXX_FLAGS "-D_SEM_SEMUN_UNDEFINED -D_MSGQSUPPORT -ftls-model=global-dynamic -D_THREAD_SAFE -pthread -brtl -bexpall -berok -Wno-unused-command-line-argument ${CMAKE_CXX_FLAGS}")
-        set ( CMAKE_SHARED_LINKER_FLAGS "-shared -Wl,-G")
-    elseif ("${CMAKE_C_COMPILER_ID}" STREQUAL "XL")
-        message("XL compiler")
-        set ( CMAKE_C_FLAGS " -D_MSGQSUPPORT -D_SEM_SEMUN_UNDEFINED -D_THREAD_SAFE ")
-        set ( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -qwarn64 -qpic -bexpfull -b64")
-        set ( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -brtl -qtls -q64")
-        set ( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -qsuppress=1506-997 -qprocimported=setjmp")
-        set ( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -qsuppress=1506-747")
-        set ( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -qsuppress=1506-742")
-        set ( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -qsuppress=1506-743")
-        set ( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -qsuppress=1506-744")
-        set ( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -qsuppress=1506-745")
-        set ( CMAKE_SHARED_LINKER_FLAGS "-G")
-        SET ( CMAKE_CXX_FLAGS "-D_MSGQSUPPORT -O2 -qtls -q64 -b64 -qsuppress=1500-030 -qnoinline ${CMAKE_CXX_FLAGS}" CACHE STRING "compile flags" FORCE)
-
-        if (NOT DEFINE_RELEASEBUILD)
-                message("XL compiler: with -g (debug symbols...)")
-                set ( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g")
-                set ( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")
-        endif()
-    endif()
-endif()
 
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(ATMI REQUIRED atmisrvinteg)
@@ -184,7 +136,7 @@ SET(SOURCES
 	"${SOURCE_DIR}/endurox.cpp"
 	"${SOURCE_DIR}/endurox_srv.cpp"
 	"${SOURCE_DIR}/endurox_atmi.cpp"
-    "${SOURCE_DIR}/endurox_util.cpp"
+	"${SOURCE_DIR}/endurox_util.cpp"
 	"${SOURCE_DIR}/atmibuf.cpp"
 	"${SOURCE_DIR}/bufconv.cpp"
 	"${SOURCE_DIR}/bufconv_view.cpp"
@@ -234,6 +186,7 @@ string(TOLOWER ${PROJECT_NAME} PROJECT_NAME_LO)
 #
 set(CPACK_PACKAGE_FILE_NAME ${PROJECT_NAME_LO}-${NDRXPY_VERSION}-${RELEASE}.${LSB_RELEASE_OUTPUT_OS}${LSB_RELEASE_OUTPUT_VER}_${CMAKE_CXX_COMPILER_ID}_cp${PY_MAJOR}${PY_MINOR}.${EX_CPU_ARCH}.whl.zip)
 
+string(TOLOWER ${CPACK_PACKAGE_FILE_NAME}  CPACK_PACKAGE_FILE_NAME)
 write_file("package_name.tmp" ${CPACK_PACKAGE_FILE_NAME})
 
 message("Package name ${CPACK_PACKAGE_FILE_NAME} ${EX_CPU_ARCH}")
