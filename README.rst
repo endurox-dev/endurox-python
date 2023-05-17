@@ -13,7 +13,7 @@ language. Module includes such features as:
 - Receive response even when the service returns TPFAIL (instead of exception)
 - Enduro/X ATMI server extensions, such as periodic callbacks and resource polling
 - Logging API.
-- Simple, but yet powerful Python to Executable linker tool (named `expyld`), which pre-compiles and embeds pure Python packages/modules into binary memory. During the runtime these packages/modules are resolved directly from the process memory, i.e. no temp files are used.
+- Simple, but yet powerful Python to Executable linker tool (named `expyld`), which pre-compiles and embeds pure Python packages/modules into executable file. During the runtime these packages/modules are resolved directly from the process memory, i.e. no temp files are used.
 - See `documentation <https://www.endurox.org/dokuwiki>`_ for full API description.
 
 Python module for Enduro/X is written in C++11 and `pybind11 <https://github.com/pybind/pybind11>`_.
