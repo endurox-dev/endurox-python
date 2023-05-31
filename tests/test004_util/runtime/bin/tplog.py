@@ -2,7 +2,8 @@ import unittest
 import endurox as e
 import os
 import time
-
+import subprocess
+import glob
 
 #
 # Check text exists in file
@@ -158,6 +159,22 @@ class TestTplog(unittest.TestCase):
         e.tplogconfig(e.LOG_FACILITY_TP|e.TPLOGQI_GET_NDRX, e.log_error, "", None, None)
         info = (e.tplogqinfo(1, e.TPLOGQI_GET_TP) >> 24)
         self.assertEqual(info,e.log_error)
+
+    # check ulog results....
+    def test_userlog(self):
+
+        e.userlog("HELLO WORLD TO ULOG")
+        # Define the command
+        command = ['grep', 'HELLO WORLD TO ULOG']
+        # search all ULOG files
+        command = command+glob.glob('%s/ULOG*' % e.tuxgetenv('NDRX_ULOG'))
+
+        # Run the command
+        result = subprocess.run(command, capture_output=True, text=True)
+
+        self.assertEqual(result.returncode, 0)
+        # Check the output
+        self.assertIn('HELLO WORLD TO ULOG', result.stdout)
 
 if __name__ == '__main__':
     unittest.main()

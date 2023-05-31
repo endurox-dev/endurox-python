@@ -857,6 +857,22 @@ expublic void ndrxpy_register_tplog(py::module &m)
          )pbdoc",
         py::arg("lev"), py::arg("title"), py::arg("data"));
 
+    m.def(
+        "userlog",
+        [](const char *message)
+        {
+            py::gil_scoped_release release;
+            userlog(const_cast<char *>(message));
+        },
+        R"pbdoc(
+        Print message to ULOG.
+
+        Parameters
+        ----------
+        message : str
+            Message to log.
+        )pbdoc", py::arg("message"));
+
 }
 
 /* vim: set ts=4 sw=4 et smartindent: */

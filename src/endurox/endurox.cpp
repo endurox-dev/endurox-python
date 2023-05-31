@@ -519,6 +519,7 @@ Python3 bindings for writing Enduro/X clients and servers
         tplogfpget
         tplogfpunlock
         tplogprintubf
+        userlog
         Bfldtype
         Bfldno
         Bmkfldid
