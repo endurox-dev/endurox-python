@@ -59,7 +59,7 @@
 /*---------------------------Statics------------------------------------*/
 
 /** Use UbfDict() by default */
-expublic thread_local bool ndrxpy_G_ubfdict_enable = true;
+expublic __thread bool ndrxpy_G_ubfdict_enable = true;
 
 /** Ensure that field is empty when setting UbfDict() field occ
  * i.e. if setting single field or field from the list
@@ -67,7 +67,7 @@ expublic thread_local bool ndrxpy_G_ubfdict_enable = true;
  * Default is false, meaning that non changed occurrances will be preserved
  * in the buffer.
  */
-expublic thread_local bool ndrxpy_G_ubfdict_delonset = false;
+expublic __thread bool ndrxpy_G_ubfdict_delonset = false;
 
 /*---------------------------Prototypes---------------------------------*/
 namespace py = pybind11;
