@@ -4,6 +4,7 @@ import os
 import time
 import subprocess
 import glob
+from subprocess import PIPE
 
 #
 # Check text exists in file
@@ -170,11 +171,11 @@ class TestTplog(unittest.TestCase):
         command = command+glob.glob('%s/ULOG*' % e.tuxgetenv('NDRX_ULOG'))
 
         # Run the command
-        result = subprocess.run(command, capture_output=True, text=True)
+        result = subprocess.run(command, stdout=PIPE, stderr=PIPE)
 
         self.assertEqual(result.returncode, 0)
         # Check the output
-        self.assertIn('HELLO WORLD TO ULOG', result.stdout)
+        self.assertIn('HELLO WORLD TO ULOG', result.stdout.decode('utf-8'))
 
 if __name__ == '__main__':
     unittest.main()
