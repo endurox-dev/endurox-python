@@ -62,7 +62,7 @@
 			The maximum time while process can hang in 'starting' state i.e.
 			have not completed initialization, sec X <= 0 = disabled  
 		-->
-		<start_max>10</start_max>
+		<start_max>60</start_max>
 		
 		<!--
 			Ping server in every X seconds (step is <sanity>).
