@@ -1269,7 +1269,7 @@ if c_compiler=="gcc" or c_compiler=="clang":
         add_last=" -lutil -lpthread -lm -ldl"
 
 elif c_compiler=="xlc": 
-    c_flags=f"-O2 -qtls -q64 -b64 -D_THREAD_SAFE -lpthread {c_flags}"
+    c_flags=f"-O2 -qlanglvl=extc99 -qtls -q64 -b64 -D_THREAD_SAFE -brtl -lpthread {c_flags}"
 elif c_compiler=="sunpro":
     c_flags=f"-xc99 -O2 -m64 -D_REENTRANT -erroff=E_INIT_DOES_NOT_FIT -erroff=E_EMPTY_DECLARATION {c_flags}"
     add_last=" -lpthread -ldl -lm"
