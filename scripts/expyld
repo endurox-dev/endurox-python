@@ -43,6 +43,7 @@ import tempfile
 import sysconfig
 import re
 import platform
+import subprocess
 
 #
 # Single package entry
@@ -120,7 +121,7 @@ M_keep = False
 M_depsonly = False
 
 def get_cc_id(cc, c_flags):
-    """Get C compiler id
+    """Guess the C compiler id
 
     Parameters
     ----------
@@ -137,6 +138,22 @@ def get_cc_id(cc, c_flags):
 
     test_file_name = None
     out_file_name = None
+
+    # check GCC firstly, having issues on AIX to build with out any special flags...
+    # and also GCC is most popular compiler used out there
+
+    gcc_output=""
+    ret=0
+    try:
+        proc = subprocess.run([cc, "--version"], capture_output=True, text=True, check=True)
+        gcc_output = proc.stdout
+        ret = proc.returncode
+    except Exception as ex:
+        pass
+    
+    # seems like 'gcc (' appears in many versions of gcc
+    if "gcc (" in gcc_output and ret==0:
+        return "gcc"
 
     try:
         test_file_name = tempfile.NamedTemporaryFile(delete=False, suffix='.c',
@@ -185,7 +202,7 @@ int main(int argc, char **argv)
             raise RuntimeError("Failed to invoke compiler")
 
         # exit status?
-        process =  os.popen(out_file_name.name)
+        process = os.popen(out_file_name.name)
         comp = process.read()
         ret=process.close()
         
@@ -1264,6 +1281,9 @@ if c_compiler=="gcc" or c_compiler=="clang":
     if system == "SunOS":
         c_flags=f"-O2 -std=c99 -g {c_flags}"
         add_last=" -lpthread -ldl -lm"
+    elif system == "AIX":
+        c_flags=f"-O2 -std=c99 -g {c_flags} -Wl,-brtl -maix64"
+        add_last=" -lpthread -lm -ldl"
     else:
         c_flags=f"-O2 -std=c99 -g {c_flags} -Xlinker -export-dynamic"
         add_last=" -lutil -lpthread -lm -ldl"
