@@ -26,11 +26,11 @@ Binary wheel release can be downloaded from https://www.mavimax.com/downloads
 Mavimax provides binary builds for selected operating systems. The Python
 Wheel release files are packaged in ZIP files which are labeled according
 the release platform. ZIP file which contains original WHL file.
-Example of the ZIP file name: "endurox-python-8.0.1-1.oracle_solaris11_4_cp36_cp36m.x86_64.whl.zip".
+Example of the ZIP file name: "endurox-python-8.0.1-1.solaris11_cp36m.x86_64.whl.zip".
 
 The name encodes following data:
 
-- endurox-python-<version>-<release>.<os_ver>_<py_ver>_<py_abi>.<arch>.whl.zip
+- endurox-python-<version>-<release>.<os_ver>_<py_abi>.<arch>.whl.zip
 
 
 To install wheel release on target operating system use following commands:
