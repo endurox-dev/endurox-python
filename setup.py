@@ -90,6 +90,7 @@ class CMakeBuild(build_ext):
             os.path.dirname(self.get_ext_fullpath(ext.name)))
         cmake_args = ['-DCMAKE_LIBRARY_OUTPUT_DIRECTORY=' + extdir,
                       '-DPYTHON_EXECUTABLE=' + sys.executable,
+                      '-DPython3_EXECUTABLE=' + sys.executable,
                       '-DCMAKE_MODULE_PATH=' + self.cmake_module_path,
                       '-DNDRXPY_VERSION=' + NDRXPY_VERSION,]
 

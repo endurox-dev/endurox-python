@@ -4,19 +4,19 @@ Enduro/X Python Internal/External Developer Guide
 == Intro
 
 This document is for external and internal purposes of the 
-Enduro/X Python module developer. Document covers details about dependency 
-installation on target platform, how to build the module, preparing
+Enduro/X Python module developer. The document covers details about dependency 
+installation on the target platform, how to build the module, and how to prepare
 distribution binaries.
 
 Enduro/X Python module uses Pybind11 C\++ binding library and Enduro/X
 invocation code is written in C\+\+. The minimum language level is C++ 11.
 
-Build scripts also relay on "python3" binary (or symlink) which shall
+Build scripts also rely on "python3" binary (or symlink) which shall
 be in the *PATH*. This name is used for detecting the Python version,
 and this name is used in test scripts.
 
-Module documentation is built by Sphinx. The documentation by it self
-is embedded in the module, meaning that python interactive shell can
+Module documentation is built by Sphinx. The documentation by itself
+is embedded in the module, meaning that Python interactive shell can
 provide help.
 
 This document does not cover the Enduro/X Python API description.
@@ -30,11 +30,11 @@ For this purpose see:
 
 == Preparing system
 
-To build Enduro/X Python module, following dependencies:
+To build Enduro/X Python module, the following dependencies:
 
 - C++11 (or later) Compiler.
 
-- CMake, at-least version 3.1 or later
+- CMake, at least version 3.1 or later
 
 - pkg-config
 
@@ -56,7 +56,7 @@ This section lists details about Enduro/X Python module internals.
 
 === Module structure
 
-Enduro/X Python mode is based on native code binding. Due to fact that
+Enduro/X Python mode is based on native code binding. Due to the fact that
 Python loads shared libraries with *RTLD_LOCAL* flag, the consequent
 shared libraries loaded by Enduro/X code (XA libs) does not see the
 original libraries loaded by the Python. To overcome this problem
@@ -65,32 +65,32 @@ is automatically loaded with *RTLD_GLOBAL* flag at the "endurox" module init.
 
 === Build system
 
-Module uses CMake build scripts to perform C++ code builds. This allows
-module to utilize Enduro/X build scripts and perform advanced product
-configuration. CMake configuration and building is activated from *setup.py*
+The module uses CMake build scripts to perform C++ code builds. This allows
+the module to utilize Enduro/X build scripts and perform advanced product
+configuration. CMake configuration and building are activated from *setup.py*
 script.
 
 The generic CMake configuration may be started in the project root
-directory i.e. "$ cmake .". This will generate Makefiles in project directory
-and that shall be sufficient for IDEs such as Visual Studio Code to perform
+directory i.e. "$ cmake .". This will generate Makefiles in the project directory
+and that shall be sufficient for IDEs such as Visual Studio Code to
 perform full C++ code analysis and builds.
 
 When testing such code (edited from IDE), install it with the setuptools:
 "$ python3 setup.py install --user".
 
-When switching to fully Python controlled build, clean-up the project with:
-"$ python3 setup.py clean", as Python controlled builds uses different
+When switching to a fully Python-controlled build, clean-up the project with:
+"$ python3 setup.py clean", as Python-controlled builds use different
 directories for build outputs.
 
 == Installing Python 3
 
 This section describes tasks to be performed on the given operating system&
-for getting required Python 3 version. Additional dependencies are being
+for getting the required Python 3 version. Additional dependencies are being
 installed such as pip, wheel and sphinx.
 
 === CentOS/RHEL/Oracle Linux 7.x
 
-To install the Python3 for RHEL system, use following command:
+To install the Python3 for RHEL system, use the following command:
 
 --------------------------------------------------------------------------------
 
@@ -102,7 +102,7 @@ $ su - root
 
 === CentOS/RHEL/Oracle Linux 8.x
 
-To install the Python3 for RHEL system, use following command:
+To install the Python3 for RHEL system, use the following command:
 
 --------------------------------------------------------------------------------
 
@@ -114,7 +114,7 @@ $ su - root
 
 === CentOS/RHEL/Oracle/Rocky Linux 9.x
 
-To install the Python3 for RHEL system, use following command:
+To install the Python3 for RHEL system, use the following command:
 
 --------------------------------------------------------------------------------
 
@@ -197,19 +197,19 @@ headers for integration testing.
 
 === Oracle Solaris
 
-Python 3.6+ is not available from CSW, only option is to build Python 3.6 from
+Python 3.6+ is not available from CSW, the only option is to build Python 3.6 from
 the sources. CPython can be built on Solaris OS by the:
 
 - Oracle Solaris Studio compiler 
 
 - Or GCC compiler.
 
-To perform the build, please see previous section.
+To perform the build, please see the previous section.
 
 However when building Enduro/X Python module, only GCC compiler is suitable,
 as Solaris Studio does not support *cxx_user_literals* syntax.
 
-Prior building Python on Solaris, following environment must be prepared:
+Before building Python on Solaris, the following environment must be prepared:
 
 --------------------------------------------------------------------------------
 
@@ -231,7 +231,7 @@ $ su - root
 # /opt/csw/bin/pkgutil -y -i pkgconfig
 --------------------------------------------------------------------------------
 
-Following environment variables must be set prior running *setuptools* or *pip3*:
+The following environment variables must be set prior to running *setuptools* or *pip3*:
 
 --------------------------------------------------------------------------------
 $ export CXX=g++
@@ -254,7 +254,7 @@ $ export LD_LIBRARY_PATH=/usr/lib64:/usr/lib/64:/opt/csw/lib/64
 --------------------------------------------------------------------------------
 
 otherwise expect that endurox-python module exceptions will not work and
-will generate such are errors as:
+will generate such errors as:
 
 --------------------------------------------------------------------------------
 ...
@@ -265,18 +265,18 @@ terminate called after throwing an instance of 'atmi_exception'
 
 IBM AIX v7.3 ships with Python3 which is built with xlC compiler suite. 
 For AIX v7.2, Linux toolbox version of Python3 is available. 
-In case of Linux toolbox, Python3 3 is built with GCC.
+In the case of Linux toolbox, Python3 3 is built with GCC.
 
 As Enduro/X Python uses C\++ Exceptions, the stdc++ library must match with the
 compiler which is used for building Python3, otherwise exceptions will not work
 and core dumps will be generated.
 
-So it is recommended that compiler is matched with Python compiler.
+So it is recommended that the compiler is matched with the Python compiler.
 
-- In case of AIX 7.3, build Enduro/X Python with xlC
-- In case of AIX 7.2 toolbox version, build Enduro/X Python with GCC
+- In the case of AIX 7.3, build Enduro/X Python with xlC
+- In the case of AIX 7.2 toolbox version, build Enduro/X Python with GCC
 
-To install Linux toolbox version of the Python3 on AIX use following commands:
+To install the Linux toolbox version of Python3 on AIX use the following commands:
 
 
 --------------------------------------------------------------------------------
@@ -289,7 +289,7 @@ $ su - root
 
 ==== Building endurox-python on IBM AIX (xlC)
 
-To build Python module, C\+\+11 standard is required to be supported by compiler.
+To build Python module, C\+\+11 standard is required to be supported by the compiler.
 If using IBM xlC compiler suite, then "xlclang\+\+" shall be used as a C++ compiler.
 
 For installing xlC compiler, please follow the instructions from the compiler
@@ -323,9 +323,9 @@ After this configuration standard package build/install will work.
 
 === Installing Python 3 libraries
 
-Once Python is installed on target operating system, additionally *sphinx* and
-*wheel* packages shall be installed. Installation would be done with *pip*
-package manager. Usually the name of the command is *pip* or *pip3*, depending
+Once Python is installed on the target operating system, install the *sphinx* and
+*wheel* packages. Installation would be done with *pip*
+package manager. Usually, the name of the command is *pip* or *pip3*, depending
 on the operating system. 
 
 --------------------------------------------------------------------------------
@@ -342,8 +342,8 @@ $ python3 -m pip ...
 
 == Building the module
 
-This section describes the Enduro/X Python build/install procedures, as
-well how to perform the testing.
+This section describes the Enduro/X Python build/install procedures,
+as well as how to perform the testing.
 
 === Getting the source
 
@@ -353,7 +353,7 @@ $ git clone --recursive https://github.com/endurox-dev/endurox-python
 
 --------------------------------------------------------------------------------
 
-Other option is to download the official sources release at https://www.mavimax.com/downloads
+Another option is to download the official sources release at https://www.mavimax.com/downloads
 
 --------------------------------------------------------------------------------
 
@@ -363,7 +363,7 @@ $ cd endurox-8.0.1
 
 --------------------------------------------------------------------------------
 
-In document further it assumed that sources are located in *endurox-python* directory.
+In the document, it assumed that sources are located in *endurox-python* directory.
 
 === Building and installing module with setuptools
 
@@ -387,11 +387,11 @@ $ pip3 install .  --user
 
 --------------------------------------------------------------------------------
 
-In case if Enduro/X Core is not installed system wide, custom Enduro/X Core
-installation path may be specified in following environment variables prior
-running the pip or setup.py installation instructions..
+In case Enduro/X Core is not installed system-wide, a custom Enduro/X Core
+installation path may be specified in the following environment variables
+(before running the pip or setup.py installation instructions).
 
-This example specified custom installation path to */usr/local*:
+This example specified a custom installation path to */usr/local*:
 
 --------------------------------------------------------------------------------
 
@@ -418,10 +418,9 @@ $ python3 ./setup.py clean
 
 --------------------------------------------------------------------------------
 
-
 === Building documentation
 
-Documentation shall be built after the packages are installed for user or system
+Documentation shall be built after the packages are installed for the user or system
 wide.
 
 --------------------------------------------------------------------------------
@@ -433,7 +432,7 @@ $ make html
 --------------------------------------------------------------------------------
 
 HTML pages are unloaded in "_build/html" directory. Optionally user guides
-and mapages can be built (in case if asciidoc is installed).
+and mapages can be built (in case asciidoc is installed).
 
 --------------------------------------------------------------------------------
 
@@ -470,7 +469,7 @@ Distribution files are located in *endurox-python/dist* directory.
 === Testing
 
 Enduro/X Python module contains unit/integration tests. Tests are executed
-by following command:
+by the following command:
 
 --------------------------------------------------------------------------------
 
@@ -498,8 +497,8 @@ $ pip3 install cx_oracle --user
 Database configuration (users, environment variables) are configured as part
 of the 
 building_guide(guides)(Enduro/X Building Guide, Enduro/X basic Environment configuration for HOME directory).
-Once the Oracle environment is configured, test database table must be created.
-that could be done in following way (assuming that ~/ndrx_home is properly set):
+Once the Oracle environment is configured, a test database table must be created.
+that could be done in the following way (assuming that ~/ndrx_home is properly set):
 
 --------------------------------------------------------------------------------
 
@@ -525,13 +524,91 @@ $ ./run.sh
 
 --------------------------------------------------------------------------------
 
+== Troubleshooting
+
+=== Different Python versions used for Python code and C++ code build
+
+In case if after the build/install steps, Enduro/X package does fail with
+error: *ModuleNotFoundError: No module named 'endurox.endurox'*, for example:
+
+--------------------------------------------------------------------------------
+
+$ python3
+
+>>> import endurox as e
+Traceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+  File "/Users/user1/Library/Python/3.11/lib/python/site-packages/endurox-8.0.4-py3.11-macosx-13-arm64.egg/endurox/__init__.py", line 13, in <module>
+    from .endurox import *
+ModuleNotFoundError: No module named 'endurox.endurox'
+
+--------------------------------------------------------------------------------
+
+Verify that C++ shared library is built with the proper Python version. That can
+be checked by inspecting the module install location:
+
+--------------------------------------------------------------------------------
+
+$ /Users/user1/Library/Python/3.11/lib/python/site-packages/endurox-8.0.4-py3.11-macosx-13-arm64.egg/endurox/
+
+total 2472
+-rw-r--r--  1 user1  staff     1194 Dec 10 01:37 __init__.py
+drwxr-xr-x  4 user1  staff      128 Dec 10 01:37 __pycache__
+-rwxr-xr-x  1 user1  staff  1229024 Dec 10 01:37 endurox.cpython-312-darwin.so
+-rw-r--r--  1 user1  staff    25861 Dec 10 01:37 ubfdict.py
+
+--------------------------------------------------------------------------------
+
+Compare the Python version in the shared library name: *endurox.cpython-312-darwin.so*
+which corresponds to version 3.12 and module install path *ndurox-8.0.4-py3.11-macosx-13-arm64.egg*,
+which suggests that Python code is built and installed with 3.11 version. To work
+correctly, these versions must match the compiler version from which the module is
+expected to work.
+
+The issue can be fixed by:
+
+- Either masking or uninstalling one of the Python versions, which are not expected to be used;
+
+- Update *CMakeLists.txt* of the Enduro/X for Python package, with replacing
+section for Python executable detection:
+
+--------------------------------------------------------------------------------
+
+if(${CMAKE_VERSION} VERSION_EQUAL "3.12.0" OR ${CMAKE_VERSION} VERSION_GREATER "3.12.0")
+    # Find the python...
+    find_package (Python3 COMPONENTS Development Interpreter)
+else()
+    set(Python3_EXECUTABLE "python3")
+endif()
+
+--------------------------------------------------------------------------------
+
+with hard-coding the binary name, for example:
+
+--------------------------------------------------------------------------------
+
+#if(${CMAKE_VERSION} VERSION_EQUAL "3.12.0" OR ${CMAKE_VERSION} VERSION_GREATER "3.12.0")
+    # Find the python...
+#    find_package (Python3 COMPONENTS Development Interpreter)
+#else()
+    set(Python3_EXECUTABLE "python3.11")
+#endif()
+
+--------------------------------------------------------------------------------
+
+However this normally shall not be done, and it is expected that CMake would
+properly resolve the Python version (having the CMake above the 3.12). Also,
+note that at the build/install time *setup.py*, does pass the current
+Python binary name to the CMake.
+
+After any of the above fixes, perform the clean and build/install steps again.
 
 == Conclusions
 
 This instruction showed how to perform common tasks, starting from module
-build, installation and completing it with the module testing. The given information
-shall be enough to start to dig into module development details. Also document can
-help to prepare module for system for which official build is not available or Python 3
+build, and installation and completing it with the module testing. The given information
+shall be enough to start to dig into module development details. Also, document can
+help to prepare module for systems for which the official build is not available or Python 3
 is not available.
 
 :numbered!:
