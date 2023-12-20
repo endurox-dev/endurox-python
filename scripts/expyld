@@ -1284,6 +1284,9 @@ if c_compiler=="gcc" or c_compiler=="clang":
     elif system == "AIX":
         c_flags=f"-O2 -std=c99 -g {c_flags} -Wl,-brtl -maix64"
         add_last=" -lpthread -lm -ldl"
+    elif system == "Darwin":
+        c_flags=f"-O2 -std=c99 -g {c_flags} -Xlinker"
+        add_last=" -lutil -lpthread -lm -ldl"
     else:
         c_flags=f"-O2 -std=c99 -g {c_flags} -Xlinker -export-dynamic"
         add_last=" -lutil -lpthread -lm -ldl"
