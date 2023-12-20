@@ -1348,7 +1348,6 @@ try:
     c_file.write("#include <marshal.h>\n")
     c_file.write("#include <object.h>\n")
     c_file.write("#include <compile.h>\n")
-    c_file.write("#include <eval.h>\n")
     c_file.write("#include <wchar.h>\n\n")
 
     gen_first(c_file)
