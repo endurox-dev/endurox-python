@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/opt/homebrew/opt/python@3.11/bin/python3.11
 ##
 ## @brief Enduro/X Limited Python binary Linker to stand-alone executable
 ##  This linker does not support some of the pkgutil operations, such as
@@ -672,16 +672,46 @@ static void free_argv_wchar(int argc, wchar_t **argv)
  */
 int main(int argc, char **argv)
 {
+    int ret=0;
     wchar_t *prognm = cvt_charptr_wchar_ptr(argv[0]);
     wchar_t **argvw = cvt_argv_wchar_ptr(argc, argv);
 
+#if PY_VERSION_HEX >= 0x020B0000
+    PyConfig config;
+    PyStatus status;
+#endif
+
     PyImport_AppendInittab("embedded", &PyInit_embedded);
 
+#if PY_VERSION_HEX >= 0x020B0000
+
+    PyConfig_InitPythonConfig(&config);
+
+    status = PyConfig_SetBytesArgv(&config, argc, argv);
+    if (PyStatus_Exception(status))
+    {
+        PyErr_Print();
+        PyConfig_Clear(&config);
+        ret=-1;
+    }
+
+    status = Py_InitializeFromConfig(&config);
+    if (PyStatus_Exception(status))
+    {
+        PyErr_Print();
+        PyConfig_Clear(&config);
+        ret=-1;
+    }
+
+    PyConfig_Clear(&config);
+
+#else
     Py_SetProgramName(prognm);
     Py_Initialize();
     PySys_SetArgv(argc, argvw);
+#endif
 
-    int ret = PyRun_SimpleString("\
+    ret = PyRun_SimpleString("\
 import embedded, sys\n\
 class Importer:\n\
     def find_module(self, fullpath, path=None):\n\
@@ -697,6 +727,8 @@ sys.meta_path.append(Importer())\n\
     }
 
     ret = load_main();
+
+out:
 
     if (NULL!=prognm)
     {
