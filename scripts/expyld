@@ -676,14 +676,16 @@ int main(int argc, char **argv)
     wchar_t *prognm = cvt_charptr_wchar_ptr(argv[0]);
     wchar_t **argvw = cvt_argv_wchar_ptr(argc, argv);
 
-#if PY_VERSION_HEX >= 0x020B0000
+/* 3.11+ */
+#if PY_VERSION_HEX >= 0x030B0000
     PyConfig config;
     PyStatus status;
 #endif
 
     PyImport_AppendInittab("embedded", &PyInit_embedded);
 
-#if PY_VERSION_HEX >= 0x020B0000
+/* 3.11+ */
+#if PY_VERSION_HEX >= 0x030B0000
 
     PyConfig_InitPythonConfig(&config);
 
