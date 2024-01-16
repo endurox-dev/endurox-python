@@ -23,12 +23,12 @@ Python module for Enduro/X is written in C++11 and `pybind11 <https://github.com
 Supported platforms
 -------------------
 
-Module is supported all platforms where Enduro/X runs, Python3 and C++11 is available.
+The module is supported by all platforms where Enduro/X runs, Python3 and C++11 are available.
 
 Installation process
 --------------------
 
-The following packages must be installed prior to installing Enduro/X Python module from sources:
+The following packages must be installed before installing the Enduro/X Python module from sources:
 
 - Enduro/X Core (binary downloads here https://www.mavimax.com) starting from version 8.0.6
 - pkg-config
@@ -41,7 +41,7 @@ To build and install `endurox`, clone or download this repository and then, from
 
     $ python3 ./setup.py install --user
 
-Or if `pip3` is available, install in following way:
+Or if `pip3` is available, install it in the following way:
 
 .. code:: bash
 
