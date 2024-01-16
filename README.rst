@@ -3,20 +3,22 @@ Enduro/X Python3 module
 =======================
 
 Python module for Enduro/X offers complete ATMI API access from the Python3 programming
-language. Module includes such features as:
+language. The module includes such features as:
 
 - A multi-threaded server
-- Synchronous, asynchronous, conversational, event based and notification IPC APIs
-- Support for UBF (emulation of Tuxedo FML32, i.e. binary coded key/value buffer), NULL, STRING, CARRAY, VIEW (C structures) and JSON buffers
+- Synchronous, asynchronous, conversational, event-based and notification IPC APIs
+- Support for UBF (emulation of Tuxedo FML32, i.e. binary coded key/value buffer), NULL, STRING, CARRAY, VIEW (C structures), and JSON buffers
 - Support for nested UBF buffers with PTR (pointer to other XATMI buffers) and VIEW support
-- Dictionary like interface for UBF, having zero marshaling when client/server sends/receives UBF buffers, meaning ultra fast processing times, even for large data. When bufers are exchanged between processes, only few memcpy() operation are performed between processes and OS kernel, as for UBF there is no serialization and when using UbfDict() interface, only requested fields from memory are exchanged with the Python VM uppon get/set access.
-- Receive response even when the service returns TPFAIL (instead of exception)
+- Dictionary like interface for UBF, having zero marshaling when client/server sends/receives UBF buffers, meaning ultra-fast processing times, even for large data. When buffers are exchanged between processes, only a few memcpy() operations are performed between processes and the OS kernel, as for UBF there is no serialization and when using UbfDict() interface, only requested fields from memory are exchanged with the Python VM upon get/set access.
+- Receive a response even when the service returns TPFAIL (instead of exception)
 - Enduro/X ATMI server extensions, such as periodic callbacks and resource polling
 - Logging API.
-- Simple, but yet powerful Python to Executable linker tool (named `expyld`), which pre-compiles and embeds pure Python packages/modules into executable file. During the runtime these packages/modules are resolved directly from the process memory, i.e. no temp files are used.
+- Simple, but yet powerful Python to Executable linker tool (named `expyld`), which pre-compiles and embeds pure Python packages/modules into executable files. During the runtime these packages/modules are resolved directly from the process memory, i.e. no temp files are used.
 - See `documentation <https://www.endurox.org/dokuwiki>`_ for full API description.
 
 Python module for Enduro/X is written in C++11 and `pybind11 <https://github.com/pybind/pybind11>`_.
+
+
 
 Supported platforms
 -------------------
@@ -26,7 +28,7 @@ Module is supported all platforms where Enduro/X runs, Python3 and C++11 is avai
 Installation process
 --------------------
 
-Following packages must be installed prior installing Enduro/X Python module from sources:
+The following packages must be installed prior to installing Enduro/X Python module from sources:
 
 - Enduro/X Core (binary downloads here https://www.mavimax.com) starting from version 8.0.6
 - pkg-config
@@ -337,14 +339,14 @@ Client process example:
     e.tpclose()
     e.tpterm()
 
-When running Enduro/X client which must participate in global transaction, CC tag shall be set
-in environment prior running the client script:
+When running the Enduro/X client which must participate in global transaction, CC tag shall be set
+in the environment before running the client script:
 
 .. code:: bash
 
     $ NDRX_CCTAG="ORA1" ./dbclient.py
 
-When running ATMI server in global transaction, the <cctag> XML tag can be used to assign the DB
+When running ATMI server in the global transaction, the <cctag> XML tag can be used to assign the DB
 configuration to it:
 
 .. code:: xml
@@ -358,7 +360,7 @@ configuration to it:
     </server>
 
 
-For a multi-threaded server new connections for each thread must be created in 
+For a multi-threaded server, new connections for each thread must be created in 
 ``tpsvrthrinit()`` (instead of ``tpsvrinit()``) and stored in thread-local storage of ``threading.local()``.
 
 **app.ini** settings for the Oracle DB:
@@ -373,7 +375,7 @@ For a multi-threaded server new connections for each thread must be created in
     NDRX_XA_RMLIB=libclntsh.so
     NDRX_XA_LAZY_INIT=1
 
-Additionally Enduro/X transaction manager must be configured to run global transactions, e.g.:
+Additionally, Enduro/X transaction manager must be configured to run global transactions, e.g.:
 
 .. code::
 
@@ -402,7 +404,7 @@ Functions to determine field number and type from identifier:
 Exceptions
 ----------
 
-On errors either ``AtmiException`` or ``UbfException`` are raised by the module. Exceptions contain
+On errors, either ``AtmiException`` or ``UbfException`` are raised by the module. Exceptions contain
 additional attribute ``code`` that contains the Enduro/X error code and it can be
 compared it with defined errors like ``TPENOENT`` or ``TPESYSTEM``.
 
@@ -418,10 +420,10 @@ compared it with defined errors like ``TPENOENT`` or ``TPESYSTEM``.
 Logging
 -------
 
-Enduro/X Python module contains all logging features provided by Enduro/X Core.
+The Enduro/X Python module contains all logging features provided by Enduro/X Core.
 functions such as ``tplog()`` (including syntactic sugars for log levels), ``tplogdump()``
 for dumping bytes to hex dumps in logs, request/session log file contexting and
-APIs manipulation with logfile file-descriptors.
+APIs manipulation with logfile file descriptors.
 
 .. code:: python
 
@@ -433,25 +435,25 @@ Unit testing
 ------------
 
 ``tests/`` contains test for all Enduro/X ATMIs provided by the module.
-These test cases can be studied for getting familiar with module APIs.
+These test cases can be studied to get familiar with module APIs.
 
 
 Licensing
 ---------
 
-Module is licensed under GNU Affero General Public License Version 3,
-which allows the use of the product for open source software.
-Mavimax SIA also provides commercial license EULA which allows to use Enduro/X
+The module is licensed under GNU Affero General Public License Version 3,
+which allows the use of the product for open-source software.
+Mavimax SIA also provides a commercial license EULA which allows to use Enduro/X
 Python module in closed source projects.
 
 Conclusions
 -----------
 
-This document gave short overview of the Enduro/X Python module.
-For full API overview please see API descriptions at https://www.endurox.org/dokuwiki
+This document gave a short overview of the Enduro/X Python module.
+For a full API overview please see API descriptions at https://www.endurox.org/dokuwiki
 
-As all API descriptions are embedded as PyDoc, Python shall can be utilized to
-get help for the overview, functions, constants, etc.
+As all API descriptions are embedded as PyDoc, Python shell can be utilized to
+get help with the overview, functions, constants, etc.
 
 As the root package "endurox" actually embeds C biding code in another sub-module "endurox",
 then full API doc can be viewed by:
