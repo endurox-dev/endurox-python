@@ -6,19 +6,25 @@ Python module for Enduro/X offers complete ATMI API access from the Python3 prog
 language. The module includes such features as:
 
 - A multi-threaded server
-- Synchronous, asynchronous, conversational, event-based and notification IPC APIs
+- Synchronous, asynchronous, conversational, event-based, and notification IPC APIs
 - Support for UBF (emulation of Tuxedo FML32, i.e. binary coded key/value buffer), NULL, STRING, CARRAY, VIEW (C structures), and JSON buffers
 - Support for nested UBF buffers with PTR (pointer to other XATMI buffers) and VIEW support
-- Dictionary like interface for UBF, having zero marshaling when client/server sends/receives UBF buffers, meaning ultra-fast processing times, even for large data. When buffers are exchanged between processes, only a few memcpy() operations are performed between processes and the OS kernel, as for UBF there is no serialization and when using UbfDict() interface, only requested fields from memory are exchanged with the Python VM upon get/set access.
+- Dictionary-like interface for UBF, having zero marshaling when client/server sends/receives UBF buffers, meaning ultra-fast processing times, even for large data. When buffers are exchanged between processes, only a few memcpy() operations are performed between processes and the OS kernel, as for UBF there is no serialization and when using UbfDict() interface, only requested fields from memory are exchanged with the Python VM upon get/set access.
 - Receive a response even when the service returns TPFAIL (instead of exception)
 - Enduro/X ATMI server extensions, such as periodic callbacks and resource polling
 - Logging API.
-- Simple, but yet powerful Python to Executable linker tool (named `expyld`), which pre-compiles and embeds pure Python packages/modules into executable files. During the runtime these packages/modules are resolved directly from the process memory, i.e. no temp files are used.
+- Simple, yet powerful Python to Executable linker tool (named `expyld`), which pre-compiles and embeds pure Python packages/modules into executable files. During the runtime these packages/modules are resolved directly from the process memory, i.e. no temp files are used.
 - See `documentation <https://www.endurox.org/dokuwiki>`_ for full API description.
 
 Python module for Enduro/X is written in C++11 and `pybind11 <https://github.com/pybind/pybind11>`_.
 
 
+Getting started tutorial
+------------------------
+
+.. image:: https://img.youtube.com/vi/v9kJv_vMel8/maxresdefault.jpg
+    :alt: IMAGE ALT TEXT HERE
+    :target: https://www.youtube.com/watch?v=v9kJv_vMel8
 
 Supported platforms
 -------------------
