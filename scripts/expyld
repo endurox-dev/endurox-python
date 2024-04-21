@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/opt/homebrew/opt/python@3.12/bin/python3.12
 ##
 ## @brief Enduro/X Limited Python binary Linker to stand-alone executable
 ##  This linker does not support some of the pkgutil operations, such as
@@ -327,6 +327,7 @@ static int ndrxpy_resolve(char *module, const char **data, ssize_t *dlen)
     static __thread ssize_t cache_dlen=0;
     static __thread int cache_ret=NDRXPY_RES_NOMOD;
 
+    fprintf(stderr, "mod=[%s]\n", module);
 #define DO_CACHE(MOD)	NDRX_STRCPY_SAFE(cache_module, MOD); cache_data=*data; cache_dlen=*dlen; cache_ret=ret;
     /*
      * Steps:
@@ -408,7 +409,6 @@ static const char *get_code_bytes(const char *data, ssize_t dlen, ssize_t *olen)
     long magic;
     int hdr_size = 3;
     int num = 1;
-
 
     if (*(char *)&num == 1)
     {
@@ -510,6 +510,7 @@ PyObject* find_module(PyObject* self, PyObject* args)
         goto out;
     }
 
+    fprintf(stderr, "module to find [%s]\n", module);
     ok=0;
     if (ndrxpy_resolve(module, &mdata, &dlen)==NDRXPY_RES_NOMOD)
     {
@@ -599,7 +600,7 @@ static struct PyModuleDef modDef = {
     NULL, NULL, NULL, NULL
 };
 
-static PyObject* PyInit_embedded(void)
+static PyObject* PyInit_ndrx_embedded(void)
 {
     return PyModule_Create(&modDef);
 }
@@ -682,8 +683,7 @@ int main(int argc, char **argv)
     PyStatus status;
 #endif
 
-    PyImport_AppendInittab("embedded", &PyInit_embedded);
-
+    PyImport_AppendInittab("ndrx_embedded", &PyInit_ndrx_embedded);
 /* 3.11+ */
 #if PY_VERSION_HEX >= 0x030B0000
 
@@ -713,14 +713,28 @@ int main(int argc, char **argv)
     PySys_SetArgv(argc, argvw);
 #endif
 
-    ret = PyRun_SimpleString("\
-import embedded, sys\n\
-class Importer:\n\
-    def find_module(self, fullpath, path=None):\n\
-        return self if embedded.find_module(fullpath) else None\n\
-    def load_module(self, fullpath):\n\
-        return embedded.load_module(fullpath)\n\
-sys.meta_path.append(Importer())\n\
+ret = PyRun_SimpleString("\
+import ndrx_embedded, sys\n\
+from importlib import util\n\
+from importlib.abc import Loader, MetaPathFinder\n\
+\n\
+class _NdrxExpyldModuleLoader(Loader):\n\
+    def create_module(self, spec):\n\
+        return None\n\
+\n\
+    def exec_module(self, module):\n\
+        ndrx_embedded.load_module(module.__spec__.name)\n\
+\n\
+class _NdrxExpyldModuleFinder(MetaPathFinder):\n\
+    def find_spec(self, fullname, path, target=None):\n\
+        try:\n\
+            if ndrx_embedded.find_module(fullname):\n\
+                return util.spec_from_loader(fullname, _NdrxExpyldModuleLoader())\n\
+        except Exception as e:\n\
+            print(f'Error in find_spec: {e}')\n\
+        return None\n\
+\n\
+sys.meta_path.append(_NdrxExpyldModuleFinder())\n\
 ");
 
     if (0!=ret)
