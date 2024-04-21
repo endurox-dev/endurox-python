@@ -621,7 +621,7 @@ error: externally-managed-environment
 
 --------------------------------------------------------------------------------
 
-Behavior can be overridden by:
+Behavior can be overridden (installation process fixed) by:
 
 --------------------------------------------------------------------------------
 
