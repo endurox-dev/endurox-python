@@ -327,7 +327,7 @@ static int ndrxpy_resolve(char *module, const char **data, ssize_t *dlen)
     static __thread ssize_t cache_dlen=0;
     static __thread int cache_ret=NDRXPY_RES_NOMOD;
 
-    fprintf(stderr, "mod=[%s]\n", module);
+    /* fprintf(stderr, "mod=[%s]\n", module); */
 #define DO_CACHE(MOD)	NDRX_STRCPY_SAFE(cache_module, MOD); cache_data=*data; cache_dlen=*dlen; cache_ret=ret;
     /*
      * Steps:
@@ -510,7 +510,7 @@ PyObject* find_module(PyObject* self, PyObject* args)
         goto out;
     }
 
-    fprintf(stderr, "module to find [%s]\n", module);
+    /* fprintf(stderr, "module to find [%s]\n", module); */
     ok=0;
     if (ndrxpy_resolve(module, &mdata, &dlen)==NDRXPY_RES_NOMOD)
     {
