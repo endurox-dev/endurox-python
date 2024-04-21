@@ -603,6 +603,41 @@ Python binary name to the CMake.
 
 After any of the above fixes, perform the clean and build/install steps again.
 
+=== On MacOS pip3 install of source or binary package might fail
+
+If performing "pip3 install . --user" of the source or binary wheel
+package and error such as is generated:
+
+--------------------------------------------------------------------------------
+
+$ pip3 install . --user
+error: externally-managed-environment
+
+× This environment is externally managed
+╰─> To install Python packages system-wide, try brew install
+    xyz, where xyz is the package you are trying to
+    install.
+...
+
+--------------------------------------------------------------------------------
+
+Behaviour can be overriden by:
+
+--------------------------------------------------------------------------------
+
+$ mkdir -p ~/.config/pip/
+
+$ cat << EOF > ~/.config/pip/
+[global]
+break-system-packages = true
+EOF
+
+--------------------------------------------------------------------------------
+
+Other option is to following the installation process of the Enduro/X for Python
+by using source package and "python3 ./setup.py install --user", which does
+not generate above error.
+
 == Conclusions
 
 This instruction showed how to perform common tasks, starting from module

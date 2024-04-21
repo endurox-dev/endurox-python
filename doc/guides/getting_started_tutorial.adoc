@@ -70,6 +70,9 @@ $ pip3 install . --user
 
 ---------------------------------------------------------------------
 
+Note, if installation process fails, see troubleshooting
+section of the *module_developer_guide(guides)*.
+
 == Configuring the application environment
 
 This tutorial will prepare "python-app" application. It  will be prepared
