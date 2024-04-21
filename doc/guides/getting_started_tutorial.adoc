@@ -3,15 +3,15 @@ Enduro/X Python Getting Started Tutorial
 
 == About the guide
 
-This document guides user how to quickly start using Enduro/X for Python3 module.
-It contains a step by step actions what needs to be taken to write and start
+This document guides users on how to quickly start using Enduro/X for Python3 module.
+It contains step-by-step actions that need to be taken to write and start
 the basic XATMI server and client process.
 
 == Operating System configuration
 
-Certain operating system configuration is required in order to Enduro/X running,
+Certain operating system configuration is required to get Enduro/X running,
 see ex_adminman(guides)(Enduro/X Administration Manual, Setup System) section,
-the steps are crucial to be executed for chosen operating system before
+the steps are crucial to be executed for the chosen operating system before
 continuing.
 
 == Preparing the Python 3 installation
@@ -20,20 +20,20 @@ After the system configuration is done, Enduro/X and Python packages can be inst
 This document assumes that your operating system has already Python version 3.6 or
 later installed. If not, follow the standard installation procedure for CPython.
 
-=== Installing binary version of Enduro/X Python module 
+=== Installing a binary version of Enduro/X Python module 
 
 Binary wheel release can be downloaded from https://www.mavimax.com/downloads
 Mavimax provides binary builds for selected operating systems. The Python
-Wheel release files are packaged in ZIP files which are labeled according
-the release platform. ZIP file which contains original WHL file.
+Wheel release files are packaged in ZIP files which are labeled according to
+the release platform. ZIP file which contains the original WHL file.
 Example of the ZIP file name: "endurox-python-8.0.1-1.solaris11_cp36m.x86_64.whl.zip".
 
-The name encodes following data:
+The name encodes the following data:
 
 - endurox-python-<version>-<release>.<os_ver>_<py_abi>.<arch>.whl.zip
 
 
-To install wheel release on target operating system use following commands:
+To install wheel release on the target operating system use the following commands:
 
 ---------------------------------------------------------------------
 
@@ -45,7 +45,7 @@ $ pip3 install *.whl --user
 
 === Installing Enduro/X Python module from sources
 
-To install module from sources code, following dependencies must be installed in the system:
+To install the module from source code, the following dependencies must be installed in the system:
 
 - CMake build system
 
@@ -70,17 +70,17 @@ $ pip3 install . --user
 
 ---------------------------------------------------------------------
 
-Note, if installation process fails, see troubleshooting
+Note, that if the installation process fails, see the troubleshooting
 section of the *module_developer_guide(guides)*.
 
 == Configuring the application environment
 
-This tutorial will prepare "python-app" application. It  will be prepared
-from new unix user "user1". Application (Enduro/X instance) will be 
+This tutorial will prepare "python-app" application. It will be prepared
+from the new unix user "user1". Application (Enduro/X instance) will be 
 located in /opt/app-python folder.
 
 To create creating base environment, Enduro/X "provision" tool is used. 
-This generates base layout of application.
+This generates the base layout of the application.
 
 ---------------------------------------------------------------------
 
@@ -99,7 +99,7 @@ Provision succeed!
 
 ---------------------------------------------------------------------
 
-Above script uses defaults, and for some parameters values are specified:
+The above script uses defaults, and for some parameters, values are specified:
 
 .Parameters applied to provision script above
 [width="40%",options="header"]
@@ -110,7 +110,7 @@ Above script uses defaults, and for some parameters values are specified:
 used by sample later
 |=========================================================
 
-Final directory structure built for the application is:
+The final directory structure built for the application is:
 
 [options="compact"]
 - /opt/app-python/conf - will contain configuration files.
@@ -124,8 +124,8 @@ Final directory structure built for the application is:
 - /opt/app-python/test - test data
 - /opt/tmlogs/rm1 - transaction manager log files (used for persistent queue space)
 
-Intial configuration file can be found in */opt/app-python/conf/ndrxconfig.xml*. 
-Lets register our Python XATMI server named *testsv.py* here first. Do this in
+The initial configuration file can be found in */opt/app-python/conf/ndrxconfig.xml*. 
+Let's register our Python XATMI server named *testsv.py* here first. Do this in
 *<servers/>* section add following *<server />* block in the file:
 
 ---------------------------------------------------------------------
@@ -167,10 +167,10 @@ sub-section of the @debug section.
 
 == Adding source code
 
-This tutorial will use Enduro/X built in feature of generating the source code.
+This tutorial will use Enduro/X built-in feature of generating the source code.
 Generators can create simple XATMI client/server processes. In this example,
-client process makes request to "TESTSV" service with one field in UBF buffer
-(*T_STRING_FLD*) and server provides original value back in *T_STRING_2_FLD* field.
+the client process makes request to "TESTSV" service with one field in UBF buffer
+(*T_STRING_FLD*) and the server provides the original value back in *T_STRING_2_FLD* field.
 
 The development process will be following:
 
@@ -183,7 +183,7 @@ The development process will be following:
 === Define UBF tables
 
 Enduro/X *Exfields* table in folder */opt/app-python/ubftab* is already added by
-provision command. In this folder we will add additional *test.fd* (already included
+the provision command. In this folder, we will add an additional *test.fd* (already included
 in configuration). 
 
 --------------------------------------------------------------------------------
@@ -215,8 +215,8 @@ Gen ok!
 
 === Define Python ATMI server process
 
-Lets generate simple Python server process which provides some field in responses
-of the service calls. We will do this by using Enduro/X generators:
+Let's generate a simple Python server process that provides some fields in response
+to the service calls. We will do this by using Enduro/X generators:
 
 --------------------------------------------------------------------------------
 $ cd /opt/app-python/bin
@@ -278,7 +278,7 @@ if __name__ == "__main__":
 
 --------------------------------------------------------------------------------
 
-This is basic XATMI single-threaded server. The tpsvrinit() advertises service
+This is a basic XATMI single-threaded server. The tpsvrinit() advertises service
 "TESTSV". Method tpsvrdone() is called during XATMI server shutdown.
 
 === Define Python client process
@@ -316,7 +316,7 @@ Python client gen ok!
 
 --------------------------------------------------------------------------------
 
-For generator the defaults basically are used, but you may choose your own identifiers
+For the generator, the defaults are used, but you may choose your own identifiers
 as well. The simple Python XATMI client process looks like this (*testcl.py*):
 
 --------------------------------------------------------------------------------
@@ -359,13 +359,13 @@ if __name__ == '__main__':
 
 --------------------------------------------------------------------------------
 
-Generate source is simple XATMI client process which prepares they key/value 
+Generate source is a simple XATMI client process that prepares the key/value 
 UBF buffer (dictionary), adds data to it and performs call to service.
 
 == Running the example
 
-After this we are ready to boot up the application, thus lets load the environment
-and start up.
+After this, we are ready to boot up the application, thus load the environment
+and start-up.
 
 --------------------------------------------------------------------------------
 
@@ -483,15 +483,15 @@ T_STRING_2_FLD  Hello World from XATMI server
 
 == Conclusions
 
-In the end we see that it is quite simple to create XATMI Python client and 
-server processes. The good thing is that this API is consistent with Go, Java and C/C++
-languages. Any of these four programming languages can be mixed in single
-high performance application solution.
+In the end, we see that it is quite simple to create XATMI Python client and 
+server processes. The good thing is that this API is consistent with Go, Java, and C/C++
+languages. Any of these four programming languages can be mixed into a single
+high-performance application solution.
 
-This tutorial shows only basic features of the Enduro/X. There is more to study
+This tutorial shows only the basic features of the Enduro/X. There is more to study
 as async calls, *tpforward(3)*, persistent queues, events, distributed transactions
 and more. For full API consult the Enduro/X API Pydoc pages at https://www.endurox.org/dokuwiki 
-Also unit tests can give a clue for the full functionality use (at 
+Also, unit tests can give a clue for the full functionality use (at 
 https://github.com/endurox-dev/endurox-python/tree/master/tests).
  
 
