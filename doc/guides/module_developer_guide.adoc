@@ -56,9 +56,9 @@ This section lists details about Enduro/X Python module internals.
 
 === Module structure
 
-Enduro/X Python mode is based on native code binding. Due to the fact that
+Enduro/X Python mode is based on native code binding. Because
 Python loads shared libraries with *RTLD_LOCAL* flag, the consequent
-shared libraries loaded by Enduro/X code (XA libs) does not see the
+shared libraries loaded by Enduro/X code (XA libs) do not see the
 original libraries loaded by the Python. To overcome this problem
 actual binding code is found in "endurox.endurox" sub-module. The sub-module
 is automatically loaded with *RTLD_GLOBAL* flag at the "endurox" module init.
@@ -231,7 +231,7 @@ $ su - root
 # /opt/csw/bin/pkgutil -y -i pkgconfig
 --------------------------------------------------------------------------------
 
-The following environment variables must be set prior to running *setuptools* or *pip3*:
+The following environment variables must be set before running *setuptools* or *pip3*:
 
 --------------------------------------------------------------------------------
 $ export CXX=g++
@@ -514,7 +514,7 @@ Table created.
 
 --------------------------------------------------------------------------------
 
-finally Oracle DB test cases can be run:
+finally, Oracle DB test cases can be run:
 
 --------------------------------------------------------------------------------
 
@@ -621,28 +621,28 @@ error: externally-managed-environment
 
 --------------------------------------------------------------------------------
 
-Behaviour can be overriden by:
+Behavior can be overridden by:
 
 --------------------------------------------------------------------------------
 
 $ mkdir -p ~/.config/pip/
 
-$ cat << EOF > ~/.config/pip/
+$ cat << EOF > ~/.config/pip/pip.conf
 [global]
 break-system-packages = true
 EOF
 
 --------------------------------------------------------------------------------
 
-Other option is to following the installation process of the Enduro/X for Python
-by using source package and "python3 ./setup.py install --user", which does
-not generate above error.
+Another option is to follow the installation process of the Enduro/X for Python
+by using source package and "python3 ./setup.py install --user" command, which 
+with default configuration does not generate the above error.
 
 == Conclusions
 
 This instruction showed how to perform common tasks, starting from module
 build, and installation and completing it with the module testing. The given information
-shall be enough to start to dig into module development details. Also, document can
+shall be enough to start to dig into module development details. Also, the document can
 help to prepare module for systems for which the official build is not available or Python 3
 is not available.
 
