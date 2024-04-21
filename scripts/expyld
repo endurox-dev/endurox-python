@@ -590,8 +590,8 @@ out:
 
 
 static struct PyMethodDef methods[] = {
-    { "find_module", find_module, METH_VARARGS, "Returns module_loader if this is an encrypted module"},
-    { "load_module", load_module, METH_VARARGS, "Load an encrypted module" },
+    { "find_module", find_module, METH_VARARGS, "Returns module_loader if this is a _ndrx_embedded module"},
+    { "load_module", load_module, METH_VARARGS, "Load an _ndrx_embedded module" },
     { NULL, NULL, 0, NULL }
 };
 
@@ -683,7 +683,7 @@ int main(int argc, char **argv)
     PyStatus status;
 #endif
 
-    PyImport_AppendInittab("ndrx_embedded", &PyInit_ndrx_embedded);
+    PyImport_AppendInittab("_ndrx_embedded", &PyInit_ndrx_embedded);
 /* 3.11+ */
 #if PY_VERSION_HEX >= 0x030B0000
 
@@ -714,7 +714,7 @@ int main(int argc, char **argv)
 #endif
 
 ret = PyRun_SimpleString("\
-import ndrx_embedded, sys\n\
+import _ndrx_embedded, sys\n\
 from importlib import util\n\
 from importlib.abc import Loader, MetaPathFinder\n\
 \n\
@@ -723,12 +723,12 @@ class _NdrxExpyldModuleLoader(Loader):\n\
         return None\n\
 \n\
     def exec_module(self, module):\n\
-        ndrx_embedded.load_module(module.__spec__.name)\n\
+        _ndrx_embedded.load_module(module.__spec__.name)\n\
 \n\
 class _NdrxExpyldModuleFinder(MetaPathFinder):\n\
     def find_spec(self, fullname, path, target=None):\n\
         try:\n\
-            if ndrx_embedded.find_module(fullname):\n\
+            if _ndrx_embedded.find_module(fullname):\n\
                 return util.spec_from_loader(fullname, _NdrxExpyldModuleLoader())\n\
         except Exception as e:\n\
             print(f'Error in find_spec: {e}')\n\
