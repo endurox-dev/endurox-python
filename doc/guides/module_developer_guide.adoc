@@ -627,7 +627,7 @@ Behavior can be overridden by:
 
 $ mkdir -p ~/.config/pip/
 
-$ cat << EOF > ~/.config/pip/
+$ cat << EOF > ~/.config/pip/pip.conf
 [global]
 break-system-packages = true
 EOF
