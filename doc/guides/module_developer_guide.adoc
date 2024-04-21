@@ -634,9 +634,11 @@ EOF
 
 --------------------------------------------------------------------------------
 
-Another option is to follow the installation process of the Enduro/X for Python
+After the *pip.conf* edit, retry the installation process with the pip3.
+
+However, another option is to follow the installation process of the Enduro/X for Python3
 by using source package and "python3 ./setup.py install --user" command, which 
-with default configuration does not generate the above error.
+with default configuration does succeed (no above error generated).
 
 == Conclusions
 
