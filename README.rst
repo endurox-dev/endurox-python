@@ -2,8 +2,9 @@
 Enduro/X Python3 module
 =======================
 
-Python module for Enduro/X offers complete ATMI API access from the Python3 programming
-language. The module includes such features as:
+The Python module for Enduro/X provides full ATMI API access within the Python3 programming language. It is available under a dual license: AGPLv3 or a commercial license from Mavimax SIA. The commercial license removes the requirement to make user applications open source, which is necessary under the AGPLv3 license.
+
+The module includes such features as:
 
 - A multi-threaded server
 - Synchronous, asynchronous, conversational, event-based, and notification IPC APIs
